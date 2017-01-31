@@ -179,7 +179,7 @@ class avlAnalysis():
 
     def executeRun(self):
 
-        self.exe = True
+        self.__exe = True
 
         avl.oper()
 
@@ -225,7 +225,7 @@ class avlAnalysis():
             sys.exit(1)
 
 
-        avl.calcfs()
+        avl.calcst()
         self.NP = avl.case_r.xnp
         # print 'Xnp:', avl.case_r.xnp
 

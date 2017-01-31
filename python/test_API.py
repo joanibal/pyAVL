@@ -13,7 +13,13 @@ case.addConstraint('rudder', 0.00)
 # case.addTrimCondition('CL', 1.0)
 # case.addConstraint('alpha', 0.00)
 
-# case.executeRun()
+case.executeRun()
+
+print '----------------- Neutral Point ----------------'
+case.calcNP()
+print case.NP
+case.clearVals()
+
 
 case.alphaSweep(0, 10)
 
