@@ -245,7 +245,7 @@ C
 C
         INFO = 1
         CALL EXEC(NITMAX,INFO,IRUN)
-        IF(.NOT.LSOL) GO TO 810
+C        IF(.NOT.LSOL) GO TO 810
 C C
 C         IF(LPTOT)   CALL OUTTOT(6)
 C         IF(LPSURF)  CALL OUTSURF(6)
