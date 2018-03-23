@@ -204,8 +204,11 @@ class avlAnalysis():
         self.sec_Yle.append(np.asarray(avl.strp_r.rle[1][:NS]))
 
 
-        # print 'alfa:', avl.case_r.alfa   
+        self.convergedFlag =  avl.case_l.lsol
 
+        if not self.convergedFlag:
+            print 'oh no the case did not converge'
+            
         # print 'CLTOT:', avl.case_r.cltot
         # print 'CdTOT:', avl.case_r.cdtot
         # print 'CmTOT:', avl.case_r.cmtot
