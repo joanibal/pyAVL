@@ -21,7 +21,7 @@ default:
 # 	mv pyxlight_cs.so ./python
 # 	-rm common.mk
 
-gfortran:
+default:
 	@echo "Linux - Gfortran"
 	-rm common.mk
 	rm src/avl.o || :
@@ -32,9 +32,17 @@ gfortran:
 	rm python/pyavl.so || :
 	ln -s ./config/config.LINUX_GFORTRAN.mk common.mk
 	( cd src && make) || exit 1; 
-	f2py  --fcompiler=gfortran --f90flags=-fdefault-real*8 -c -m  pyavl src/pyavl.pyf src/libavl.a 
-	mv pyavl.so ./python
+	f2py  --fcompiler=gnu95 --f77flags='-O2 -fdefault-real-8 -fPIC -g -fcheck=all' -c -m  libavl src/libavl.pyf src/libavl.a 
+	mv libavl.*so ./pyavl/libavl.so
 	-rm common.mk
+
+
+clean:
+	rm -fr src/*.mod
+	rm -fr src/*.o
+	rm -fr src/*.a
+	rm -fr src/*.so
+	# rm -f *~ config.mk;
 
 
 gfortran_test:

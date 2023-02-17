@@ -1,9 +1,9 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module pyavl ! in 
-    interface  ! in :pyavl
-        subroutine avl ! in :pyavl:avl.f
+python module libavl ! in 
+    interface  ! in :libavl
+        subroutine avl ! in :libavl:avl.f
             real*8 dimension(3,400) :: rle
             real*8 dimension(400) :: chord
             real*8 dimension(3,400) :: rle1
@@ -424,34 +424,31 @@ python module pyavl ! in
             common /vrtx_r/ rv1,rv2,rv,rc,rs,rl,radl,dxv,chordv,slopev,slopec,dcontrol,vhinge,phinge,vrefl,enc,env,enc_d,enc_g,env_d,env_g,dcp,dcp_u,dcp_d,dcp_g,gam,gam_u_0,gam_u_d,gam_u_g,gam_u,gam_d,gam_g,src,dbl,src_u,dbl_u,wcsrd_u,wvsrd_u
         end subroutine avl
         
-        subroutine oper ! in :pyavl:aoper.f
+        subroutine oper ! in :libavl:aoper.f
         end subroutine oper
 
-        subroutine loadgeo(fildef) ! in :pyavl:avl.f
+        subroutine loadgeo(fildef) ! in :libavl:avl.f
             character*80 :: fildef
         end subroutine loadgeo
 
-        subroutine loadmass(fmsdef) ! in :pyavl:avl.f
+        subroutine loadmass(fmsdef) ! in :libavl:avl.f
             character*80 :: fmsdef
         end subroutine loadmass
 
         
-        subroutine conset(comand, comarg) ! in :pyavl:aoper.f
+        subroutine conset(comand, comarg) ! in :libavl:aoper.f
               character*(*) comand, comarg
         end subroutine conset
 
-        subroutine trmset(comand, comarg, com, carg) ! in :pyavl:aoper.f
+        subroutine trmset(comand, comarg, com, carg) ! in :libavl:aoper.f
             character*(*) comand, comarg 
             character*4 com
             character*80 carg
         end subroutine trmset
 
-        subroutine calcst ! in :pyavl:aoper.f
+        subroutine calcst ! in :libavl:aoper.f
         end subroutine calcst
 
 
     end interface 
-end python module pyavl
-
-! This file was auto-generated with f2py (version:2).
-! See http://cens.ioc.ee/projects/f2py2e/
+end python module libavl

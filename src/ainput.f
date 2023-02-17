@@ -68,7 +68,7 @@ C
 C
 C----------------------------------------------------
       FERR = .FALSE.
-C
+C       
       OPEN(UNIT=LUN,FILE=FNAME,STATUS='OLD',ERR=3)
       GO TO 6
 C
