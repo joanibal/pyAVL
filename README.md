@@ -30,11 +30,11 @@ The AVL wrapper is implemented in the `AVLSolver` class.
 To use this wrapper, first one must initialize the `AVLSoilver` object with a geometry file and optionally a mass file. 
 After, the user can add constraints and then execute the run to generate data. 
 Below is a basic example of this workflow. 
-```
+```python
 from pyavl import AVLSolver
 import numpy as np
 
-avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False)
+avl_solver = AVLSolver(geo_file="aircraft.avl")
 avl_solver.addConstraint('alpha', 0.00)
 
 # surface names form geometry file
