@@ -21,7 +21,7 @@ History
 # =============================================================================
 import os
 import time
-
+import copy
 # =============================================================================
 # External Python modules
 # =============================================================================
@@ -61,7 +61,7 @@ class AVLSolver(object):
             self.avl.avl()
             if debug:
                 self.avl.case_l.lverbose = True
-            
+
             self.avl.loadgeo(geo_file)
 
             if  mass_file is not None:
@@ -69,33 +69,65 @@ class AVLSolver(object):
 
         else:
             raise ValueError("neither a geometry file or aircraft object was given")
-        
+
         self.bref = self.avl.case_r.bref
         self.cref = self.avl.case_r.cref
         self.sref = self.avl.case_r.sref
-        return
 
-    def addConstraint(self, variable, val):
+        # store the control surfaces variables
+        control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
+        
+        self.control_variables =  {}
+        for  idx_c_var, c_name in enumerate(control_names):
+            self.control_variables[c_name] =  f"D{idx_c_var+1}"
+        
+
+    def addConstraint(self, var, val, con_var=None):
         self.__exe = False
 
-        options = {
-            "alpha": ["A", "A "],
-            "beta": ["B", "B "],
-            "roll rate": ["R", "R "],
-            "pitch rate": ["P", "P "],
-            "yaw rate": ["Y", "Y"],
-            "D1": ["D1", "PM "],
-            "D2": ["D2", "YM "],
-            "D3": ["D3", "RM "],
+        avl_variables = {
+            "alpha": "A",
+            "beta": "B",
+            "roll rate": "R",
+            "pitch rate": "P",
+            "yaw rate": "Y",
         }
-
-        if not (variable in options):
+        
+        avl_con_variables = copy.deepcopy(avl_variables)
+        avl_con_variables.update({
+            "CL": "C",
+            "CY": "S",
+            "Cl roll moment": "RM",
+            "Cm pitch moment": "PM",
+            "Cn yaw moment": "YM",
+        })
+        
+        if var in avl_variables:
+            # save the name of the avl_var
+            avl_var = avl_variables[var]
+        elif var in self.control_variables.keys():
+            avl_var = self.control_variables[var]
+        elif var in self.control_variables.keys():
+            avl_var = self.control_variables[var]
+        else:
             raise ValueError(
-                f"constraint variable `{variable}` not a valid option. Must be one of the following {[key for key in options]}."
+                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items]}."
             )
-
-        self.avl.conset(options[variable][0], (options[variable][1] + str(val) + " \n"))
-        return
+        
+        if con_var is None:
+            avl_con_var = avl_var
+        elif con_var in avl_con_variables:
+            avl_con_var = avl_con_variables[con_var]
+        elif con_var in self.control_variables.keys():
+            avl_con_var = self.control_variables[con_var]
+        elif con_var in self.control_variables.keys():
+            avl_con_var = self.control_variables[con_var]     
+        else:
+            raise ValueError(
+                f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items]}."
+            ) 
+        
+        self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
     def addTrimCondition(self, variable, val):
         self.__exe = False
@@ -119,7 +151,6 @@ class AVLSolver(object):
 
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
-        return
 
     def executeRun(self):
         self.__exe = True
@@ -252,6 +283,40 @@ class AVLSolver(object):
 
         self.surf_CL = np.empty(0)
         self.surf_CD = np.empty(0)
+    
+# Utility functions     
+    
+    def _createFortranStringArray(self, strList, num_max_char):
+        """Setting arrays of strings in Fortran can be kinda nasty. This
+        takesa list of strings and returns the array"""
+
+        arr = np.zeros((len(strList), num_max_char), dtype="str")
+        arr[:] = " "
+        for i, s in enumerate(strList):
+            for j in range(len(s)):
+                arr[i, j] = s[j]
+
+        return arr
+
+    def _convertFortranStringArrayToList(self, fortArray):
+        """Undoes the _createFotranStringArray"""
+        strList = []
+        for ii in range(len(fortArray)):
+            if fortArray[ii].dtype == np.dtype("|S0"):
+                # there is characters in the sting to add
+                continue
+            if fortArray[ii].dtype == np.dtype("|S1"):
+                strList.append(b"".join(fortArray[ii]).decode().strip())
+            elif fortArray[ii].dtype == np.dtype("<U1"):
+                strList.append("".join(fortArray[ii]).strip())
+            elif fortArray[ii].dtype == np.dtype("|S16"):
+                strList.append(fortArray[ii].decode().strip())
+            else:
+                raise TypeError(f"Unable to convert {fortArray[ii]} of type {fortArray[ii].dtype} to string")
+
+        return strList
+
+    
 
     # def calcSectionalCPDist(self):
 
