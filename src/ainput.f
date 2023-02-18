@@ -91,8 +91,10 @@ C
 C----------------------------------------------------
  6    CONTINUE
       CALL STRIP(FNAME,NFN)
-C       WRITE(*,*) 
-C       WRITE(*,*) 'Reading file: ', FNAME(1:NFN), '  ...'
+      if(LVERBOSE) then 
+        WRITE(*,*) 
+        WRITE(*,*) 'Reading file: ', FNAME(1:NFN), '  ...'
+      end if
 C
       DCL_A0 = 0.
       DCM_A0 = 0.
@@ -128,7 +130,10 @@ C---------------------------------------------------
       CALL RDLINE(LUN,LINE,NLINE,ILINE)
       TITLE = LINE(1:NLINE)
 C
-C       WRITE(*,1001) TITLE(1:60)
+      if(LVERBOSE) then 
+        WRITE(*,*) 
+        WRITE(*,1001) TITLE(1:60)
+      end if
  1001 FORMAT(/' Configuration: ', A)
 C
 C
@@ -292,8 +297,12 @@ C
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         STITLE(ISURF) = LINE(1:NLINE)
-C         WRITE(*,*)
-C         WRITE(*,*) '  Building surface: ', STITLE(ISURF)
+        
+        if(lverbose)then
+                WRITE(*,*)
+                WRITE(*,*) '  Building surface: ', STITLE(ISURF)
+        end if 
+                
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         NINPUT = 4
@@ -709,14 +718,19 @@ CCC         WRITE(*,*) '     Using data in normalized range ',XFMIN,XFMAX
         ENDIF
 C
         CALL STRIP(CNAME,NCN)
-C         WRITE(*,*) '    Reading airfoil from file: ',CNAME(1:NCN)
+        if(lverbose)then
+        WRITE(*,*) '    Reading airfoil from file: ',CNAME(1:NCN)
+        end if 
         NBLDS = 1
         CALL READBL(CNAME,IBX,NBLDS,XB,YB,NB,NBL,
      &               ANAME,XINL,XOUT,YBOT,YTOP)
 C
         IF(NBL.EQ.0) THEN
-C          WRITE(*,*) '**   Airfoil file not found  : ',CNAME(1:NCN)
-C          WRITE(*,*) '**   Using default zero-camber airfoil'
+        if(lverbose)then
+        WRITE(*,*) '**   Airfoil file not found  : ',CNAME(1:NCN)
+        WRITE(*,*) '**   Using default zero-camber airfoil'
+        end if 
+
 C C
          NASEC(ISEC) = MIN( 50 , IBX )
          DO I = 1, NASEC(ISEC)

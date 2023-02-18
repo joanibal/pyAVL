@@ -19,8 +19,8 @@ C
 C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
 C
-      PARAMETER (NVMAX=6000, 
-     &           NSMAX=400, 
+      PARAMETER (NVMAX=6000,
+     &           NSMAX=400,
      &           NFMAX=30,
      &           NLMAX=500,
      &           NBMAX=20,
@@ -112,7 +112,8 @@ C
      &        LPTOT,LPSURF,LPSTRP,LPELE,LPHINGE,LPDERIV,
      &        LBFORCE,
      &        LNASA_SA, LSA_RATES,
-     &        LMWAIT
+     &        LMWAIT,
+     &        LVERBOSE
       LOGICAL LPPAR
       COMMON /CASE_L/
      & LGEO,   ! T if geometry exists
@@ -136,7 +137,8 @@ C
      & LNASA_SA,    ! T if NASA-std stability axes are to be used
      & LSA_RATES,   ! T if stability-axis rates are to be used
      & LMWAIT,      ! T if mode display is to wait for real time
-     & LPPAR(IPMAX)          ! T if parameter value is to be plotted
+     & LPPAR(IPMAX),          ! T if parameter value is to be plotted
+     & LVERBOSE             ! debug flag to trigger writing out typical avl output
       COMMON /CASE_R/
      & VERSION,          ! AVL version number
      & DTR,     PI,      ! 3.14159/180 ,  3.14159
@@ -183,7 +185,7 @@ C
      & CDTOT_G(NGMAX),CLTOT_G(NGMAX),                !sens wrt design
      & CXTOT_G(NGMAX),CYTOT_G(NGMAX),CZTOT_G(NGMAX), !sens wrt design
      & CRTOT_G(NGMAX),CMTOT_G(NGMAX),CNTOT_G(NGMAX), !sens wrt design
-     & CHINGE(NDMAX), 
+     & CHINGE(NDMAX),
      & CHINGE_U(NDMAX,NUMAX),
      & CHINGE_D(NDMAX,NDMAX),
      & CHINGE_G(NDMAX,NGMAX),
@@ -191,7 +193,7 @@ C
      & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
      & XNP                ! x neutral point
       COMPLEX EVAL, EVEC, EVALDAT
-      COMMON /CASE_Z/ 
+      COMMON /CASE_Z/
      &  EVAL(JEMAX,NRMAX),       ! mode eigenvalue
      &  EVEC(JEMAX,JEMAX,NRMAX), ! mode eigenvector
      &  EVALDAT(JEMAX,NRMAX)     ! mode eigenvalue reference data
@@ -219,12 +221,12 @@ C
 
 
       LOGICAL LFWAKE, LFALBE, LFLOAD
-      COMMON /SURF_L/  
+      COMMON /SURF_L/
      & LFWAKE(NFMAX),   ! T if surface sheds a wake
      & LFALBE(NFMAX),   ! T if surface is to see freestream alpha,beta
      & LFLOAD(NFMAX)    ! T if surface contributes to overall loads
 
-      COMMON /SURF_I/  
+      COMMON /SURF_I/
      & NJ(NFMAX),       ! number of elements along span  in surface
      & NK(NFMAX),       ! number of elements along chord in surface
      & IFRST(NFMAX),    ! index of first element in surface
@@ -247,7 +249,7 @@ C
      & CDS_G(NFMAX,NGMAX), CLS_G(NFMAX,NGMAX),
      & CXS_G(NFMAX,NGMAX), CYS_G(NFMAX,NGMAX), CZS_G(NFMAX,NGMAX),
      & CRS_G(NFMAX,NGMAX), CNS_G(NFMAX,NGMAX), CMS_G(NFMAX,NGMAX),
-     & CF_SRF(3,NFMAX), CM_SRF(3,NFMAX), 
+     & CF_SRF(3,NFMAX), CM_SRF(3,NFMAX),
      & CL_SRF(NFMAX), CD_SRF(NFMAX), CMLE_SRF(NFMAX),
      & SSURF(NFMAX), CAVESURF(NFMAX),
      & VBODY(NBMAX)
@@ -255,7 +257,7 @@ C
 C
       COMMON /STRP_I/
      & NSURFS(NSMAX),    ! index of surface which contains this strip
-     & IJFRST(NSMAX),    ! index of first element in strip 
+     & IJFRST(NSMAX),    ! index of first element in strip
      & NVSTRP(NSMAX)     ! number of elements in strip
 
       LOGICAL LSTRIPOFF,LVISCSTRP,LJ1SECT,LJ2SECT
@@ -292,8 +294,8 @@ C
      & CXST_G(NSMAX,NGMAX), CYST_G(NSMAX,NGMAX), CZST_G(NSMAX,NGMAX),
      & CRST_G(NSMAX,NGMAX), CNST_G(NSMAX,NGMAX), CMST_G(NSMAX,NGMAX),
      & CF_STRP(3,NSMAX),   CM_STRP(3,NSMAX), ! strip forces, norm local
-     & CNRMSTRP(NSMAX),    CAXLSTRP(NSMAX), 
-     & CD_LSTRP(NSMAX),  CL_LSTRP(NSMAX), 
+     & CNRMSTRP(NSMAX),    CAXLSTRP(NSMAX),
+     & CD_LSTRP(NSMAX),  CL_LSTRP(NSMAX),
      & CDV_LSTRP(NSMAX), CLTSTRP(NSMAX), CLASTRP(NSMAX),
      & CMC4(NSMAX),        CMLE(NSMAX),
      & CNC(NSMAX),         DWWAKE(NSMAX),
@@ -347,7 +349,7 @@ C
      & WCSRD_U(3,NVMAX,NUMAX),
      & WVSRD_U(3,NVMAX,NUMAX)
 C
-      COMMON /BODY_I/  
+      COMMON /BODY_I/
      & NL(NBMAX),       ! number of source-line nodes in body
      & LFRST(NBMAX)     ! index of first line node in body
 
@@ -360,9 +362,9 @@ C
      & CXBDY(NBMAX),CYBDY(NBMAX),CZBDY(NBMAX),  ! body CX,CY,CZ
      & CRBDY(NBMAX),CNBDY(NBMAX),CMBDY(NBMAX)   ! body Cl,Cm,Cn
 C
-      COMMON /SOLV_I/ 
+      COMMON /SOLV_I/
      & IAPIV(NVMAX)           ! pivot indices for LU solver
-      COMMON /SOLV_R/  
+      COMMON /SOLV_R/
      & AMACH,                 ! Mach number at which AIC matrices were computed
      & AICN(NVMAX,NVMAX),     ! normalwash AIC matrix (and VL system matrix)
      & WC_GAM(3,NVMAX,NVMAX), ! c.p. velocity/Gamma influence matrix
@@ -374,32 +376,32 @@ C
      & WV(3,NVMAX),           ! total induced velocity at h.v.
      & WV_U(3,NVMAX,NUMAX),
      & WV_D(3,NVMAX,NDMAX),
-     & WV_G(3,NVMAX,NGMAX) 
+     & WV_G(3,NVMAX,NGMAX)
 C
       LOGICAL
      & LWAKEPLT,   LLOADPLT,   LHINGEPLT,
-     & LBOUNDLEG,  LCHORDLINE, LCAMBER,   LCNTLPTS, 
+     & LBOUNDLEG,  LCHORDLINE, LCAMBER,   LCNTLPTS,
      & LNRMLPLT,   LAXESPLT,   LRREFPLT,
      & LCLPERPLT,  LDWASHPLT,  LLABSURF,   LTRFORCE,
      & LABEL_SURF, LABEL_STRP, LABEL_VRTX, LABEL_BODY,
-     & LPLTNEW,    
+     & LPLTNEW,
      & LPLTSURF,
-     & LPLTBODY, 
+     & LPLTBODY,
      & LSVMOV
-C       COMMON /PLOT_L/          ! plotting flags
-C      & LWAKEPLT,   LLOADPLT,   LHINGEPLT,
-C      & LBOUNDLEG,  LCHORDLINE, LCAMBER,   LCNTLPTS, 
-C      & LNRMLPLT,   LAXESPLT,   LRREFPLT,
-C      & LCLPERPLT,  LDWASHPLT,  LLABSURF,   LTRFORCE,
-C      & LABEL_SURF, LABEL_STRP, LABEL_VRTX, LABEL_BODY,
-C      & LPLTNEW,    
-C      & LPLTSURF(NFMAX),
-C      & LPLTBODY(NBMAX),
-C      & LSVMOV
-C       COMMON /PLOT_I/ NTRI, IMARKSURF, NAXANN(3), IRCOLOR(NRMAX)
-C       COMMON /PLOT_R/ TRI(16,ITMAX),
-C      &                AXMIN(3),AXMAX(3),AXDEL(3),AXSPAN(3),
-C      &                GMIN(3),GMAX(3),GMINP(3),GMAXP(3),
-C      &                VMIN(3),VMAX(3),VMINP(3),VMAXP(3),
-C      &                DTMOVIE,TMOVIE, SLOMOF,
-C      &                EPHASE, EIGENF, TMOFAC 
+      COMMON /PLOT_L/          ! plotting flags
+     & LWAKEPLT,   LLOADPLT,   LHINGEPLT,
+     & LBOUNDLEG,  LCHORDLINE, LCAMBER,   LCNTLPTS,
+     & LNRMLPLT,   LAXESPLT,   LRREFPLT,
+     & LCLPERPLT,  LDWASHPLT,  LLABSURF,   LTRFORCE,
+     & LABEL_SURF, LABEL_STRP, LABEL_VRTX, LABEL_BODY,
+     & LPLTNEW,
+     & LPLTSURF(NFMAX),
+     & LPLTBODY(NBMAX),
+     & LSVMOV
+      COMMON /PLOT_I/ NTRI, IMARKSURF, NAXANN(3), IRCOLOR(NRMAX)
+      COMMON /PLOT_R/ TRI(16,ITMAX),
+     &                AXMIN(3),AXMAX(3),AXDEL(3),AXSPAN(3),
+     &                GMIN(3),GMAX(3),GMINP(3),GMAXP(3),
+     &                VMIN(3),VMAX(3),VMINP(3),VMAXP(3),
+     &                DTMOVIE,TMOVIE, SLOMOF,
+     &                EPHASE, EIGENF, TMOFAC

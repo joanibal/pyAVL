@@ -73,9 +73,11 @@ C C
 C C
 C C
       CALL CFRAC(IRUN,NRUN,CRUN,NPR)
-C C
-C       WRITE(*,1050) CRUN(1:NPR), RTITLE(IRUN)
-C       CALL CONLST(IRUN)
+C
+      if(lverbose)then
+            WRITE(*,1050) CRUN(1:NPR), RTITLE(IRUN)
+            CALL CONLST(IRUN)
+      end if
 C       WRITE(*,1052)
 
  1050 FORMAT(
@@ -247,11 +249,13 @@ C
         CALL EXEC(NITMAX,INFO,IRUN)
 C        IF(.NOT.LSOL) GO TO 810
 C C
-C         IF(LPTOT)   CALL OUTTOT(6)
-C         IF(LPSURF)  CALL OUTSURF(6)
-C         IF(LPSTRP)  CALL OUTSTRP(6)
-C         IF(LPELE)   CALL OUTELE(6)
-C         IF(LPHINGE) CALL OUTHINGE(6)
+        if(lverbose) then
+            IF(LPTOT)   CALL OUTTOT(6)
+            IF(LPSURF)  CALL OUTSURF(6)
+            IF(LPSTRP)  CALL OUTSTRP(6)
+            IF(LPELE)   CALL OUTELE(6)
+            IF(LPHINGE) CALL OUTHINGE(6)
+        end if
 
 
 C

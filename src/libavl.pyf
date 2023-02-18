@@ -297,6 +297,7 @@ python module libavl ! in
             real*8 :: dcm_u0
             real*8 :: xnp
             logical :: lgeo
+            logical :: lverbose
             logical :: lenc
             logical :: laic
             logical :: lsrd
@@ -418,7 +419,7 @@ python module libavl ! in
             common /case_z/ eval,evec,evaldat
             common /vrtx_i/ nsurfv
             common /case_r/ version,dtr,pi,ysym,zsym,alfa,beta,vinf,vinf_a,vinf_b,wrot,dtimed,parval,conval,delcon,deldes,sref,cref,bref,xyzref,xyzref0,mach,mach0,cdref,cdref0,vrcore,srcore,clff,cyff,cdff,clff_u,cyff_u,cdff_u,clff_d,cyff_d,cdff_d,clff_g,cyff_g,cdff_g,spanef,spanef_a,spanef_u,spanef_d,spanef_g,cdtot,cltot,cxtot,cytot,cztot,crtot,cmtot,cntot,cdvtot,cdtot_a,cltot_a,cdtot_u,cltot_u,cxtot_u,cytot_u,cztot_u,crtot_u,cmtot_u,cntot_u,cdtot_d,cltot_d,cxtot_d,cytot_d,cztot_d,crtot_d,cmtot_d,cntot_d,cdtot_g,cltot_g,cxtot_g,cytot_g,cztot_g,crtot_g,cmtot_g,cntot_g,chinge,chinge_u,chinge_d,chinge_g,dcl_a0,dcm_a0,dcl_u0,dcm_u0,xnp
-            common /case_l/ lgeo,lenc,laic,lsrd,lvel,lsol,lsen,lvisc,lmass,lcondef,ldesdef,lptot,lpsurf,lpstrp,lpele,lphinge,lpderiv,lbforce,lnasa_sa,lsa_rates,lmwait,lppar
+            common /case_l/ lgeo,lenc,laic,lsrd,lvel,lsol,lsen,lvisc,lmass,lcondef,ldesdef,lptot,lpsurf,lpstrp,lpele,lphinge,lpderiv,lbforce,lnasa_sa,lsa_rates,lmwait,lppar, lverbose
             common /case_i/ luinp,lurun,luout,lustd,lusys,iysym,izsym,matsym,nvor,nstrip,nsurf,nlnode,nbody,icon,nvtot,nctot,nptot,ncontrol,ndesign,nitmax,irun,nrun,irune,irunt,itrim,neigen,neigendat, cpscl
             common /case_c/ frndef,fprdef,fevdef,title,stitle,btitle,rtitle,dname,gname,varnam,connam,varkey,conkey,parnam,parunch
             common /vrtx_r/ rv1,rv2,rv,rc,rs,rl,radl,dxv,chordv,slopev,slopec,dcontrol,vhinge,phinge,vrefl,enc,env,enc_d,enc_g,env_d,env_g,dcp,dcp_u,dcp_d,dcp_g,gam,gam_u_0,gam_u_d,gam_u_g,gam_u,gam_d,gam_g,src,dbl,src_u,dbl_u,wcsrd_u,wvsrd_u

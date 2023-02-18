@@ -3,7 +3,7 @@ pyAVL
 
 pyAVL is a wrapper for Mark Drela's AVL code. The purpose of this
 class is to provide an easy to use wrapper for avl for intergration
-into other projects. 
+into other projects.
 
 Developers:
 -----------
@@ -59,6 +59,9 @@ class AVLSolver(object):
                 )
 
             self.avl.avl()
+            if debug:
+                self.avl.case_l.lverbose = True
+            
             self.avl.loadgeo(geo_file)
 
             if  mass_file is not None:
@@ -66,7 +69,10 @@ class AVLSolver(object):
 
         else:
             raise ValueError("neither a geometry file or aircraft object was given")
-
+        
+        self.bref = self.avl.case_r.bref
+        self.cref = self.avl.case_r.cref
+        self.sref = self.avl.case_r.sref
         return
 
     def addConstraint(self, variable, val):
@@ -142,29 +148,40 @@ class AVLSolver(object):
         # get section properties
         # NS = self.avl.surf_i.nj[0]
         num_strips = np.trim_zeros(self.avl.surf_i.nj)
-        
+
         # print NS
         # print np.trim_zeros(self.avl.strp_r.clstrp[:])
 
         # start = 0
         sec_CLs = []
         sec_CDs = []
+        sec_CMs = []
+        sec_CNs = []
+        sec_CRs = []
         sec_Chords = []
         sec_Yles = []
+        sec_widths = []
         end = 0
         for i in range(0, len(num_strips)):
             start = end
             end = start + num_strips[i]
             sec_CLs.append(self.avl.strp_r.clstrp[start:end])
             sec_CDs.append(self.avl.strp_r.cdstrp[start:end])
+            sec_CMs.append(self.avl.strp_r.cmstrp[start:end])
+            sec_CNs.append(self.avl.strp_r.cnstrp[start:end])
+            sec_CRs.append(self.avl.strp_r.crstrp[start:end])
             sec_Chords.append(self.avl.strp_r.chord[start:end])
             sec_Yles.append(self.avl.strp_r.rle[1][start:end])
+            sec_widths.append(self.avl.strp_r.wstrip[start:end])
 
         self.sec_CL.append(sec_CLs)
         self.sec_CD.append(sec_CDs)
-        self.sec_Chord.append(sec_Chords)
-        self.sec_Yle.append(sec_Yles)
-
+        self.sec_CM.append(sec_CMs)
+        self.sec_CN.append(sec_CNs)
+        self.sec_CR.append(sec_CRs)
+        self.sec_Chord = sec_Chords
+        self.sec_Yle = sec_Yles
+        self.sec_width = sec_widths
         surf_CLs = (np.trim_zeros(self.avl.surf_r.clsurf)).reshape(len(np.trim_zeros(self.avl.surf_r.clsurf)), 1)
         surf_CDs = (np.trim_zeros(self.avl.surf_r.cdsurf)).reshape(len(np.trim_zeros(self.avl.surf_r.cdsurf)), 1)
 
@@ -175,7 +192,7 @@ class AVLSolver(object):
             self.surf_CL = surf_CLs = np.hstack((self.surf_CL, surf_CLs))
             self.surf_CD = surf_CDs = np.hstack((self.surf_CD, surf_CDs))
 
-        
+
 
     def calcNP(self):
         # executeRun must be run first
@@ -187,7 +204,7 @@ class AVLSolver(object):
         self.NP = self.avl.case_r.xnp
         # print 'Xnp:', self.avl.case_r.xnp
 
-        
+
 
     def alphaSweep(self, start_alpha, end_alpha, increment=1):
         alphas = np.arange(start_alpha, end_alpha + increment, increment)
@@ -196,7 +213,7 @@ class AVLSolver(object):
             self.addConstraint("alpha", alf)
             self.executeRun()
 
-        
+
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
         CLs = np.arange(start_CL, end_CL + increment, increment)
@@ -205,7 +222,7 @@ class AVLSolver(object):
             self.addTrimCondition("CL", cl)
             self.executeRun()
 
-        
+
 
     def resetData(self):
         self.__exe = False
@@ -227,6 +244,9 @@ class AVLSolver(object):
 
         self.sec_CL = []
         self.sec_CD = []
+        self.sec_CM = []
+        self.sec_CN = []
+        self.sec_CR = []
         self.sec_Chord = []
         self.sec_Yle = []
 
@@ -245,7 +265,7 @@ class AVLSolver(object):
 
     #         for
 
-    #     
+    #
 
 
 #### fortran code

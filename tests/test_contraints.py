@@ -23,7 +23,7 @@ geom_file = os.path.join(base_dir, 'aircraft.txt')
 mass_file = os.path.join(base_dir, 'aircraft.mass')
 
 class TestConstraints(unittest.TestCase):
-    # TODO: add reference values for comparison 
+    # TODO: add reference values for comparison by running avl binnary by hand or with wrappper
     
     def setUp(self):
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)

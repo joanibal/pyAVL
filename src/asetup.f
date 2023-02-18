@@ -92,7 +92,9 @@ CC...Holdover from HPV hydro project for forces near free surface
 CC...Eliminates excluded vortices from eqns which are below z=Zsym 
 C      CALL MUNGEA
 C
-C        WRITE(*,*) ' Factoring normalwash AIC matrix...'
+       if(lverbose) then
+        WRITE(*,*) ' Factoring normalwash AIC matrix...'
+       end if 
        CALL LUDCMP(NVMAX,NVOR,AICN,IAPIV,WORK)
 C
        LAIC = .TRUE.
@@ -100,12 +102,16 @@ C
 C
 C
       IF(.NOT.LSRD) THEN
-C         WRITE(*,*) ' Building source+doublet strength AIC matrix...'
+        if(lverbose) then
+          WRITE(*,*) ' Building source+doublet strength AIC matrix...'
+        end if
         CALL SRDSET(BETM,XYZREF,
      &              NBODY,LFRST,NLMAX,
      &              NL,RL,RADL,
      &              SRC_U,DBL_U)
-C         WRITE(*,*) ' Building source+doublet velocity AIC matrix...'
+        if(lverbose) then
+          WRITE(*,*) ' Building source+doublet velocity AIC matrix...'
+        end if 
         NU = 6
         CALL VSRD(BETM,IYSYM,YSYM,IZSYM,ZSYM,SRCORE,
      &            NBODY,LFRST,NLMAX,
@@ -118,7 +124,9 @@ C         WRITE(*,*) ' Building source+doublet velocity AIC matrix...'
 
 C
       IF(.NOT.LVEL) THEN
-C        WRITE(*,*) ' Building bound-vortex velocity matrix...'
+      if(lverbose) then
+        WRITE(*,*) ' Building bound-vortex velocity matrix...'
+       end if 
        CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
      &           NVOR,RV1,RV2,NSURFV,CHORDV,
      &           NVOR,RV ,    NSURFV,.TRUE.,
