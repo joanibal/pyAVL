@@ -22,6 +22,7 @@ History
 import os
 import time
 import copy
+
 # =============================================================================
 # External Python modules
 # =============================================================================
@@ -64,7 +65,7 @@ class AVLSolver(object):
 
             self.avl.loadgeo(geo_file)
 
-            if  mass_file is not None:
+            if mass_file is not None:
                 self.avl.loadmass(mass_file)
 
         else:
@@ -76,11 +77,10 @@ class AVLSolver(object):
 
         # store the control surfaces variables
         control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
-        
-        self.control_variables =  {}
-        for  idx_c_var, c_name in enumerate(control_names):
-            self.control_variables[c_name] =  f"D{idx_c_var+1}"
-        
+
+        self.control_variables = {}
+        for idx_c_var, c_name in enumerate(control_names):
+            self.control_variables[c_name] = f"D{idx_c_var+1}"
 
     def addConstraint(self, var, val, con_var=None):
         self.__exe = False
@@ -92,41 +92,43 @@ class AVLSolver(object):
             "pitch rate": "P",
             "yaw rate": "Y",
         }
-        
+
         avl_con_variables = copy.deepcopy(avl_variables)
-        avl_con_variables.update({
-            "CL": "C",
-            "CY": "S",
-            "Cl roll moment": "RM",
-            "Cm pitch moment": "PM",
-            "Cn yaw moment": "YM",
-        })
-        
+        avl_con_variables.update(
+            {
+                "CL": "C",
+                "CY": "S",
+                "Cl roll moment": "RM",
+                "Cm pitch moment": "PM",
+                "Cn yaw moment": "YM",
+            }
+        )
+
         if var in avl_variables:
             # save the name of the avl_var
             avl_var = avl_variables[var]
         elif var in self.control_variables.keys():
             avl_var = self.control_variables[var]
-        elif var in self.control_variables.keys():
-            avl_var = self.control_variables[var]
+        elif var in self.control_variables.values():
+            avl_var = var
         else:
             raise ValueError(
-                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items]}."
+                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}."
             )
-        
+
         if con_var is None:
             avl_con_var = avl_var
         elif con_var in avl_con_variables:
             avl_con_var = avl_con_variables[con_var]
         elif con_var in self.control_variables.keys():
             avl_con_var = self.control_variables[con_var]
-        elif con_var in self.control_variables.keys():
-            avl_con_var = self.control_variables[con_var]     
+        elif con_var in self.control_variables.values():
+            avl_con_var = con_var
         else:
             raise ValueError(
-                f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items]}."
-            ) 
-        
+                f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}."
+            )
+
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
     def addTrimCondition(self, variable, val):
@@ -151,7 +153,6 @@ class AVLSolver(object):
 
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
-
     def executeRun(self):
         self.__exe = True
 
@@ -159,8 +160,12 @@ class AVLSolver(object):
 
         self.alpha = np.append(self.alpha, float(self.avl.case_r.alfa))  # *(180.0/np.pi) # returend in radians)
         self.CL = np.append(self.CL, float(self.avl.case_r.cltot))
-        self.CD = np.append(self.CD, float(self.avl.case_r.cdtot))  # = np append(self.avl.case_r.cdvtot)  for total viscous)
-        self.CDV = np.append(self.CDV, float(self.avl.case_r.cdvtot))  # = np append(self.avl.case_r.cdvtot)  for total viscous)
+        self.CD = np.append(
+            self.CD, float(self.avl.case_r.cdtot)
+        )  # = np append(self.avl.case_r.cdvtot)  for total viscous)
+        self.CDV = np.append(
+            self.CDV, float(self.avl.case_r.cdvtot)
+        )  # = np append(self.avl.case_r.cdvtot)  for total viscous)
         self.CDFF = np.append(self.CDFF, float(self.avl.case_r.cdff))
         self.CM = np.append(self.CM, float(self.avl.case_r.cmtot))
         self.span_eff = np.append(self.span_eff, float(self.avl.case_r.spanef))
@@ -223,8 +228,6 @@ class AVLSolver(object):
             self.surf_CL = surf_CLs = np.hstack((self.surf_CL, surf_CLs))
             self.surf_CD = surf_CDs = np.hstack((self.surf_CD, surf_CDs))
 
-
-
     def calcNP(self):
         # executeRun must be run first
 
@@ -235,8 +238,6 @@ class AVLSolver(object):
         self.NP = self.avl.case_r.xnp
         # print 'Xnp:', self.avl.case_r.xnp
 
-
-
     def alphaSweep(self, start_alpha, end_alpha, increment=1):
         alphas = np.arange(start_alpha, end_alpha + increment, increment)
 
@@ -244,16 +245,12 @@ class AVLSolver(object):
             self.addConstraint("alpha", alf)
             self.executeRun()
 
-
-
     def CLSweep(self, start_CL, end_CL, increment=0.1):
         CLs = np.arange(start_CL, end_CL + increment, increment)
 
         for cl in CLs:
             self.addTrimCondition("CL", cl)
             self.executeRun()
-
-
 
     def resetData(self):
         self.__exe = False
@@ -283,9 +280,9 @@ class AVLSolver(object):
 
         self.surf_CL = np.empty(0)
         self.surf_CD = np.empty(0)
-    
-# Utility functions     
-    
+
+    # Utility functions
+
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
         takesa list of strings and returns the array"""
@@ -315,8 +312,6 @@ class AVLSolver(object):
                 raise TypeError(f"Unable to convert {fortArray[ii]} of type {fortArray[ii].dtype} to string")
 
         return strList
-
-    
 
     # def calcSectionalCPDist(self):
 

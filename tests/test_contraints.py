@@ -47,3 +47,5 @@ class TestConstraints(unittest.TestCase):
         self.avl_solver.addTrimCondition('CL', 1.0)
         self.avl_solver.executeRun()
     
+if __name__ == "__main__":
+    unittest.main()
