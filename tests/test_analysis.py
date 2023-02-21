@@ -22,7 +22,7 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=True)
+        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     def test_constrained_alpha_sweep(self):
         self.avl_solver.addConstraint('Elevator',  0.00, con_var='Cm pitch moment')

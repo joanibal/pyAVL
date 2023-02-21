@@ -101,8 +101,7 @@ C
         IF(LFLOAD(ISURF)) THEN
 C------- add circulation of this strip only if it contributes to total load
          I1  = IJFRST(JC)
-         NVC = NVSTRP(JC)
-         DO I = I1, I1+NVC-1 
+         DO I = I1, I1+NVSTRP(JC)-1 
            GAMS(JC) = GAMS(JC) + GAM(I)
            DO N = 1, NUMAX
              GAMS_U(JC,N) = GAMS_U(JC,N) + GAM_U(I,N)

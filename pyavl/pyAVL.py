@@ -53,7 +53,7 @@ class AVLSolver(object):
                 if not (mass_file is None):
                     file = mass_file
                     f = open(mass_file, "r")
-                    f.close
+                    f.close()
             except FileNotFoundError:
                 raise FileNotFoundError(
                     f"Could not open the file {file} from python. This is usually an issue with the specified file path"
@@ -159,6 +159,7 @@ class AVLSolver(object):
         self.avl.oper()
 
         self.alpha = np.append(self.alpha, float(self.avl.case_r.alfa))  # *(180.0/np.pi) # returend in radians)
+        self.beta = np.append(self.beta, float(self.avl.case_r.beta))  # *(180.0/np.pi) # returend in radians)
         self.CL = np.append(self.CL, float(self.avl.case_r.cltot))
         self.CD = np.append(
             self.CD, float(self.avl.case_r.cdtot)
@@ -289,6 +290,7 @@ class AVLSolver(object):
         self.__exe = False
 
         self.alpha = np.zeros(0)
+        self.beta = np.zeros(0)
         self.CL = np.zeros(0)
         self.CD = np.zeros(0)
         self.CDV = np.zeros(0)
@@ -315,6 +317,17 @@ class AVLSolver(object):
         self.surf_CD = np.empty(0)
 
     # Utility functions
+    def get_num_surfaces(self) -> int:
+        """Get the number of surfaces in the geometry"""
+        return self.avl.case_i.nsurf
+    
+    def get_num_strips(self) -> int:
+        """Get the number of strips in the mesh"""
+        return self.avl.case_i.nstrip
+    
+    def get_mesh_size(self) -> int:
+        """Get the number of panels in the mesh"""
+        return self.avl.case_i.nvor
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This

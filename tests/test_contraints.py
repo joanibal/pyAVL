@@ -34,15 +34,104 @@ class TestConstraints(unittest.TestCase):
         self.avl_solver.addConstraint("beta", 2.00)
         self.avl_solver.executeRun()
 
+        np.testing.assert_allclose(
+            np.rad2deg(self.avl_solver.alpha),
+            np.array([6.0]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            np.rad2deg(self.avl_solver.beta),
+            np.array([2.0]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CL,
+            np.array([1.821967]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CD,
+            np.array([0.053871]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CM,
+            np.array([-0.195797]),
+            rtol=1e-4,
+        )
+
     def test_control_surfaces(self):
-        self.avl_solver.addConstraint("D1", 0.00)
-        self.avl_solver.addConstraint("D2", 0.00)
+        self.avl_solver.addConstraint("D1", 10.00)
+        self.avl_solver.addConstraint("D2", 5.00)
         self.avl_solver.executeRun()
+        np.testing.assert_allclose(
+            self.avl_solver.CL,
+            np.array([1.005553]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CD,
+            np.array([0.038557]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CM,
+            np.array([0.956897]),
+            rtol=1e-4,
+        )
+        
+    def test_control_surfaces_names(self):
+        """test that the control surface names are can be used as well"""
+        self.avl_solver.addConstraint("Elevator", 10.00)
+        self.avl_solver.addConstraint("Rudder", 5.00)
+        self.avl_solver.executeRun()
+        np.testing.assert_allclose(
+            self.avl_solver.CL,
+            np.array([1.005553]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CD,
+            np.array([0.038557]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CM,
+            np.array([0.956897]),
+            rtol=1e-4,
+        )
 
     def test_trim(self):
         # TODO: parametrize for the other options
         self.avl_solver.addTrimCondition("CL", 1.0)
         self.avl_solver.executeRun()
+
+
+        np.testing.assert_allclose(
+            self.avl_solver.alpha,
+            np.array([-0.031734]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.beta,
+            np.array([0.0]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CL,
+            np.array([1.0]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CD,
+            np.array([0.025359]),
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.CM,
+            np.array([0.252352]),
+            rtol=1e-4,
+        )
 
 
 if __name__ == "__main__":

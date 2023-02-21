@@ -202,7 +202,6 @@ C------- "old" surface is still active, so build it before finishing
      &       IDESTD,NSDES,GAING )
 C
          IF(LDUPL(ISURF)) THEN
-          write(*,*) "isurf=", ISURF
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
          ENDIF
 C
@@ -240,7 +239,6 @@ C------- "old" surface is still active, so build it before starting new one
      &       IDESTD,NSDES,GAING )
 C
          IF(LDUPL(ISURF)) THEN
-          write(*,*) "isurf=", ISURF
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
          ENDIF
 C

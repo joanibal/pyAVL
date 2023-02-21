@@ -97,10 +97,9 @@ C---- section arc lengths of wing trace in y-z plane
         YZLEN(ISEC) = YZLEN(ISEC-1) + SQRT(DY*DY + DZ*DZ)
       ENDDO
 C
-C
-      IF(NVS1.EQ.0) THEN
+
+      IF(NVS(ISURF).EQ.0) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
-       NVS(ISURF) = 0
        DO ISEC = 1, NSEC(ISURF)-1
          NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC)
        ENDDO
@@ -446,7 +445,7 @@ C
      &           +     FC *(CHORDR/CHORDC)*CLAFR
 C
 C-------- set chordwise spacing fraction arrays
-          CALL CSPACER(NVC,CSPACE(ISURF),CLAFC, XPT,XVR,XSR,XCP)
+          CALL CSPACER(NVC(ISURF),CSPACE(ISURF),CLAFC, XPT,XVR,XSR,XCP)
 c
 C-------- go over vortices in this strip
           DO 1505 IVC = 1, NVC(ISURF)
@@ -647,7 +646,6 @@ C-----------------------------------
       CHARACTER*(*) MSG
 C
       NNI = NSURF + 1
-      write(*,*) 'NNI=',NNI
       IF(NNI.GT.NFMAX) THEN
         WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX.'
         STOP
@@ -694,7 +692,7 @@ C
 C--- Create image strips, to maintain the same sense of positive GAMMA
 C    these have the 1 and 2 strip edges reversed (i.e. root is edge 2, 
 C    not edge 1 as for a strip with IMAGS=1
-      DO 100 IVS = 1, NVS(ISURF)
+      DO 100 IVS = 1, NVS(NNI)
         NSTRIP = NSTRIP + 1
         IF(NSTRIP.GT.NSMAX) THEN
           WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX.'
@@ -739,13 +737,13 @@ C
 C
 C--- The defined section for image strip is flagged with (-)
         IJFRST(JJI)  = NVOR + 1
-        NVSTRP(JJI)  = NVC(ISURF)
+        NVSTRP(JJI)  = NVC(NNI)
         DO L = 1, 6
           CLCD(L,JJI) = CLCD(L,JJ) 
         END DO
         LVISCSTRP(JJI) = LVISCSTRP(JJ)
 C
-        DO 80 IVC = 1, NVC(ISURF)
+        DO 80 IVC = 1, NVC(NNI)
           NVOR = NVOR + 1
           IF(NVOR.GT.NVMAX) THEN
             WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX.'
