@@ -14,9 +14,9 @@ import os
 import unittest
 import numpy as np
 
-base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 
-geom_file = os.path.join(base_dir, "aircraft.txt")
+base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+geom_file = os.path.join(base_dir, "aircraft.avl")
 mass_file = os.path.join(base_dir, "aircraft.mass")
 
 

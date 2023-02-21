@@ -4,75 +4,102 @@
 python module libavl ! in 
     interface  ! in :libavl
         subroutine avl ! in :libavl:avl.f
-            real*8 dimension(3,400) :: rle
-            real*8 dimension(400) :: chord
-            real*8 dimension(3,400) :: rle1
-            real*8 dimension(400) :: chord1
-            real*8 dimension(3,400) :: rle2
-            real*8 dimension(400) :: chord2
-            real*8 dimension(400) :: wstrip
-            real*8 dimension(400) :: tanle
-            real*8 dimension(400) :: tante
-            real*8 dimension(6,400) :: clcd
+            ! parameters from include 'AINDEX.INC'
+            parameter (ivtot=5)
+            parameter (ictot=10)
+            parameter (iptot=30)
+            parameter (jetot=12)
+            parameter (kptot=17)
+            parameter (kpvtot=7)
+
+            ! Parameters
+            parameter (nvmax=6000)
+            parameter (nsmax=400)
+            parameter (nfmax=30)
+            parameter (nlmax=500)
+            parameter (nbmax=20)
+            parameter (numax=6)
+            parameter (ndmax=30)
+            parameter (ngmax=20)
+            parameter (nrmax=25)
+            parameter (ntmax=5000)
+            parameter (ibx=300)
+            ! Derived parameters
+            parameter (itmax=2*nvmax)
+            parameter (ivmax=ivtot+ndmax)
+            parameter (icmax=ictot+ndmax)
+            parameter (ipmax=iptot)
+            parameter (jemax=jetot)
+            
+            real*8 dimension(3,nsmax) :: rle
+            real*8 dimension(nsmax) :: chord
+            real*8 dimension(3,nsmax) :: rle1
+            real*8 dimension(nsmax) :: chord1
+            real*8 dimension(3,nsmax) :: rle2
+            real*8 dimension(nsmax) :: chord2
+            real*8 dimension(nsmax) :: wstrip
+            real*8 dimension(nsmax) :: tanle
+            real*8 dimension(nsmax) :: tante
+            real*8 dimension(numax,nsmax) :: clcd
             real*8 :: saxfr
-            real*8 dimension(3,400) :: ess
-            real*8 dimension(400) :: ensy
-            real*8 dimension(400) :: ensz
-            real*8 dimension(400) :: xsref
-            real*8 dimension(400) :: ysref
-            real*8 dimension(400) :: zsref
-            real*8 dimension(400) :: ainc
-            real*8 dimension(400,20) :: ainc_g
-            real*8 dimension(400) :: cdstrp
-            real*8 dimension(400) :: clstrp
-            real*8 dimension(400) :: cxstrp
-            real*8 dimension(400) :: cystrp
-            real*8 dimension(400) :: czstrp
-            real*8 dimension(400) :: crstrp
-            real*8 dimension(400) :: cnstrp
-            real*8 dimension(400) :: cmstrp
-            real*8 dimension(400) :: cdst_a
-            real*8 dimension(400) :: clst_a
-            real*8 dimension(400,6) :: cdst_u
-            real*8 dimension(400,6) :: clst_u
-            real*8 dimension(400,6) :: cxst_u
-            real*8 dimension(400,6) :: cyst_u
-            real*8 dimension(400,6) :: czst_u
-            real*8 dimension(400,6) :: crst_u
-            real*8 dimension(400,6) :: cnst_u
-            real*8 dimension(400,6) :: cmst_u
-            real*8 dimension(400,30) :: cdst_d
-            real*8 dimension(400,30) :: clst_d
-            real*8 dimension(400,30) :: cxst_d
-            real*8 dimension(400,30) :: cyst_d
-            real*8 dimension(400,30) :: czst_d
-            real*8 dimension(400,30) :: crst_d
-            real*8 dimension(400,30) :: cnst_d
-            real*8 dimension(400,30) :: cmst_d
-            real*8 dimension(400,20) :: cdst_g
-            real*8 dimension(400,20) :: clst_g
-            real*8 dimension(400,20) :: cxst_g
-            real*8 dimension(400,20) :: cyst_g
-            real*8 dimension(400,20) :: czst_g
-            real*8 dimension(400,20) :: crst_g
-            real*8 dimension(400,20) :: cnst_g
-            real*8 dimension(400,20) :: cmst_g
-            real*8 dimension(3,400) :: cf_strp
-            real*8 dimension(3,400) :: cm_strp
-            real*8 dimension(400) :: cnrmstrp
-            real*8 dimension(400) :: caxlstrp
-            real*8 dimension(400) :: cd_lstrp
-            real*8 dimension(400) :: cl_lstrp
-            real*8 dimension(400) :: cdv_lstrp
-            real*8 dimension(400) :: cltstrp
-            real*8 dimension(400) :: clastrp
-            real*8 dimension(400) :: cmc4
-            real*8 dimension(400) :: cmle
-            real*8 dimension(400) :: cnc
-            real*8 dimension(400) :: dwwake
-            real*8 dimension(400,6) :: cnc_u
-            real*8 dimension(400,30) :: cnc_d
-            real*8 dimension(400,20) :: cnc_g
+            real*8 dimension(3,nsmax) :: ess
+            real*8 dimension(nsmax) :: ensy
+            real*8 dimension(nsmax) :: ensz
+            real*8 dimension(nsmax) :: xsref
+            real*8 dimension(nsmax) :: ysref
+            real*8 dimension(nsmax) :: zsref
+            real*8 dimension(nsmax) :: ainc
+            real*8 dimension(nsmax,ngmax) :: ainc_g
+            real*8 dimension(nsmax) :: cdstrp
+            real*8 dimension(nsmax) :: clstrp
+            real*8 dimension(nsmax) :: cxstrp
+            real*8 dimension(nsmax) :: cystrp
+            real*8 dimension(nsmax) :: czstrp
+            real*8 dimension(nsmax) :: crstrp
+            real*8 dimension(nsmax) :: cnstrp
+            real*8 dimension(nsmax) :: cmstrp
+            real*8 dimension(nsmax) :: cdst_a
+            real*8 dimension(nsmax) :: clst_a
+            real*8 dimension(nsmax,numax) :: cdst_u
+            real*8 dimension(nsmax,numax) :: clst_u
+            real*8 dimension(nsmax,numax) :: cxst_u
+            real*8 dimension(nsmax,numax) :: cyst_u
+            real*8 dimension(nsmax,numax) :: czst_u
+            real*8 dimension(nsmax,numax) :: crst_u
+            real*8 dimension(nsmax,numax) :: cnst_u
+            real*8 dimension(nsmax,numax) :: cmst_u
+            real*8 dimension(nsmax,ndmax) :: cdst_d
+            real*8 dimension(nsmax,ndmax) :: clst_d
+            real*8 dimension(nsmax,ndmax) :: cxst_d
+            real*8 dimension(nsmax,ndmax) :: cyst_d
+            real*8 dimension(nsmax,ndmax) :: czst_d
+            real*8 dimension(nsmax,ndmax) :: crst_d
+            real*8 dimension(nsmax,ndmax) :: cnst_d
+            real*8 dimension(nsmax,ndmax) :: cmst_d
+            real*8 dimension(nsmax,ngmax) :: cdst_g
+            real*8 dimension(nsmax,ngmax) :: clst_g
+            real*8 dimension(nsmax,ngmax) :: cxst_g
+            real*8 dimension(nsmax,ngmax) :: cyst_g
+            real*8 dimension(nsmax,ngmax) :: czst_g
+            real*8 dimension(nsmax,ngmax) :: crst_g
+            real*8 dimension(nsmax,ngmax) :: cnst_g
+            real*8 dimension(nsmax,ngmax) :: cmst_g
+            real*8 dimension(3,nsmax) :: cf_strp
+            real*8 dimension(3,nsmax) :: cm_strp
+            real*8 dimension(nsmax) :: cnrmstrp
+            real*8 dimension(nsmax) :: caxlstrp
+            real*8 dimension(nsmax) :: cd_lstrp
+            real*8 dimension(nsmax) :: cl_lstrp
+            real*8 dimension(nsmax) :: cdv_lstrp
+            real*8 dimension(nsmax) :: cltstrp
+            real*8 dimension(nsmax) :: clastrp
+            real*8 dimension(nsmax) :: cmc4
+            real*8 dimension(nsmax) :: cmle
+            real*8 dimension(nsmax) :: cnc
+            real*8 dimension(nsmax) :: dwwake
+            real*8 dimension(nsmax,numax) :: cnc_u
+            real*8 dimension(nsmax,ndmax) :: cnc_d
+            real*8 dimension(nsmax,ngmax) :: cnc_g
             character*32 :: unchl
             character*32 :: unchm
             character*32 :: uncht
@@ -82,12 +109,12 @@ python module libavl ! in
             character*32 :: uncha
             character*32 :: unchi
             character*32 :: unchd
-            integer dimension(30) :: nj
-            integer dimension(30) :: nk
-            integer dimension(30) :: ifrst
-            integer dimension(30) :: jfrst
-            integer dimension(30) :: imags
-            integer dimension(30) :: lscomp
+            integer dimension(nfmax) :: nj
+            integer dimension(nfmax) :: nk
+            integer dimension(nfmax) :: ifrst
+            integer dimension(nfmax) :: jfrst
+            integer dimension(nfmax) :: imags
+            integer dimension(nfmax) :: lscomp
             integer :: nul
             integer :: num
             integer :: nut
@@ -97,18 +124,18 @@ python module libavl ! in
             integer :: nua
             integer :: nui
             integer :: nud
-            real*8 dimension(20) :: elbdy
-            real*8 dimension(20) :: srfbdy
-            real*8 dimension(20) :: volbdy
+            real*8 dimension(nbmax) :: elbdy
+            real*8 dimension(nbmax) :: srfbdy
+            real*8 dimension(nbmax) :: volbdy
             real*8 dimension(3,500) :: dcpb
-            real*8 dimension(20) :: cdbdy
-            real*8 dimension(20) :: clbdy
-            real*8 dimension(20) :: cxbdy
-            real*8 dimension(20) :: cybdy
-            real*8 dimension(20) :: czbdy
-            real*8 dimension(20) :: crbdy
-            real*8 dimension(20) :: cnbdy
-            real*8 dimension(20) :: cmbdy
+            real*8 dimension(nbmax) :: cdbdy
+            real*8 dimension(nbmax) :: clbdy
+            real*8 dimension(nbmax) :: cxbdy
+            real*8 dimension(nbmax) :: cybdy
+            real*8 dimension(nbmax) :: czbdy
+            real*8 dimension(nbmax) :: crbdy
+            real*8 dimension(nbmax) :: cnbdy
+            real*8 dimension(nbmax) :: cmbdy
             real*8 :: unitl
             real*8 :: unitm
             real*8 :: unitt
@@ -118,11 +145,11 @@ python module libavl ! in
             real*8 :: unita
             real*8 :: uniti
             real*8 :: unitd
-            logical dimension(30) :: lfwake
-            logical dimension(30) :: lfalbe
-            logical dimension(30) :: lfload
-            integer dimension(20) :: nl
-            integer dimension(20) :: lfrst
+            logical dimension(nfmax) :: lfwake
+            logical dimension(nfmax) :: lfalbe
+            logical dimension(nfmax) :: lfload
+            integer dimension(nbmax) :: nl
+            integer dimension(nbmax) :: lfrst
             real*8 :: rho0
             real*8 :: gee0
             real*8 dimension(3) :: xyzmass0
@@ -130,84 +157,119 @@ python module libavl ! in
             real*8 dimension(3,3) :: riner0
             real*8 dimension(3,3) :: amass
             real*8 dimension(3,3) :: ainer
-            integer dimension(400) :: nsurfs
-            integer dimension(400) :: ijfrst
-            integer dimension(400) :: nvstrp
-            logical dimension(400) :: lstripoff
-            logical dimension(400) :: lviscstrp
-            logical dimension(400) :: lj1sect
-            logical dimension(400) :: lj2sect
+            integer dimension(nsmax) :: nsurfs
+            integer dimension(nsmax) :: ijfrst
+            integer dimension(nsmax) :: nvstrp
+            logical dimension(nsmax) :: lstripoff
+            logical dimension(nsmax) :: lviscstrp
+            logical dimension(nsmax) :: lj1sect
+            logical dimension(nsmax) :: lj2sect
             real*8 :: deltat
             real*8 dimension(3) :: tder
-            real*8 dimension(5000) :: tlev
-            real*8 dimension(17,5000) :: tpars
-            real*8 dimension(3,7,5000) :: tparv
-            real*8 dimension(30,5000) :: tpard
+            real*8 dimension(ntmax) :: tlev
+            real*8 dimension(kptot,ntmax) :: tpars
+            real*8 dimension(3,kpvtot,ntmax) :: tparv
+            real*8 dimension(nfmax,ntmax) :: tpard
             integer :: itlev
             integer :: ntlev
             integer :: ntsteps
-            integer dimension(6000) :: iapiv
-            real*8 dimension(30) :: cdsurf
-            real*8 dimension(30) :: clsurf
-            real*8 dimension(30) :: cxsurf
-            real*8 dimension(30) :: cysurf
-            real*8 dimension(30) :: czsurf
-            real*8 dimension(30) :: crsurf
-            real*8 dimension(30) :: cnsurf
-            real*8 dimension(30) :: cmsurf
-            real*8 dimension(30) :: cdvsurf
-            real*8 dimension(30) :: cds_a
-            real*8 dimension(30) :: cls_a
-            real*8 dimension(30,6) :: cds_u
-            real*8 dimension(30,6) :: cls_u
-            real*8 dimension(30,6) :: cxs_u
-            real*8 dimension(30,6) :: cys_u
-            real*8 dimension(30,6) :: czs_u
-            real*8 dimension(30,6) :: crs_u
-            real*8 dimension(30,6) :: cns_u
-            real*8 dimension(30,6) :: cms_u
-            real*8 dimension(30,30) :: cds_d
-            real*8 dimension(30,30) :: cls_d
-            real*8 dimension(30,30) :: cxs_d
-            real*8 dimension(30,30) :: cys_d
-            real*8 dimension(30,30) :: czs_d
-            real*8 dimension(30,30) :: crs_d
-            real*8 dimension(30,30) :: cns_d
-            real*8 dimension(30,30) :: cms_d
-            real*8 dimension(30,20) :: cds_g
-            real*8 dimension(30,20) :: cls_g
-            real*8 dimension(30,20) :: cxs_g
-            real*8 dimension(30,20) :: cys_g
-            real*8 dimension(30,20) :: czs_g
-            real*8 dimension(30,20) :: crs_g
-            real*8 dimension(30,20) :: cns_g
-            real*8 dimension(30,20) :: cms_g
-            real*8 dimension(3,30) :: cf_srf
-            real*8 dimension(3,30) :: cm_srf
-            real*8 dimension(30) :: cl_srf
-            real*8 dimension(30) :: cd_srf
-            real*8 dimension(30) :: cmle_srf
-            real*8 dimension(30) :: ssurf
-            real*8 dimension(30) :: cavesurf
-            real*8 dimension(20) :: vbody
+            integer dimension(nvmax) :: iapiv
+            real*8 dimension(nfmax) :: cdsurf
+            real*8 dimension(nfmax) :: clsurf
+            real*8 dimension(nfmax) :: cxsurf
+            real*8 dimension(nfmax) :: cysurf
+            real*8 dimension(nfmax) :: czsurf
+            real*8 dimension(nfmax) :: crsurf
+            real*8 dimension(nfmax) :: cnsurf
+            real*8 dimension(nfmax) :: cmsurf
+            real*8 dimension(nfmax) :: cdvsurf
+            real*8 dimension(nfmax) :: cds_a
+            real*8 dimension(nfmax) :: cls_a
+            real*8 dimension(nfmax,numax) :: cds_u
+            real*8 dimension(nfmax,numax) :: cls_u
+            real*8 dimension(nfmax,numax) :: cxs_u
+            real*8 dimension(nfmax,numax) :: cys_u
+            real*8 dimension(nfmax,numax) :: czs_u
+            real*8 dimension(nfmax,numax) :: crs_u
+            real*8 dimension(nfmax,numax) :: cns_u
+            real*8 dimension(nfmax,numax) :: cms_u
+            real*8 dimension(nfmax,ndmax) :: cds_d
+            real*8 dimension(nfmax,ndmax) :: cls_d
+            real*8 dimension(nfmax,ndmax) :: cxs_d
+            real*8 dimension(nfmax,ndmax) :: cys_d
+            real*8 dimension(nfmax,ndmax) :: czs_d
+            real*8 dimension(nfmax,ndmax) :: crs_d
+            real*8 dimension(nfmax,ndmax) :: cns_d
+            real*8 dimension(nfmax,ndmax) :: cms_d
+            real*8 dimension(nfmax,ngmax) :: cds_g
+            real*8 dimension(nfmax,ngmax) :: cls_g
+            real*8 dimension(nfmax,ngmax) :: cxs_g
+            real*8 dimension(nfmax,ngmax) :: cys_g
+            real*8 dimension(nfmax,ngmax) :: czs_g
+            real*8 dimension(nfmax,ngmax) :: crs_g
+            real*8 dimension(nfmax,ngmax) :: cns_g
+            real*8 dimension(nfmax,ngmax) :: cms_g
+            real*8 dimension(3,nfmax) :: cf_srf
+            real*8 dimension(3,nfmax) :: cm_srf
+            real*8 dimension(nfmax) :: cl_srf
+            real*8 dimension(nfmax) :: cd_srf
+            real*8 dimension(nfmax) :: cmle_srf
+            real*8 dimension(nfmax) :: ssurf
+            real*8 dimension(nfmax) :: cavesurf
+            real*8 dimension(nbmax) :: vbody
+            
+            ! added params
+            ! ----- body ----
+            ! logicals
+            logical dimension(nfmax) :: ldupl_b
+            common /body_geom_l/ ldupl_b
+            ! integers
+            integer dimension(nfmax) :: nsec_b
+            common /body_geom_l/ nsec_b
+            ! reals
+            real*8 dimension(3,nbmax) :: xyzscal_b
+            real*8 dimension(3,nbmax) :: xyztran_b
+            real*8 dimension(nfmax) :: ydupl_b
+            common /body_geom_r/ xyzscal_b, xyztran_b, ydupl_b
+            
+            ! ---- surface ----
+            ! logicals
+            logical dimension(nfmax) :: ldupl
+            common /surf_geom_l/ ldupl
+            ! integers
+            integer dimension(nfmax) :: nsec
+            integer dimension(nfmax) :: nvc
+            integer dimension(nfmax) :: nvs
+            common /surf_geom_i/ nsec, nvc, nvs
+            ! reals
+            real*8 dimension(3,nfmax) :: xyzscal
+            real*8 dimension(3,nfmax) :: xyztran
+            real*8 dimension(nfmax) :: addinc
+            real*8 dimension(nfmax) :: ydupl
+            real*8 dimension(nfmax) :: cspace
+            real*8 dimension(nfmax) :: sspace
+            common /surf_geom_r/ xyzscal, xyztran, ydupl, addinc, cspace, sspace
+            ! note that the variables must appear in the same order as in common statement in the AVL.inc file
+            
+            ! end added params
             real*8 :: amach
-            real*8 dimension(6000,6000) :: aicn
-            real*8 dimension(3,6000,6000) :: wc_gam
-            real*8 dimension(3,6000,6000) :: wv_gam
-            real*8 dimension(3,6000) :: wc
-            real*8 dimension(3,6000,6) :: wc_u
-            real*8 dimension(3,6000,30) :: wc_d
-            real*8 dimension(3,6000,20) :: wc_g
-            real*8 dimension(3,6000) :: wv
-            real*8 dimension(3,6000,6) :: wv_u
-            real*8 dimension(3,6000,30) :: wv_d
-            real*8 dimension(3,6000,20) :: wv_g
-            logical dimension(6000) :: lvnc
-            logical dimension(6000) :: lvalbe
-            complex dimension(12,25) :: eval
-            complex dimension(12,12,25) :: evec
-            complex dimension(12,25) :: evaldat
-            integer dimension(6000) :: nsurfv
+            real*8 dimension(nvmax,nvmax) :: aicn
+            real*8 dimension(3,nvmax,nvmax) :: wc_gam
+            real*8 dimension(3,nvmax,nvmax) :: wv_gam
+            real*8 dimension(3,nvmax) :: wc
+            real*8 dimension(3,nvmax,numax) :: wc_u
+            real*8 dimension(3,nvmax,ndmax) :: wc_d
+            real*8 dimension(3,nvmax,ngmax) :: wc_g
+            real*8 dimension(3,nvmax) :: wv
+            real*8 dimension(3,nvmax,numax) :: wv_u
+            real*8 dimension(3,nvmax,ndmax) :: wv_d
+            real*8 dimension(3,nvmax,ngmax) :: wv_g
+            logical dimension(nvmax) :: lvnc
+            logical dimension(nvmax) :: lvalbe
+            complex dimension(jemax,nrmax) :: eval
+            complex dimension(jemax,jemax,nrmax) :: evec
+            complex dimension(jemax,nrmax) :: evaldat
+            integer dimension(nvmax) :: nsurfv
             real*8 :: version
             real*8 :: dtr
             real*8 :: pi
@@ -220,10 +282,10 @@ python module libavl ! in
             real*8 dimension(3) :: vinf_b
             real*8 dimension(3) :: wrot
             real*8 :: dtimed
-            real*8 dimension(30,25) :: parval
-            real*8 dimension(40,25) :: conval
-            real*8 dimension(30) :: delcon
-            real*8 dimension(20) :: deldes
+            real*8 dimension(ipmax,nrmax) :: parval
+            real*8 dimension(icmax,nrmax) :: conval
+            real*8 dimension(ndmax) :: delcon
+            real*8 dimension(ngmax) :: deldes
             real*8 :: sref
             real*8 :: cref
             real*8 :: bref
@@ -238,20 +300,20 @@ python module libavl ! in
             real*8 :: clff
             real*8 :: cyff
             real*8 :: cdff
-            real*8 dimension(6) :: clff_u
-            real*8 dimension(6) :: cyff_u
-            real*8 dimension(6) :: cdff_u
-            real*8 dimension(30) :: clff_d
-            real*8 dimension(30) :: cyff_d
-            real*8 dimension(30) :: cdff_d
-            real*8 dimension(20) :: clff_g
-            real*8 dimension(20) :: cyff_g
-            real*8 dimension(20) :: cdff_g
+            real*8 dimension(numax) :: clff_u
+            real*8 dimension(numax) :: cyff_u
+            real*8 dimension(numax) :: cdff_u
+            real*8 dimension(ndmax) :: clff_d
+            real*8 dimension(ndmax) :: cyff_d
+            real*8 dimension(ndmax) :: cdff_d
+            real*8 dimension(ngmax) :: clff_g
+            real*8 dimension(ngmax) :: cyff_g
+            real*8 dimension(ngmax) :: cdff_g
             real*8 :: spanef
             real*8 :: spanef_a
-            real*8 dimension(6) :: spanef_u
-            real*8 dimension(30) :: spanef_d
-            real*8 dimension(20) :: spanef_g
+            real*8 dimension(numax) :: spanef_u
+            real*8 dimension(ndmax) :: spanef_d
+            real*8 dimension(ngmax) :: spanef_g
             real*8 :: cdtot
             real*8 :: cltot
             real*8 :: cxtot
@@ -263,34 +325,34 @@ python module libavl ! in
             real*8 :: cdvtot
             real*8 :: cdtot_a
             real*8 :: cltot_a
-            real*8 dimension(6) :: cdtot_u
-            real*8 dimension(6) :: cltot_u
-            real*8 dimension(6) :: cxtot_u
-            real*8 dimension(6) :: cytot_u
-            real*8 dimension(6) :: cztot_u
-            real*8 dimension(6) :: crtot_u
-            real*8 dimension(6) :: cmtot_u
-            real*8 dimension(6) :: cntot_u
-            real*8 dimension(30) :: cdtot_d
-            real*8 dimension(30) :: cltot_d
-            real*8 dimension(30) :: cxtot_d
-            real*8 dimension(30) :: cytot_d
-            real*8 dimension(30) :: cztot_d
-            real*8 dimension(30) :: crtot_d
-            real*8 dimension(30) :: cmtot_d
-            real*8 dimension(30) :: cntot_d
-            real*8 dimension(20) :: cdtot_g
-            real*8 dimension(20) :: cltot_g
-            real*8 dimension(20) :: cxtot_g
-            real*8 dimension(20) :: cytot_g
-            real*8 dimension(20) :: cztot_g
-            real*8 dimension(20) :: crtot_g
-            real*8 dimension(20) :: cmtot_g
-            real*8 dimension(20) :: cntot_g
-            real*8 dimension(30) :: chinge
-            real*8 dimension(30,6) :: chinge_u
-            real*8 dimension(30,30) :: chinge_d
-            real*8 dimension(30,20) :: chinge_g
+            real*8 dimension(numax) :: cdtot_u
+            real*8 dimension(numax) :: cltot_u
+            real*8 dimension(numax) :: cxtot_u
+            real*8 dimension(numax) :: cytot_u
+            real*8 dimension(numax) :: cztot_u
+            real*8 dimension(numax) :: crtot_u
+            real*8 dimension(numax) :: cmtot_u
+            real*8 dimension(numax) :: cntot_u
+            real*8 dimension(ndmax) :: cdtot_d
+            real*8 dimension(ndmax) :: cltot_d
+            real*8 dimension(ndmax) :: cxtot_d
+            real*8 dimension(ndmax) :: cytot_d
+            real*8 dimension(ndmax) :: cztot_d
+            real*8 dimension(ndmax) :: crtot_d
+            real*8 dimension(ndmax) :: cmtot_d
+            real*8 dimension(ndmax) :: cntot_d
+            real*8 dimension(ngmax) :: cdtot_g
+            real*8 dimension(ngmax) :: cltot_g
+            real*8 dimension(ngmax) :: cxtot_g
+            real*8 dimension(ngmax) :: cytot_g
+            real*8 dimension(ngmax) :: cztot_g
+            real*8 dimension(ngmax) :: crtot_g
+            real*8 dimension(ngmax) :: cmtot_g
+            real*8 dimension(ngmax) :: cntot_g
+            real*8 dimension(ndmax) :: chinge
+            real*8 dimension(ndmax,numax) :: chinge_u
+            real*8 dimension(ndmax,ndmax) :: chinge_d
+            real*8 dimension(ndmax,ngmax) :: chinge_g
             real*8 :: dcl_a0
             real*8 :: dcm_a0
             real*8 :: dcl_u0
@@ -306,8 +368,8 @@ python module libavl ! in
             logical :: lsen
             logical :: lvisc
             logical :: lmass
-            logical dimension(30) :: lcondef
-            logical dimension(20) :: ldesdef
+            logical dimension(ndmax) :: lcondef
+            logical dimension(ngmax) :: ldesdef
             logical :: lptot
             logical :: lpsurf
             logical :: lpstrp
@@ -318,7 +380,7 @@ python module libavl ! in
             logical :: lnasa_sa
             logical :: lsa_rates
             logical :: lmwait
-            logical dimension(30) :: lppar
+            logical dimension(ipmax) :: lppar
             integer :: luinp
             integer :: lurun
             integer :: luout
@@ -332,7 +394,7 @@ python module libavl ! in
             integer :: nsurf
             integer :: nlnode
             integer :: nbody
-            integer dimension(35,25) :: icon
+            integer dimension(ivmax,nrmax) :: icon
             integer :: nvtot
             integer :: nctot
             integer :: nptot
@@ -343,62 +405,62 @@ python module libavl ! in
             integer :: nrun
             integer :: irune
             integer :: irunt
-            integer dimension(25) :: itrim
-            integer dimension(25) :: neigen
-            integer dimension(25) :: neigendat
+            integer dimension(nrmax) :: itrim
+            integer dimension(nrmax) :: neigen
+            integer dimension(nrmax) :: neigendat
             character*80 :: frndef
             character*80 :: fprdef
             character*80 :: fevdef
             character*80 :: title
-            character dimension(30,40),intent(c) :: stitle
-            character dimension(20,40),intent(c) :: btitle
-            character dimension(25,40),intent(c) :: rtitle
-            character dimension(30,16),intent(c) :: dname
-            character dimension(20,16),intent(c) :: gname
-            character dimension(35,12),intent(c) :: varnam
-            character dimension(40,12),intent(c) :: connam
-            character dimension(35,12),intent(c) :: varkey
-            character dimension(40,3),intent(c) :: conkey
-            character dimension(30,10),intent(c) :: parnam
-            character dimension(30,32),intent(c) :: parunch
-            real*8 dimension(3,6000) :: rv1
-            real*8 dimension(3,6000) :: rv2
-            real*8 dimension(3,6000) :: rv
-            real*8 dimension(3,6000) :: rc
-            real*8 dimension(3,6000) :: rs
-            real*8 dimension(3,500) :: rl
-            real*8 dimension(500) :: radl
-            real*8 dimension(6000) :: dxv
-            real*8 dimension(6000) :: chordv
-            real*8 dimension(6000) :: slopev
-            real*8 dimension(6000) :: slopec
-            real*8 dimension(6000,30) :: dcontrol
-            real*8 dimension(3,400,30) :: vhinge
-            real*8 dimension(3,400,30) :: phinge
-            real*8 dimension(400,30) :: vrefl
-            real*8 dimension(3,6000) :: enc
-            real*8 dimension(3,6000) :: env
-            real*8 dimension(3,6000,30) :: enc_d
-            real*8 dimension(3,6000,20) :: enc_g
-            real*8 dimension(3,6000,30) :: env_d
-            real*8 dimension(3,6000,20) :: env_g
-            real*8 dimension(6000) :: dcp
-            real*8 dimension(6000,6) :: dcp_u
-            real*8 dimension(6000,30) :: dcp_d
-            real*8 dimension(6000,20) :: dcp_g
-            real*8 dimension(6000) :: gam
-            real*8 dimension(6000,6) :: gam_u_0
-            real*8 dimension(6000,6,30) :: gam_u_d
-            real*8 dimension(6000,6,20) :: gam_u_g
-            real*8 dimension(6000,6) :: gam_u
-            real*8 dimension(6000,30) :: gam_d
-            real*8 dimension(6000,20) :: gam_g
-            real*8 dimension(500) :: src
-            real*8 dimension(3,500) :: dbl
-            real*8 dimension(500,6) :: src_u
-            real*8 dimension(3,500,6) :: dbl_u
-            real*8 dimension(3,6000,6) :: wcsrd_u
-            real*8 dimension(3,6000,6) :: wvsrd_u
+            character dimension(nfmax,40),intent(c) :: stitle
+            character dimension(nbmax,40),intent(c) :: btitle
+            character dimension(nrmax,40),intent(c) :: rtitle
+            character dimension(ndmax,16),intent(c) :: dname
+            character dimension(ngmax,16),intent(c) :: gname
+            character dimension(ivmax,12),intent(c) :: varnam
+            character dimension(icmax,12),intent(c) :: connam
+            character dimension(ivmax,12),intent(c) :: varkey
+            character dimension(icmax,3),intent(c) :: conkey
+            character dimension(ipmax,10),intent(c) :: parnam
+            character dimension(ipmax,32),intent(c) :: parunch
+            real*8 dimension(3,nvmax) :: rv1
+            real*8 dimension(3,nvmax) :: rv2
+            real*8 dimension(3,nvmax) :: rv
+            real*8 dimension(3,nvmax) :: rc
+            real*8 dimension(3,nvmax) :: rs
+            real*8 dimension(3,nlmax) :: rl
+            real*8 dimension(nlmax) :: radl
+            real*8 dimension(nvmax) :: dxv
+            real*8 dimension(nvmax) :: chordv
+            real*8 dimension(nvmax) :: slopev
+            real*8 dimension(nvmax) :: slopec
+            real*8 dimension(nvmax,ndmax) :: dcontrol
+            real*8 dimension(3,nsmax,ndmax) :: vhinge
+            real*8 dimension(3,nsmax,ndmax) :: phinge
+            real*8 dimension(nsmax,ndmax) :: vrefl
+            real*8 dimension(3,nvmax) :: enc
+            real*8 dimension(3,nvmax) :: env
+            real*8 dimension(3,nvmax,ndmax) :: enc_d
+            real*8 dimension(3,nvmax,ngmax) :: enc_g
+            real*8 dimension(3,nvmax,ndmax) :: env_d
+            real*8 dimension(3,nvmax,ngmax) :: env_g
+            real*8 dimension(nvmax) :: dcp
+            real*8 dimension(nvmax,numax) :: dcp_u
+            real*8 dimension(nvmax,ndmax) :: dcp_d
+            real*8 dimension(nvmax,ngmax) :: dcp_g
+            real*8 dimension(nvmax) :: gam
+            real*8 dimension(nvmax,numax) :: gam_u_0
+            real*8 dimension(nvmax,numax,ndmax) :: gam_u_d
+            real*8 dimension(nvmax,numax,ngmax) :: gam_u_g
+            real*8 dimension(nvmax,numax) :: gam_u
+            real*8 dimension(nvmax,ndmax) :: gam_d
+            real*8 dimension(nvmax,ngmax) :: gam_g
+            real*8 dimension(nlmax) :: src
+            real*8 dimension(3,nlmax) :: dbl
+            real*8 dimension(nlmax,numax) :: src_u
+            real*8 dimension(3,nlmax,numax) :: dbl_u
+            real*8 dimension(3,nvmax,numax) :: wcsrd_u
+            real*8 dimension(3,nvmax,numax) :: wvsrd_u
             common /strp_r/ rle,chord,rle1,chord1,rle2,chord2,wstrip,tanle,tante,clcd,saxfr,ess,ensy,ensz,xsref,ysref,zsref,ainc,ainc_g,cdstrp,clstrp,cxstrp,cystrp,czstrp,crstrp,cnstrp,cmstrp,cdst_a,clst_a,cdst_u,clst_u,cxst_u,cyst_u,czst_u,crst_u,cnst_u,cmst_u,cdst_d,clst_d,cxst_d,cyst_d,czst_d,crst_d,cnst_d,cmst_d,cdst_g,clst_g,cxst_g,cyst_g,czst_g,crst_g,cnst_g,cmst_g,cf_strp,cm_strp,cnrmstrp,caxlstrp,cd_lstrp,cl_lstrp,cdv_lstrp,cltstrp,clastrp,cmc4,cmle,cnc,dwwake,cnc_u,cnc_d,cnc_g
             common /un_c/ unchl,unchm,uncht,unchf,unchs,unchv,uncha,unchi,unchd
             common /surf_i/ nj,nk,ifrst,jfrst,imags,lscomp
@@ -414,6 +476,7 @@ python module libavl ! in
             common /time_i/ itlev,ntlev,ntsteps
             common /solv_i/ iapiv
             common /surf_r/ cdsurf,clsurf,cxsurf,cysurf,czsurf,crsurf,cnsurf,cmsurf,cdvsurf,cds_a,cls_a,cds_u,cls_u,cxs_u,cys_u,czs_u,crs_u,cns_u,cms_u,cds_d,cls_d,cxs_d,cys_d,czs_d,crs_d,cns_d,cms_d,cds_g,cls_g,cxs_g,cys_g,czs_g,crs_g,cns_g,cms_g,cf_srf,cm_srf,cl_srf,cd_srf,cmle_srf,ssurf,cavesurf,vbody
+            
             common /solv_r/ amach,aicn,wc_gam,wv_gam,wc,wc_u,wc_d,wc_g,wv,wv_u,wv_d,wv_g
             common /vrtx_l/ lvnc,lvalbe
             common /case_z/ eval,evec,evaldat

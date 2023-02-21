@@ -28,7 +28,8 @@ C
      &           NDMAX=30,
      &           NGMAX=20,
      &           NRMAX=25,
-     &           NTMAX=5000 )
+     &           NTMAX=5000,
+     &           IBX=300)
 C
 C   Derived array limits
 C
@@ -253,8 +254,65 @@ C
      & CL_SRF(NFMAX), CD_SRF(NFMAX), CMLE_SRF(NFMAX),
      & SSURF(NFMAX), CAVESURF(NFMAX),
      & VBODY(NBMAX)
-C
-C
+
+C      !start added variables for python geometry minipulation
+
+      LOGICAL LDUPL_B
+      COMMON /BODY_GEOM_L/
+     & LDUPL_B(NBMAX)      ! T if surface is a duplicated
+c
+      COMMON /BODY_GEOM_I/
+     & NSEC_B(NBMAX)  ! number of sections in surface
+
+      COMMON /BODY_GEOM_R/
+     & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
+     & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
+     & YDUPL_B(NBMAX) ! y duplicate
+c
+      LOGICAL LDUPL
+      COMMON /SURF_GEOM_L/
+     & LDUPL(NFMAX)      ! T if surface is a duplicated
+
+      COMMON /SURF_GEOM_I/
+     & NSEC(NFMAX),  ! number of sections in surface
+     & NVC(NFMAX), ! number of chordwise elements
+     & NVS(NFMAX) ! number of spanwise elements
+C     & SSPACES(NFMAX), ! spanwise spacing vector
+C     & NSPANS(NFMAX), ! number of spanwise elements vector
+C     & NASEC(NFMAX),
+C     & ICONX(NFMAX), ! max number of control or design variable declaration lines per section (20)
+C     & ICONTD(ICONX, NSMAX, NFMAX),
+C     & NSCON(NSMAX, NFMAX),
+C     & IDESTD(ICONX, NSMAX, NFMAX),
+C     & NSDES(NSMAX, NFMAX),
+
+      
+      COMMON /SURF_GEOM_R/
+     & XYZSCAL(3, NFMAX), ! scaling factors for XYZ coordinates
+     & XYZTRAN(3, NFMAX), ! translation factors for XYZ coordinates
+     & YDUPL(NFMAX), ! y position of duplicate plane
+     & ADDINC(NFMAX), ! additional incidence angle
+     & CSPACE(NFMAX), ! chordwise spacing
+     & SSPACE(NFMAX) ! spanwise spacing
+C     & XYZLES(NSMAX, NFMAX), ! leading edge cordinate vector
+C     & CHORDS(NSMAX, NFMAX), ! chord length vectorm
+C     & AINCS(NSMAX, NFMAX), ! incidence angle vector
+C     & XASEC(IBX, NSMAX, NFMAX),  !
+C     & SASEC(IBX, NSMAX, NFMAX),  !
+C     & TASEC(IBX, NSMAX, NFMAX),
+
+
+C     & CLCDSEC(6, NSMAX, NFMAX),
+C     & CLAF(NSMAX, NFMAX),
+
+C     & XHINGED(ICONX, NSMAX, NFMAX),
+C     & VHINGED(3, ICONX, NSMAX, NFMAX),
+C     & GAIND(ICONX, NSMAX, NFMAX),
+C     & REFLD(ICONX, NSMAX, NFMAX),
+C     & GAING(ICONX, NSMAX, NFMax),
+
+C      !!--- end added variables for python geometry minipulation ---
+
       COMMON /STRP_I/
      & NSURFS(NSMAX),    ! index of surface which contains this strip
      & IJFRST(NSMAX),    ! index of first element in strip

@@ -252,6 +252,39 @@ class AVLSolver(object):
             self.addTrimCondition("CL", cl)
             self.executeRun()
 
+    def get_surface_names(self) -> list[str]:
+        """get the surface names from the geometry"""
+        surf_names = self._convertFortranStringArrayToList(self.avl.case_c.stitle)
+        return surf_names
+
+    def get_surface_params(self) -> dict[str, dict[str:any]]:
+        """get the surface level parameters from the geometry"""
+        surf_names = self.get_surface_names()
+        surf_data = {}
+        for idx_surf, surf_name in enumerate(surf_names):
+            # only copy unduplicated sufaces
+            # print(surf_name, self.avl.surf_geom_i.nsec[idx_surf])
+            if (self.avl.surf_i.imags[idx_surf] < 0):
+                # this is a duplicated surface, skip it
+                continue
+            
+            
+            num_sec =  self.avl.surf_geom_i.nsec[idx_surf]
+
+            surf_data[surf_name] = {
+                "scale": self.avl.surf_geom_r.xyzscal[:, idx_surf].T,
+                "translate": self.avl.surf_geom_r.xyztran[:, idx_surf].T,
+                "angle": np.rad2deg(self.avl.surf_geom_r.addinc[idx_surf]),
+                "nchordwise":  self.avl.surf_geom_i.nvc[idx_surf],
+                "cspace": self.avl.surf_geom_r.cspace[idx_surf],
+                "nspan": self.avl.surf_geom_i.nvs[idx_surf],
+                "sspace": self.avl.surf_geom_r.sspace[idx_surf],
+            }
+            if self.avl.surf_geom_l.ldupl[idx_surf]:
+                surf_data[surf_name]["yduplicate"] = self.avl.surf_geom_r.ydupl[idx_surf]
+
+        return surf_data
+
     def resetData(self):
         self.__exe = False
 
@@ -306,7 +339,10 @@ class AVLSolver(object):
                 strList.append(b"".join(fortArray[ii]).decode().strip())
             elif fortArray[ii].dtype == np.dtype("<U1"):
                 strList.append("".join(fortArray[ii]).strip())
+            # TODO: need a more general solution for |S<variable> type
             elif fortArray[ii].dtype == np.dtype("|S16"):
+                strList.append(fortArray[ii].decode().strip())
+            elif fortArray[ii].dtype == np.dtype("|S40"):
                 strList.append(fortArray[ii].decode().strip())
             else:
                 raise TypeError(f"Unable to convert {fortArray[ii]} of type {fortArray[ii].dtype} to string")

@@ -30,12 +30,11 @@ C
       CHARACTER*4  KEYWD
       CHARACTER*80 CNAME, ANAME
       CHARACTER*128 LINE
-      LOGICAL LDUPL, LHINGE
+      LOGICAL  LHINGE
 C
       REAL CLX(3), CDX(3)
-      REAL XYZSCAL(3), XYZTRAN(3)
 C
-      PARAMETER (NWRK=NSMAX, IBX=300)
+      PARAMETER (NWRK=NSMAX)
       REAL XYZLES(3,NWRK),CHORDS(NWRK),AINCS(NWRK),SSPACES(NWRK),
      &     BRADY(NWRK), BRADZ(NWRK), CLAF(NWRK)
       INTEGER NSPANS(NWRK), NASEC(NWRK)
@@ -194,9 +193,7 @@ C------ end of file... clean up loose ends
 C
         IF(ISURF.NE.0) THEN
 C------- "old" surface is still active, so build it before finishing
-         CALL MAKESURF(ISURF, IBX,NSEC, 
-     &       NVC, CSPACE, NVS, SSPACE,
-     &       XYZSCAL,XYZTRAN,ADDINC,
+         CALL MAKESURF(ISURF, 
      &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
      &       XASEC,SASEC,TASEC,NASEC,
      &       CLCDSEC,CLAF,
@@ -204,8 +201,9 @@ C------- "old" surface is still active, so build it before finishing
      &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
      &       IDESTD,NSDES,GAING )
 C
-         IF(LDUPL) THEN
-          CALL SDUPL(ISURF,YDUPL,'YDUP')
+         IF(LDUPL(ISURF)) THEN
+          write(*,*) "isurf=", ISURF
+          CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
          ENDIF
 C
          ISURF = 0
@@ -215,11 +213,10 @@ C
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY, IBX,
      &       NVB, BSPACE,
-     &       XYZSCAL,XYZTRAN,
      &       XBOD,YBOD,TBOD,NBOD)
 C
-         IF(LDUPL) THEN
-          CALL BDUPL(IBODY,YDUPL,'YDUP')
+         IF(LDUPL_B(IBODY)) THEN
+          CALL BDUPL(IBODY,YDUPL_B(IBODY),'YDUP')
          ENDIF
 C
          IBODY = 0
@@ -234,9 +231,7 @@ C------ new surface is about to start
 C
         IF(ISURF.NE.0) THEN
 C------- "old" surface is still active, so build it before starting new one
-         CALL MAKESURF(ISURF, IBX,NSEC, 
-     &       NVC, CSPACE, NVS, SSPACE,
-     &       XYZSCAL,XYZTRAN,ADDINC,
+         CALL MAKESURF(ISURF, 
      &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
      &       XASEC,SASEC,TASEC,NASEC,
      &       CLCDSEC,CLAF,
@@ -244,8 +239,9 @@ C------- "old" surface is still active, so build it before starting new one
      &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
      &       IDESTD,NSDES,GAING )
 C
-         IF(LDUPL) THEN
-          CALL SDUPL(ISURF,YDUPL,'YDUP')
+         IF(LDUPL(ISURF)) THEN
+          write(*,*) "isurf=", ISURF
+          CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
          ENDIF
 C
          ISURF = 0
@@ -255,11 +251,10 @@ C
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY, IBX,
      &       NVB, BSPACE,
-     &       XYZSCAL,XYZTRAN,
      &       XBOD,YBOD,TBOD,NBOD)
 C
-         IF(LDUPL) THEN
-          CALL BDUPL(IBODY,YDUPL,'YDUP')
+         IF(LDUPL_B(IBODY)) THEN
+          CALL BDUPL(IBODY,YDUPL_B(IBODY),'YDUP')
          ENDIF
 C
          IBODY = 0
@@ -277,7 +272,7 @@ C------ clear indices for accumulation
         ISEC = 0
 C
 C------ set surface defaults
-        LDUPL  = .FALSE.   
+        LDUPL(ISURF)  = .FALSE.   
         LHINGE = .FALSE.
 
 C------ assume this will be a conventional loaded surface
@@ -285,13 +280,13 @@ C------ assume this will be a conventional loaded surface
         LFALBE(ISURF) = .TRUE.
         LFLOAD(ISURF) = .TRUE.
 
-        XYZSCAL(1) = 1.0
-        XYZSCAL(2) = 1.0
-        XYZSCAL(3) = 1.0
-        XYZTRAN(1) = 0.
-        XYZTRAN(2) = 0.
-        XYZTRAN(3) = 0.
-        ADDINC = 0.
+        XYZSCAL(1, ISURF) = 1.0
+        XYZSCAL(2, ISURF) = 1.0
+        XYZSCAL(3, ISURF) = 1.0
+        XYZTRAN(1, ISURF) = 0.
+        XYZTRAN(2, ISURF) = 0.
+        XYZTRAN(3, ISURF) = 0.
+        ADDINC(ISURF) = 0.
 C
         NCVAR = 0
 C
@@ -309,15 +304,15 @@ C
         CALL GETFLT(LINE,RINPUT,NINPUT,ERROR)
         IF(ERROR .OR. NINPUT.LT.2) GO TO 990
 C
-        NVC = INT( RINPUT(1) + 0.001 )
-        CSPACE = RINPUT(2)
+        NVC(ISURF) = INT( RINPUT(1) + 0.001 )
+        CSPACE(ISURF) = RINPUT(2)
 C
         IF(NINPUT.GE.4) THEN
-         NVS = INT( RINPUT(3) + 0.001 )
-         SSPACE = RINPUT(4)
+         NVS(ISURF) = INT( RINPUT(3) + 0.001 )
+         SSPACE(ISURF) = RINPUT(4)
         ELSE
-         NVS = 0
-         SSPACE = 0.0
+         NVS(ISURF) = 0
+         SSPACE(ISURF) = 0.0
         ENDIF
 C
 C===========================================================================
@@ -325,10 +320,8 @@ C===========================================================================
 C------ new body is about to start
 C
         IF(ISURF.NE.0) THEN
-C------- "old" surface is still active, so build it before starting new one
-         CALL MAKESURF(ISURF, IBX,NSEC, 
-     &       NVC, CSPACE, NVS, SSPACE,
-     &       XYZSCAL,XYZTRAN,ADDINC,
+C------- "old" surface is still active, so build it before starting new one     
+         CALL MAKESURF(ISURF, 
      &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
      &       XASEC,SASEC,TASEC,NASEC,
      &       CLCDSEC,CLAF,
@@ -336,8 +329,8 @@ C------- "old" surface is still active, so build it before starting new one
      &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
      &       IDESTD,NSDES,GAING )
 C
-         IF(LDUPL) THEN
-          CALL SDUPL(ISURF,YDUPL,'YDUP')
+         IF(LDUPL(ISURF)) THEN
+          CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
          ENDIF
 C
          ISURF = 0
@@ -347,11 +340,10 @@ C
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY, IBX,
      &       NVB, BSPACE,
-     &       XYZSCAL,XYZTRAN,
      &       XBOD,YBOD,TBOD,NBOD)
 C
-         IF(LDUPL) THEN
-          CALL BDUPL(IBODY,YDUPL,'YDUP')
+         IF(LDUPL_B(IBODY)) THEN
+          CALL BDUPL(IBODY,YDUPL_B(IBODY),'YDUP')
          ENDIF
 C
          IBODY = 0
@@ -367,14 +359,14 @@ C
 C
         NIN = 0
 C
-        LDUPL  = .FALSE.
-C
-        XYZSCAL(1) = 1.0
-        XYZSCAL(2) = 1.0
-        XYZSCAL(3) = 1.0
-        XYZTRAN(1) = 0.
-        XYZTRAN(2) = 0.
-        XYZTRAN(3) = 0.
+        LDUPL_B(IBODY)  = .FALSE.
+C       TODO: add XYZ vecotors for bodys
+        XYZSCAL_B(1, IBODY) = 1.0
+        XYZSCAL_B(2, IBODY) = 1.0
+        XYZSCAL_B(3, IBODY) = 1.0
+        XYZTRAN_B(1, IBODY) = 0.
+        XYZTRAN_B(2, IBODY) = 0.
+        XYZTRAN_B(3, IBODY) = 0.
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         BTITLE(IBODY) = LINE(1:NLINE)
@@ -398,9 +390,17 @@ CC         WRITE(*,*) '  + duplicate body ',BTITLE(IBODY)
         ENDIF
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ (LINE,*,ERR=990) YDUPL
+        
 C
-        LDUPL = .TRUE.
+        IF    (ISURF.NE.0) THEN
+CC         WRITE(*,*) '  + duplicate surface ',STITLE(ISURF)
+           LDUPL(ISURF) = .TRUE.
+           READ (LINE,*,ERR=990) YDUPL(ISURF)
+        ELSEIF(IBODY.NE.0) THEN
+CC         WRITE(*,*) '  + duplicate body ',BTITLE(IBODY)
+           LDUPL_B(IBODY) = .TRUE.
+           READ (LINE,*,ERR=990) YDUPL_B(IBODY)
+        ENDIF
 C
         IF(IYSYM.NE.0) THEN
          WRITE(*,*)'** Warning: Y-duplicate AND Y-sym specified'
@@ -428,7 +428,18 @@ C------ read scaling factors
         ENDIF
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ (LINE,*,ERR=990) XYZSCAL(1), XYZSCAL(2), XYZSCAL(3)
+        
+        IF    (ISURF.NE.0) THEN
+                READ (LINE,*,ERR=990) XYZSCAL(1, ISURF),
+     &                                XYZSCAL(2, ISURF),
+     &                                XYZSCAL(3, ISURF)
+
+        ELSEIF(IBODY.NE.0) THEN
+                READ (LINE,*,ERR=990) XYZSCAL_B(1, IBODY),
+     &                                XYZSCAL_B(2, IBODY),
+     &                                XYZSCAL_B(3, IBODY)
+        END IF 
+                                
 C
 C===========================================================================
       ELSEIF (KEYWD.EQ.'TRAN') THEN
@@ -440,8 +451,18 @@ C------ read translation vector
         ENDIF
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ (LINE,*,ERR=990) XYZTRAN(1), XYZTRAN(2), XYZTRAN(3)
-C
+
+        IF    (ISURF.NE.0) THEN
+               READ (LINE,*,ERR=990) XYZTRAN(1, ISURF),
+     &                               XYZTRAN(2, ISURF),
+     &                               XYZTRAN(3, ISURF)
+
+        ELSEIF(IBODY.NE.0) THEN
+                READ (LINE,*,ERR=990) XYZTRAN_B(1, IBODY),
+     &                                XYZTRAN_B(2, IBODY),
+     &                                XYZTRAN_B(3, IBODY)
+        END IF 
+
 C===========================================================================
       ELSEIF (KEYWD.EQ.'ANGL') THEN
 C------ read surface angle change
@@ -452,8 +473,9 @@ C------ read surface angle change
         ENDIF
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ (LINE,*,ERR=990) ADDINC
-        ADDINC = ADDINC*DTR
+        READ (LINE,*,ERR=990) ADDINC(ISURF)
+        ADDINC(ISURF) = ADDINC(ISURF)*DTR
+        
 C
 C===========================================================================
       ELSEIF (KEYWD.EQ.'NOWA') THEN
@@ -501,8 +523,8 @@ C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
 C
 C------ store section data for current body
-        NSEC = NSEC + 1
-        ISEC = MIN( NSEC , NWRK )
+        NSEC_B(IBODY) = NSEC_B(IBODY) + 1
+        ISEC = MIN( NSEC_B(IBODY) , NWRK )
 C
         NINPUT = 5
         CALL GETFLT(LINE,RINPUT,NINPUT,ERROR)
@@ -532,8 +554,8 @@ C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
 C
 C------ store section data for current surface
-        NSEC = NSEC + 1
-        ISEC = MIN( NSEC , NWRK )
+        NSEC(ISURF) = NSEC(ISURF) + 1
+        ISEC = MIN( NSEC(ISURF) , NWRK )
 C
         NINPUT = 7
         CALL GETFLT(LINE,RINPUT,NINPUT,ERROR)

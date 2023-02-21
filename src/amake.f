@@ -18,9 +18,7 @@ C    along with this program; if not, write to the Free Software
 C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 
-      SUBROUTINE MAKESURF(ISURF, IBX,NSEC, 
-     &       NVC1, CSPACE, NVS1, SSPACE,
-     &       XYZSCAL,XYZTRAN,ADDINC,
+      SUBROUTINE MAKESURF(ISURF, 
      &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
      &       XASEC,SASEC,TASEC,NASEC,
      &       CLCDSEC,CLAF,
@@ -33,7 +31,6 @@ C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
 C
-      REAL XYZSCAL(3), XYZTRAN(3), ADDINC
       REAL XYZLES(3,*),CHORDS(*),AINCS(*),SSPACES(*)
       INTEGER NSPANS(*), NASEC(*)
       REAL XASEC(IBX,*), SASEC(IBX,*), TASEC(IBX,*)
@@ -65,22 +62,22 @@ C
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
 C
 C
-      IF(NSEC.LT.2) THEN
+      IF(NSEC(ISURF).LT.2) THEN
        WRITE(*,*) '*** Need at least 2 sections per surface.'
        STOP
       ENDIF
 C
-      NVC = NVC1
-      NVS = NVS1
 C
-      IF(NVC.GT.KCMAX) THEN
-       WRITE(*,*) '* MAKESURF: Array overflow.  Increase KCMAX to', NVC
-       NVC = KCMAX
+      IF(NVC(ISURF).GT.KCMAX) THEN
+       WRITE(*,*) '* MAKESURF: Array overflow.  Increase KCMAX to',
+     &                                                   NVC(ISURF)
+       NVC(ISURF) = KCMAX
       ENDIF
 C
-      IF(NVS.GT.KSMAX) THEN
-       WRITE(*,*) '* MAKESURF: Array overflow.  Increase KSMAX to', NVS
-       NVS = KSMAX
+      IF(NVS(ISURF).GT.KSMAX) THEN
+       WRITE(*,*) '* MAKESURF: Array overflow.  Increase KSMAX to', 
+     &                                                   NVS(ISURF)
+       NVS(ISURF) = KSMAX
       ENDIF
 C
 C--- Image flag set to indicate section definition direction
@@ -89,12 +86,12 @@ C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
       IMAGS(ISURF) = 1
       IFRST(ISURF) = NVOR   + 1 
       JFRST(ISURF) = NSTRIP + 1
-      NK(ISURF) = NVC
+      NK(ISURF) = NVC(ISURF)
 C
 C-----------------------------------------------------------------
 C---- section arc lengths of wing trace in y-z plane
       YZLEN(1) = 0.
-      DO ISEC = 2, NSEC
+      DO ISEC = 2, NSEC(ISURF)
         DY = XYZLES(2,ISEC) - XYZLES(2,ISEC-1)
         DZ = XYZLES(3,ISEC) - XYZLES(3,ISEC-1)
         YZLEN(ISEC) = YZLEN(ISEC-1) + SQRT(DY*DY + DZ*DZ)
@@ -103,20 +100,20 @@ C
 C
       IF(NVS1.EQ.0) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
-       NVS = 0
-       DO ISEC = 1, NSEC-1
-         NVS = NVS + NSPANS(ISEC)
+       NVS(ISURF) = 0
+       DO ISEC = 1, NSEC(ISURF)-1
+         NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC)
        ENDDO
-       IF(NVS.GT.KSMAX) THEN
-        WRITE(*,*) '*** MAKESURF: Array overflow. Increase KSMAX to',NVS
+       IF(NVS(ISURF).GT.KSMAX) THEN
+        WRITE(*,*) '*** MAKESURF: Array overflow. Increase KSMAX to',NVS(ISURF)
         STOP
        ENDIF
 C
-       NVS = 0
+       NVS(ISURF) = 0
        YPT(1) = YZLEN(1)
        IPTLOC(1) = 1
 C
-       DO ISEC = 1, NSEC-1
+       DO ISEC = 1, NSEC(ISURF)-1
          DYZLEN = YZLEN(ISEC+1) - YZLEN(ISEC)
 C
          NVINT = NSPANS(ISEC)
@@ -131,36 +128,38 @@ C------- set spanwise spacing array
          CALL SPACER(NSPACE,SSPACES(ISEC),FSPACE)
 C
          DO N = 1, NVINT
-           IVS = NVS + N
-           YCP(IVS)   = YPT(NVS+1) + DYZLEN*FSPACE(2*N)
-           YPT(IVS+1) = YPT(NVS+1) + DYZLEN*FSPACE(2*N+1)
+           IVS = NVS(ISURF) + N
+           YCP(IVS)   = YPT(NVS(ISURF)+1) + DYZLEN*FSPACE(2*N)
+           YPT(IVS+1) = YPT(NVS(ISURF)+1) + DYZLEN*FSPACE(2*N+1)
          ENDDO
-         IPTLOC(ISEC+1) = NVS + NVINT + 1
+         IPTLOC(ISEC+1) = NVS(ISURF) + NVINT + 1
 C
-         NVS = NVS + NVINT
+         NVS(ISURF) = NVS(ISURF) + NVINT
        ENDDO
 C
       ELSE
-C----- set spanwise spacing using overall parameters NVS, SSPACE
+C----- set spanwise spacing using overall parameters NVS(ISURF), SSPACE
 C
-       NSPACE = 2*NVS + 1
+       NSPACE = 2*NVS(ISURF) + 1
        IF(NSPACE.GT.KPMAX) THEN
         WRITE(*,*) '*** MAKESURF: Array overflow. Increase KPMAX to', 
      &              NSPACE
         STOP
        ENDIF
-       CALL SPACER(NSPACE,SSPACE,FSPACE)
+       CALL SPACER(NSPACE,SSPACE(ISURF),FSPACE)
 C
        YPT(1) = YZLEN(1)
-       DO IVS = 1, NVS
-         YCP(IVS)   = YZLEN(1) + (YZLEN(NSEC)-YZLEN(1))*FSPACE(2*IVS)
-         YPT(IVS+1) = YZLEN(1) + (YZLEN(NSEC)-YZLEN(1))*FSPACE(2*IVS+1)
+       DO IVS = 1, NVS(ISURF)
+         YCP(IVS)   = YZLEN(1) + (YZLEN(NSEC(ISURF))
+     &                         -  YZLEN(1))*FSPACE(2*IVS)
+         YPT(IVS+1) = YZLEN(1) + (YZLEN(NSEC(ISURF))
+     &                         -  YZLEN(1))*FSPACE(2*IVS+1)
        ENDDO
 C
-       NPT = NVS + 1
+       NPT = NVS(ISURF) + 1
 C
 C----- find node nearest each section
-       DO ISEC = 2, NSEC-1
+       DO ISEC = 2, NSEC(ISURF)-1
          YPTLOC = 1.0E9
          IPTLOC(ISEC) = 1
          DO IPT = 1, NPT
@@ -172,10 +171,10 @@ C----- find node nearest each section
          ENDDO
        ENDDO
        IPTLOC(1)    = 1
-       IPTLOC(NSEC) = NPT
+       IPTLOC(NSEC(ISURF)) = NPT
 C
 C----- fudge Glauert angles to make nodes match up exactly with interior sections
-       DO ISEC = 2, NSEC-1
+       DO ISEC = 2, NSEC(ISURF)-1
          IPT1 = IPTLOC(ISEC-1)
          IPT2 = IPTLOC(ISEC  )
          IF(IPT1.EQ.IPT2) THEN
@@ -237,28 +236,28 @@ C
       ENDIF
 C
 C---- go over section intervals
-      DO 200 ISEC = 1, NSEC-1
-        XYZLEL(1) = XYZSCAL(1)*XYZLES(1,ISEC)    + XYZTRAN(1)
-        XYZLEL(2) = XYZSCAL(2)*XYZLES(2,ISEC)    + XYZTRAN(2)
-        XYZLEL(3) = XYZSCAL(3)*XYZLES(3,ISEC)    + XYZTRAN(3)
-        XYZLER(1) = XYZSCAL(1)*XYZLES(1,ISEC+1)  + XYZTRAN(1)
-        XYZLER(2) = XYZSCAL(2)*XYZLES(2,ISEC+1)  + XYZTRAN(2)
-        XYZLER(3) = XYZSCAL(3)*XYZLES(3,ISEC+1)  + XYZTRAN(3)
+      DO 200 ISEC = 1, NSEC(ISURF)-1
+        XYZLEL(1) = XYZSCAL(1,ISURF)*XYZLES(1,ISEC)   + XYZTRAN(1,ISURF)
+        XYZLEL(2) = XYZSCAL(2,ISURF)*XYZLES(2,ISEC)   + XYZTRAN(2,ISURF)
+        XYZLEL(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC)   + XYZTRAN(3,ISURF)
+        XYZLER(1) = XYZSCAL(1,ISURF)*XYZLES(1,ISEC+1) + XYZTRAN(1,ISURF)
+        XYZLER(2) = XYZSCAL(2,ISURF)*XYZLES(2,ISEC+1) + XYZTRAN(2,ISURF)
+        XYZLER(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC+1) + XYZTRAN(3,ISURF)
 C
         WIDTH = SQRT(  (XYZLER(2)-XYZLEL(2))**2
      &               + (XYZLER(3)-XYZLEL(3))**2 )
 C
-        CHORDL = XYZSCAL(1)*CHORDS(ISEC)
-        CHORDR = XYZSCAL(1)*CHORDS(ISEC+1)
+        CHORDL = XYZSCAL(1,ISURF)*CHORDS(ISEC)
+        CHORDR = XYZSCAL(1,ISURF)*CHORDS(ISEC+1)
 C
         CLAFL = CLAF(ISEC)
         CLAFR = CLAF(ISEC+1)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-        AINCL = AINCS(ISEC)   + ADDINC
-        AINCR = AINCS(ISEC+1) + ADDINC
-cc      AINCL = AINCS(ISEC)   + ADDINC - 4.0*DTR*(CLAFL-1.0)
-cc      AINCR = AINCS(ISEC+1) + ADDINC - 4.0*DTR*(CLAFR-1.0)
+        AINCL = AINCS(ISEC)   + ADDINC(ISURF)
+        AINCR = AINCS(ISEC+1) + ADDINC(ISURF)
+cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
+cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
         CHSINL = CHORDL*SIN(AINCL)
         CHSINR = CHORDR*SIN(AINCR)
@@ -386,9 +385,9 @@ C------------ LE control surface, with hinge at -XHD
               XTED(N) = -XHD
              ENDIF
 C
-             VHX = VHINGED(1,ICL,ISEC)*XYZSCAL(1)
-             VHY = VHINGED(2,ICL,ISEC)*XYZSCAL(2)
-             VHZ = VHINGED(3,ICL,ISEC)*XYZSCAL(3)
+             VHX = VHINGED(1,ICL,ISEC)*XYZSCAL(1,ISURF)
+             VHY = VHINGED(2,ICL,ISEC)*XYZSCAL(2,ISURF)
+             VHZ = VHINGED(3,ICL,ISEC)*XYZSCAL(3,ISURF)
              VSQ = VHX**2 + VHY**2 + VHZ**2
              IF(VSQ.EQ.0.0) THEN
 C------------ default: set hinge vector along hingeline
@@ -398,9 +397,9 @@ C------------ default: set hinge vector along hingeline
      &            - XYZLES(2,ISEC  )
               VHZ = XYZLES(3,ISEC+1)
      &            - XYZLES(3,ISEC  )
-              VHX = VHX*XYZSCAL(1)
-              VHY = VHY*XYZSCAL(2)
-              VHZ = VHZ*XYZSCAL(3)
+              VHX = VHX*XYZSCAL(1,ISURF)
+              VHY = VHY*XYZSCAL(2,ISURF)
+              VHZ = VHZ*XYZSCAL(3,ISURF)
               VSQ = VHX**2 + VHY**2 + VHZ**2
              ENDIF
 C
@@ -434,7 +433,7 @@ C--- If the min drag is zero flag the strip as no-viscous data
 C
 C
           IJFRST(NSTRIP) = NVOR + 1
-          NVSTRP(NSTRIP) = NVC
+          NVSTRP(NSTRIP) = NVC(ISURF)
 C
           NSURFS(NSTRIP) = ISURF
 C
@@ -447,10 +446,10 @@ C
      &           +     FC *(CHORDR/CHORDC)*CLAFR
 C
 C-------- set chordwise spacing fraction arrays
-          CALL CSPACER(NVC,CSPACE,CLAFC, XPT,XVR,XSR,XCP)
+          CALL CSPACER(NVC,CSPACE(ISURF),CLAFC, XPT,XVR,XSR,XCP)
 c
 C-------- go over vortices in this strip
-          DO 1505 IVC = 1, NVC
+          DO 1505 IVC = 1, NVC(ISURF)
             NVOR = NVOR + 1
 C
             RV1(1,NVOR) = RLE1(1,NSTRIP) + XVR(IVC)*CHORD1(NSTRIP)
@@ -539,9 +538,8 @@ C
 
 
 
-      SUBROUTINE MAKEBODY(IBODY, IBX,
+      SUBROUTINE MAKEBODY(IBODY,
      &       NVB1, BSPACE,
-     &       XYZSCAL,XYZTRAN,
      &       XBOD,YBOD,TBOD,NBOD)
 C--------------------------------------------------------------
 C     Sets up all stuff for body IBODY,
@@ -549,14 +547,13 @@ C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
 C
-      REAL XYZSCAL(3), XYZTRAN(3)
       REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 C
       PARAMETER (KLMAX=101)
       REAL XPT(KLMAX), FSPACE(KLMAX)
 C
 C
-c      IF(NSEC.LT.2) THEN
+c      IF(NSEC(IBODY).LT.2) THEN
 c       WRITE(*,*) '*** Need at least 2 sections per body.'
 c       STOP
 c      ENDIF
@@ -602,12 +599,12 @@ C---- set body nodes and radii
 C
         XVB = XBOD(1) + (XBOD(NBOD)-XBOD(1))*XPT(IVB)
         CALL AKIMA(XBOD,YBOD,NBOD,XVB,YVB,DYDX)
-        RL(1,NLNODE) = XYZTRAN(1) + XYZSCAL(1)*XVB
-        RL(2,NLNODE) = XYZTRAN(2)
-        RL(3,NLNODE) = XYZTRAN(3) + XYZSCAL(3)*YVB
+        RL(1,NLNODE) = XYZTRAN_B(1,IBODY) + XYZSCAL_B(1,IBODY)*XVB
+        RL(2,NLNODE) = XYZTRAN_B(2,IBODY)
+        RL(3,NLNODE) = XYZTRAN_B(3,IBODY) + XYZSCAL_B(3,IBODY)*YVB
 C
         CALL AKIMA(XBOD,TBOD,NBOD,XVB,TVB,DRDX)
-        RADL(NLNODE) = SQRT(XYZSCAL(2)*XYZSCAL(3)) * 0.5*TVB
+        RADL(NLNODE) = SQRT(XYZSCAL(2,IBODY)*XYZSCAL(3,IBODY)) * 0.5*TVB
       ENDDO
 C---- get surface length, area and volume
       VOLB = 0.0
@@ -641,15 +638,16 @@ C
 
 
 
-      SUBROUTINE SDUPL(NN,YDUPL,MSG)
+      SUBROUTINE SDUPL(NN,Ypt,MSG)
 C-----------------------------------
 C     Adds image of surface NN,
-C     reflected about y=YDUPL.
+C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*(*) MSG
 C
       NNI = NSURF + 1
+      write(*,*) 'NNI=',NNI
       IF(NNI.GT.NFMAX) THEN
         WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX.'
         STOP
@@ -660,8 +658,10 @@ C
         IF(STITLE(NN)(K:K) .NE. ' ') GO TO 6
       ENDDO
  6    STITLE(NNI) = STITLE(NN)(1:K) // ' (' // MSG // ')'
-C       WRITE(*,*) ' '
-C       WRITE(*,*) '  Building duplicate image-surface: ',STITLE(NNI)
+      if(lverbose)then
+       WRITE(*,*) ' '
+       WRITE(*,*) '  Building duplicate image-surface: ',STITLE(NNI)
+      endif
 C
 C---- duplicate surface is assumed to be the same logical component surface
       LSCOMP(NNI) = LSCOMP(NN)
@@ -677,8 +677,8 @@ C---- accumulate stuff for new image surface
       NJ(NNI) = NJ(NN)
       NK(NNI) = NK(NN)
 C
-      NVC = NK(NNI)
-      NVS = NJ(NNI)
+      NVC(NNI) = NK(NNI)
+      NVS(NNi) = NJ(NNI)
 C
       SSURF(NNI)    = SSURF(NN)
       CAVESURF(NNI) = CAVESURF(NN)
@@ -689,12 +689,12 @@ C
 C--- Image flag reversed (set to -IMAGS) for imaged surfaces
       IMAGS(NNI) = -IMAGS(NN)
 C
-      YOFF = 2.0*YDUPL
+      YOFF = 2.0*Ypt
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
 C    these have the 1 and 2 strip edges reversed (i.e. root is edge 2, 
 C    not edge 1 as for a strip with IMAGS=1
-      DO 100 IVS = 1, NVS
+      DO 100 IVS = 1, NVS(ISURF)
         NSTRIP = NSTRIP + 1
         IF(NSTRIP.GT.NSMAX) THEN
           WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX.'
@@ -739,13 +739,13 @@ C
 C
 C--- The defined section for image strip is flagged with (-)
         IJFRST(JJI)  = NVOR + 1
-        NVSTRP(JJI)  = NVC
+        NVSTRP(JJI)  = NVC(ISURF)
         DO L = 1, 6
           CLCD(L,JJI) = CLCD(L,JJ) 
         END DO
         LVISCSTRP(JJI) = LVISCSTRP(JJ)
 C
-        DO 80 IVC = 1, NVC
+        DO 80 IVC = 1, NVC(ISURF)
           NVOR = NVOR + 1
           IF(NVOR.GT.NVMAX) THEN
             WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX.'
@@ -792,10 +792,10 @@ C
 
 
 
-      SUBROUTINE BDUPL(NN,YDUPL,MSG)
+      SUBROUTINE BDUPL(NN,Ypt,MSG)
 C-----------------------------------
 C     Adds image of surface NN,
-C     reflected about y=YDUPL.
+C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*(*) MSG
@@ -830,7 +830,7 @@ C
       SRFBDY(NNI) = SRFBDY(NN)
       VOLBDY(NNI) = VOLBDY(NN)
 C
-      YOFF = 2.0*YDUPL
+      YOFF = 2.0*Ypt
 C
 C---- set body nodes and radii
       DO IVB = 1, NVB+1

@@ -14,12 +14,9 @@ import os
 import unittest
 import numpy as np
 
+
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-
-# case = pyAVL.avlAnalysis(geo_file='aircraft.txt', mass_file ='aircraft.mass')
-
-aircraft_dir = os.path.join(base_dir, "../examples/aircraft")
-geom_file = os.path.join(base_dir, "aircraft.txt")
+geom_file = os.path.join(base_dir, "aircraft.avl")
 mass_file = os.path.join(base_dir, "aircraft.mass")
 
 
