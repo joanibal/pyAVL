@@ -265,26 +265,132 @@ class AVLSolver(object):
         for idx_surf, surf_name in enumerate(surf_names):
             # only copy unduplicated sufaces
             # print(surf_name, self.avl.surf_geom_i.nsec[idx_surf])
-            if (self.avl.surf_i.imags[idx_surf] < 0):
+            if self.avl.surf_i.imags[idx_surf] < 0:
                 # this is a duplicated surface, skip it
                 continue
-            
-            
-            num_sec =  self.avl.surf_geom_i.nsec[idx_surf]
+
+            num_sec = self.avl.surf_geom_i.nsec[idx_surf]
+
+            # I don't see a case in the code where nasec is not the same for all sections
+            # but just in case, we'll do a test and throw an error if not
+            nasec = self.avl.surf_geom_i.nasec[:num_sec, idx_surf]
+            if np.unique(nasec).size != 1:
+                raise RuntimeError("nasec is not the same for all sections")
+
+            nasec = nasec[0]
+
+            icontd = []
+            idestd = []
+            xhinged = []
+            vhinged = []
+            gaind = []
+            refld = []
+            gaing = []
+            for idx_sec in range(num_sec):
+                nscon = self.avl.surf_geom_i.nscon[idx_sec, idx_surf]
+                icontd.append(self.avl.surf_geom_i.icontd[:nscon, idx_sec, idx_surf])
+                xhinged.append(self.avl.surf_geom_r.xhinged[:nscon, idx_sec, idx_surf])
+                vhinged.append(self.avl.surf_geom_r.vhinged[:, :nscon, idx_sec, idx_surf].T)
+                gaind.append(self.avl.surf_geom_r.gaind[:nscon, idx_sec, idx_surf])
+                refld.append(self.avl.surf_geom_r.refld[:nscon, idx_sec, idx_surf])
+
+                nsdes = self.avl.surf_geom_i.nsdes[idx_sec, idx_surf]
+                idestd.append(self.avl.surf_geom_i.idestd[:nsdes, idx_sec, idx_surf])
+                gaing.append(self.avl.surf_geom_r.gaing[:nsdes, idx_sec, idx_surf])
 
             surf_data[surf_name] = {
                 "scale": self.avl.surf_geom_r.xyzscal[:, idx_surf].T,
                 "translate": self.avl.surf_geom_r.xyztran[:, idx_surf].T,
                 "angle": np.rad2deg(self.avl.surf_geom_r.addinc[idx_surf]),
-                "nchordwise":  self.avl.surf_geom_i.nvc[idx_surf],
+                "nchordwise": self.avl.surf_geom_i.nvc[idx_surf],
                 "cspace": self.avl.surf_geom_r.cspace[idx_surf],
                 "nspan": self.avl.surf_geom_i.nvs[idx_surf],
                 "sspace": self.avl.surf_geom_r.sspace[idx_surf],
+                "sspaces": self.avl.surf_geom_r.sspaces[:num_sec, idx_surf],
+                "nspans": self.avl.surf_geom_i.nspans[:num_sec, idx_surf],
+                "xyzles": self.avl.surf_geom_r.xyzles[:, :num_sec, idx_surf].T,
+                "chords": self.avl.surf_geom_r.chords[:num_sec, idx_surf],
+                "aincs": self.avl.surf_geom_r.aincs[:num_sec, idx_surf],
+                "xasec": self.avl.surf_geom_r.xasec[:nasec, :num_sec, idx_surf].T,
+                "sasec": self.avl.surf_geom_r.sasec[:nasec, :num_sec, idx_surf].T,
+                "tasec": self.avl.surf_geom_r.tasec[:nasec, :num_sec, idx_surf].T,
+                "icontd": icontd,
+                "idestd": idestd,
+                "clcdsec": self.avl.surf_geom_r.clcdsec[:, :num_sec, idx_surf].T,
+                "claf": self.avl.surf_geom_r.claf[:num_sec, idx_surf],
+                "xhinged": xhinged,
+                "vhinged": vhinged,
+                "gaind": gaind,
+                "refld": refld,
+                "gaing": gaing,
             }
+
             if self.avl.surf_geom_l.ldupl[idx_surf]:
                 surf_data[surf_name]["yduplicate"] = self.avl.surf_geom_r.ydupl[idx_surf]
 
         return surf_data
+
+    def set_surface_params(self, surf_data: dict[str, dict[str:any]]) -> None:
+        """set the give surface data into the current avl object.
+        ASSUMES THE CONTROL SURFACE DATA STAYS AT THE SAME LOCATION"""
+        surf_names = self.get_surface_names()
+
+        for surf_name in surf_data:
+            idx_surf = surf_names.index(surf_name)
+
+            # only set unduplicated sufaces
+            if self.avl.surf_i.imags[idx_surf] < 0:
+                # this is a duplicated surface, skip it
+                continue
+
+            num_sec = self.avl.surf_geom_i.nsec[idx_surf]
+
+            # I don't see a case in the code where nasec is not the same for all sections
+            # but just in case, we'll do a test and throw an error if not
+            nasec = self.avl.surf_geom_i.nasec[:num_sec, idx_surf]
+            if np.unique(nasec).size != 1:
+                raise RuntimeError("nasec is not the same for all sections")
+
+            nasec = nasec[0]
+
+            icontd = surf_data[surf_name]["icontd"]
+            idestd = surf_data[surf_name]["idestd"]
+            xhinged = surf_data[surf_name]["xhinged"]
+            vhinged = surf_data[surf_name]["vhinged"]
+            gaind = surf_data[surf_name]["gaind"]
+            refld = surf_data[surf_name]["refld"]
+            gaing = surf_data[surf_name]["gaing"]
+            for idx_sec in range(num_sec):
+                nscon = self.avl.surf_geom_i.nscon[idx_sec, idx_surf]
+                self.avl.surf_geom_i.icontd[:nscon, idx_sec, idx_surf] = icontd[idx_sec]
+                self.avl.surf_geom_r.xhinged[:nscon, idx_sec, idx_surf] = xhinged[idx_sec]
+                self.avl.surf_geom_r.vhinged[:, :nscon, idx_sec, idx_surf] = vhinged[idx_sec].T
+                self.avl.surf_geom_r.gaind[:nscon, idx_sec, idx_surf] = gaind[idx_sec]
+                self.avl.surf_geom_r.refld[:nscon, idx_sec, idx_surf] = refld[idx_sec]
+
+                nsdes = self.avl.surf_geom_i.nsdes[idx_sec, idx_surf]
+                self.avl.surf_geom_i.idestd[:nsdes, idx_sec, idx_surf] = idestd[idx_sec]
+                self.avl.surf_geom_r.gaing[:nsdes, idx_sec, idx_surf] = gaing[idx_sec]
+
+            self.avl.surf_geom_r.xyzscal[:, idx_surf] = surf_data[surf_name]["scale"].T
+            self.avl.surf_geom_r.xyztran[:, idx_surf] = surf_data[surf_name]["translate"].T
+            self.avl.surf_geom_r.addinc[idx_surf] = np.deg2rad(surf_data[surf_name]["angle"])
+            self.avl.surf_geom_i.nvc[idx_surf] = surf_data[surf_name]["nchordwise"]
+            self.avl.surf_geom_r.cspace[idx_surf] = surf_data[surf_name]["cspace"]
+            self.avl.surf_geom_i.nvs[idx_surf] = surf_data[surf_name]["nspan"]
+            self.avl.surf_geom_r.sspace[idx_surf] = surf_data[surf_name]["sspace"]
+            self.avl.surf_geom_r.sspaces[:num_sec, idx_surf] = surf_data[surf_name]["sspaces"]
+            self.avl.surf_geom_i.nspans[:num_sec, idx_surf] = surf_data[surf_name]["nspans"]
+            self.avl.surf_geom_r.xyzles[:, :num_sec, idx_surf] = surf_data[surf_name]["xyzles"].T
+            self.avl.surf_geom_r.chords[:num_sec, idx_surf] = surf_data[surf_name]["chords"]
+            self.avl.surf_geom_r.aincs[:num_sec, idx_surf] = surf_data[surf_name]["aincs"]
+            self.avl.surf_geom_r.xasec[:nasec, :num_sec, idx_surf] = surf_data[surf_name]["xasec"].T
+            self.avl.surf_geom_r.sasec[:nasec, :num_sec, idx_surf] = surf_data[surf_name]["sasec"].T
+            self.avl.surf_geom_r.tasec[:nasec, :num_sec, idx_surf] = surf_data[surf_name]["tasec"].T
+            self.avl.surf_geom_r.clcdsec[:, :num_sec, idx_surf] = surf_data[surf_name]["clcdsec"].T
+            self.avl.surf_geom_r.claf[:num_sec, idx_surf] = surf_data[surf_name]["claf"]
+
+        self.avl.update_surfaces()
 
     def resetData(self):
         self.__exe = False
@@ -320,11 +426,11 @@ class AVLSolver(object):
     def get_num_surfaces(self) -> int:
         """Get the number of surfaces in the geometry"""
         return self.avl.case_i.nsurf
-    
+
     def get_num_strips(self) -> int:
         """Get the number of strips in the mesh"""
         return self.avl.case_i.nstrip
-    
+
     def get_mesh_size(self) -> int:
         """Get the number of panels in the mesh"""
         return self.avl.case_i.nvor

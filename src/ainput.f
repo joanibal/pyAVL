@@ -35,30 +35,16 @@ C
       REAL CLX(3), CDX(3)
 C
       PARAMETER (NWRK=NSMAX)
-      REAL XYZLES(3,NWRK),CHORDS(NWRK),AINCS(NWRK),SSPACES(NWRK),
-     &     BRADY(NWRK), BRADZ(NWRK), CLAF(NWRK)
-      INTEGER NSPANS(NWRK), NASEC(NWRK)
-      REAL CLCDSEC(6,NWRK)
+      REAL BRADY(NWRK), BRADZ(NWRK)
 C
       REAL XB(IBX), YB(IBX)
       REAL XIN(IBX), YIN(IBX), TIN(IBX)
       REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 
-      REAL XASEC(IBX,NWRK), TASEC(IBX,NWRK), SASEC(IBX,NWRK)
 C
 C---- max number of control or design variable declaration lines per section
-      PARAMETER (ICONX = 20)
 C
-      INTEGER ICONTD(ICONX,NWRK),
-     &        NSCON(NWRK),
-     &        IDESTD(ICONX,NWRK),
-     &        NSDES(NWRK)
 C
-      REAL XHINGED(ICONX,NWRK), 
-     &     VHINGED(3,ICONX,NWRK), 
-     &     GAIND(ICONX,NWRK),
-     &     REFLD(ICONX,NWRK),
-     &     GAING(ICONX,NWRK)
 C
 C
       REAL    RINPUT(10)
@@ -193,16 +179,11 @@ C------ end of file... clean up loose ends
 C
         IF(ISURF.NE.0) THEN
 C------- "old" surface is still active, so build it before finishing
-         CALL MAKESURF(ISURF, 
-     &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
-     &       XASEC,SASEC,TASEC,NASEC,
-     &       CLCDSEC,CLAF,
-     &       ICONX, 
-     &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
-     &       IDESTD,NSDES,GAING )
+         CALL MAKESURF(ISURF)
 C
          IF(LDUPL(ISURF)) THEN
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
+          NSURF = NSURF + 1
          ENDIF
 C
          ISURF = 0
@@ -230,16 +211,11 @@ C------ new surface is about to start
 C
         IF(ISURF.NE.0) THEN
 C------- "old" surface is still active, so build it before starting new one
-         CALL MAKESURF(ISURF, 
-     &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
-     &       XASEC,SASEC,TASEC,NASEC,
-     &       CLCDSEC,CLAF,
-     &       ICONX, 
-     &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
-     &       IDESTD,NSDES,GAING )
+         CALL MAKESURF(ISURF)
 C
          IF(LDUPL(ISURF)) THEN
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
+          NSURF = NSURF + 1
          ENDIF
 C
          ISURF = 0
@@ -266,7 +242,7 @@ C------ default surface component index is just the surface number
         LSCOMP(ISURF) = ISURF
 C
 C------ clear indices for accumulation
-        NSEC = 0
+        NSEC(ISURF) = 0
         ISEC = 0
 C
 C------ set surface defaults
@@ -319,16 +295,11 @@ C------ new body is about to start
 C
         IF(ISURF.NE.0) THEN
 C------- "old" surface is still active, so build it before starting new one     
-         CALL MAKESURF(ISURF, 
-     &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
-     &       XASEC,SASEC,TASEC,NASEC,
-     &       CLCDSEC,CLAF,
-     &       ICONX, 
-     &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
-     &       IDESTD,NSDES,GAING )
+         CALL MAKESURF(ISURF)
 C
          IF(LDUPL(ISURF)) THEN
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
+          NSURF = NSURF + 1
          ENDIF
 C
          ISURF = 0
@@ -528,9 +499,9 @@ C
         CALL GETFLT(LINE,RINPUT,NINPUT,ERROR)
         IF(ERROR .OR. NINPUT.LT.4) GO TO 990
 C
-        XYZLES(1,ISEC) = RINPUT(1)
-        XYZLES(2,ISEC) = RINPUT(2)
-        XYZLES(3,ISEC) = RINPUT(3)
+        XYZLES_B(1,ISEC,IBODY) = RINPUT(1)
+        XYZLES_B(2,ISEC,IBODY) = RINPUT(2)
+        XYZLES_B(3,ISEC,IBODY) = RINPUT(3)
         BRADY(ISEC) = RINPUT(4)
 C
         IF(NINPUT.GE.5) THEN
@@ -559,40 +530,40 @@ C
         CALL GETFLT(LINE,RINPUT,NINPUT,ERROR)
         IF(ERROR .OR. NINPUT.LT.5) GO TO 990
 C
-        XYZLES(1,ISEC) = RINPUT(1)
-        XYZLES(2,ISEC) = RINPUT(2)
-        XYZLES(3,ISEC) = RINPUT(3)
-        CHORDS(ISEC) = RINPUT(4)
-        AINCS(ISEC)  = RINPUT(5)*DTR
+        XYZLES(1,ISEC, ISURF) = RINPUT(1)
+        XYZLES(2,ISEC, ISURF) = RINPUT(2)
+        XYZLES(3,ISEC, ISURF) = RINPUT(3)
+        CHORDS(ISEC, ISURF) = RINPUT(4)
+        AINCS(ISEC, ISURF)  = RINPUT(5)*DTR
 C
         IF(NINPUT.GE.7) THEN
-         NSPANS(ISEC) = INT( RINPUT(6) + 0.001 )
-         SSPACES(ISEC) = RINPUT(7)
+         NSPANS(ISEC, ISURF) = INT( RINPUT(6) + 0.001 )
+         SSPACES(ISEC, ISURF) = RINPUT(7)
         ELSE
-         NSPANS(ISEC) = 0
-         SSPACES(ISEC) = 0.
+         NSPANS(ISEC, ISURF) = 0
+         SSPACES(ISEC, ISURF) = 0.
         ENDIF
 C
 C------ default section...
 C    ...flat camberline
-        NASEC(ISEC)   = 2
-        XASEC(1,ISEC) = 0.0
-        XASEC(2,ISEC) = 1.0
-        SASEC(1,ISEC)  = 0.0
-        SASEC(2,ISEC)  = 0.0
-        TASEC(1,ISEC)  = 0.0
-        TASEC(2,ISEC)  = 0.0
+        NASEC(ISEC,ISURF)   = 2
+        XASEC(1,ISEC, ISURF) = 0.0
+        XASEC(2,ISEC, ISURF) = 1.0
+        SASEC(1,ISEC, ISURF)  = 0.0
+        SASEC(2,ISEC, ISURF)  = 0.0
+        TASEC(1,ISEC, ISURF)  = 0.0
+        TASEC(2,ISEC, ISURF)  = 0.0
 C    ...no polar data
         DO L=1, 6
-          CLCDSEC(L,ISEC) = 0.0
+          CLCDSEC(L,ISEC,ISURF) = 0.0
         END DO
 C    ...no control
-        NSCON(ISEC) = 0
+        NSCON(ISEC, ISURF) = 0
 C    ...no design
-        NSDES(ISEC) = 0
+        NSDES(ISEC, ISURF) = 0
 C
 C    ...unity dCL/da factor
-        CLAF(ISEC) = 1.0
+        CLAF(ISEC,ISURF) = 1.0
 C
 C===========================================================================
       ELSEIF (KEYWD.EQ.'NACA') THEN 
@@ -623,27 +594,28 @@ C
         P = FLOAT(IPOS) / 10.0
         T = FLOAT(ITHK) / 100.0
 C
-        NASEC(ISEC) = MIN( 50 , IBX )
-        DO I = 1, NASEC(ISEC)
-          XF = XFMIN + (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC)-1)
+        NASEC(ISEC,ISURF) = MIN( 50 , IBX )
+        DO I = 1, NASEC(ISEC,ISURF)
+          XF = XFMIN +
+     &        (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
 
-          XASEC(I,ISEC) = XF
-          TASEC(I,ISEC) = 
+          XASEC(I,ISEC, ISURF) = XF
+          TASEC(I,ISEC, ISURF) = 
      &        (   0.29690*SQRT(XF)
      &          - 0.12600*XF
      &          - 0.35160*XF**2
      &          + 0.28430*XF**3
      &          - 0.10150*XF**4  ) * T * 10.0
           IF    (XF .LT. P) THEN
-           SASEC(I,ISEC) = C * 2.0*(P - XF) / P**2
+           SASEC(I,ISEC,ISURF) = C * 2.0*(P - XF) / P**2
           ELSEIF(XF .GE. P) THEN
-           SASEC(I,ISEC) = C * 2.0*(P - XF) / (1.0-P)**2
+           SASEC(I,ISEC,ISURF) = C * 2.0*(P - XF) / (1.0-P)**2
           ELSE
-           SASEC(I,ISEC) = 0.
+           SASEC(I,ISEC,ISURF) = 0.
           ENDIF
         ENDDO
 
-        CALL NRMLIZ(NASEC(ISEC),XASEC(1,ISEC))
+        CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
 C
 C===========================================================================
       ELSE IF (KEYWD.EQ.'AIRF') THEN 
@@ -687,14 +659,17 @@ C------ set camber and thickness, normalized to unit chord
         CALL GETCAM(XB,YB,NB,XIN,YIN,TIN,NIN,.TRUE.)
 C
 C------ store airfoil only if surface and section are active
-        NASEC(ISEC) = NIN
+        NASEC(ISEC,ISURF) = NIN
         DO I = 1, NIN
-          XF = XFMIN + (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC)-1)
-          XASEC(I,ISEC) = XIN(1) + XF*(XIN(NIN)-XIN(1))
-          CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC),DUMMY,SASEC(I,ISEC))
-          CALL AKIMA(XIN,TIN,NIN,XASEC(I,ISEC),TASEC(I,ISEC),DUMMY)
+          XF = XFMIN + 
+     &         (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
+          XASEC(I,ISEC,ISURF) = XIN(1) + XF*(XIN(NIN)-XIN(1))
+          CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),DUMMY,
+     &               SASEC(I,ISEC,ISURF))
+          CALL AKIMA(XIN,TIN,NIN,XASEC(I,ISEC,ISURF),
+     &               TASEC(I,ISEC,ISURF),DUMMY)
         END DO
-        CALL NRMLIZ(NASEC(ISEC),XASEC(1,ISEC))
+        CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
 C
 C------ go to top of keyword-reading loop, with last-read line
         GO TO 11
@@ -752,11 +727,11 @@ C
         end if 
 
 C C
-         NASEC(ISEC) = MIN( 50 , IBX )
-         DO I = 1, NASEC(ISEC)
-          XASEC(I,ISEC) = FLOAT(I-1)/FLOAT(NASEC(ISEC)-1)
-          SASEC(I,ISEC) = 0.0
-          TASEC(I,ISEC) = 0.0
+         NASEC(ISEC,ISURF) = MIN( 50 , IBX )
+         DO I = 1, NASEC(ISEC,ISURF)
+          XASEC(I,ISEC,ISURF) = FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
+          SASEC(I,ISEC,ISURF) = 0.0
+          TASEC(I,ISEC,ISURF) = 0.0
          ENDDO
 C
         ELSE
@@ -765,14 +740,17 @@ C------- camber and thickness
          CALL GETCAM(XB,YB,NB,XIN,YIN,TIN,NIN,.TRUE.)
 C
 C------- camberline slopes at specified locations from spline
-         NASEC(ISEC) = NIN
+         NASEC(ISEC,ISURF) = NIN
          DO I = 1, NIN
-           XF = XFMIN + (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC)-1)
-           XASEC(I,ISEC) = XIN(1) + XF*(XIN(NIN)-XIN(1))
-           CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC),DUMMY,SASEC(I,ISEC))
-           CALL AKIMA(XIN,TIN,NIN,XASEC(I,ISEC),TASEC(I,ISEC),DUMMY)
+           XF = XFMIN + 
+     &         (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
+           XASEC(I,ISEC,ISURF) = XIN(1) + XF*(XIN(NIN)-XIN(1))
+           CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),DU
+     &               MMY,SASEC(I,ISEC,ISURF))
+           CALL AKIMA(XIN,TIN,NIN,XASEC(I,ISEC,ISURF),
+     &               TASEC(I,ISEC,ISURF),DUMMY)
          END DO
-         CALL NRMLIZ (NASEC(ISEC),XASEC(1,ISEC))
+         CALL NRMLIZ (NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
         ENDIF
 C
 C===========================================================================
@@ -844,26 +822,29 @@ C
         END DO
 C
         IF(ISEC.GT.1) THEN
-         IF(CLCDSEC(4,ISEC-1).LE.0.0) THEN
+         IF(CLCDSEC(4,ISEC-1,ISURF).LE.0.0) THEN
           WRITE(*,*) '* AINPUT: previous section defined with no polar' 
          ENDIF
         ENDIF
 C
 C------ Trick: sum must be 6 so we can get the "other" index
         LMID = 6 - (LMIN+LMAX)
-        CLCDSEC(1,ISEC) = CLX(LMIN)
-        CLCDSEC(2,ISEC) = CDX(LMIN)
-        CLCDSEC(3,ISEC) = CLX(LMID)
-        CLCDSEC(4,ISEC) = CDX(LMID)
-        CLCDSEC(5,ISEC) = CLX(LMAX)
-        CLCDSEC(6,ISEC) = CDX(LMAX)
-        WRITE(*,1700) CLX(LMIN),CDX(LMIN),
+        CLCDSEC(1,ISEC,ISUF) = CLX(LMIN)
+        CLCDSEC(2,ISEC,ISUF) = CDX(LMIN)
+        CLCDSEC(3,ISEC,ISUF) = CLX(LMID)
+        CLCDSEC(4,ISEC,ISUF) = CDX(LMID)
+        CLCDSEC(5,ISEC,ISUF) = CLX(LMAX)
+        CLCDSEC(6,ISEC,ISUF) = CDX(LMAX)
+        
+        if (LVERBOSE) then
+                WRITE(*,1700) CLX(LMIN),CDX(LMIN),
      &                CLX(LMID),CDX(LMID),
      &                CLX(LMAX),CDX(LMAX)
- 1700   FORMAT('    Reading CD(CL) data for section',
+1700   FORMAT('    Reading CD(CL) data for section',
      &         /'     CLneg    = ',F8.3,'  CD@CLneg = ',F10.5,
      &         /'     CL@CDmin = ',F8.3,'  CDmin    = ',F10.5,
      &         /'     CLpos    = ',F8.3,'  CD@CLpos = ',F10.5)
+        ENDIF
         LVISC = .TRUE.
 C
 C===========================================================================
@@ -877,13 +858,13 @@ C
         ENDIF
 
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ(LINE,*,ERR=990) CLAF(ISEC)
+        READ(LINE,*,ERR=990) CLAF(ISEC,ISURF)
 C
-        IF(CLAF(ISEC) .LE. 0.0 .OR. 
-     &     CLAF(ISEC) .GE. 2.0      ) THEN
+        IF(CLAF(ISEC,ISURF) .LE. 0.0 .OR. 
+     &     CLAF(ISEC,ISURF) .GE. 2.0      ) THEN
          WRITE(*,*) '** dCL/da factor must be in the range 0..2 --',
      &              ' Setting factor to 1.0'
-         CLAF(ISEC) = 1.0
+         CLAF(ISEC,ISURF) = 1.0
         ENDIF
 C
 C===========================================================================
@@ -900,8 +881,8 @@ C
 C
 C
 C------ increment control-declaration counter for this section
-        NSCON(ISEC) = NSCON(ISEC) + 1
-        ISCON = MIN( NSCON(ISEC) , ICONX )
+        NSCON(ISEC,ISURF) = NSCON(ISEC,ISURF) + 1
+        ISCON = MIN( NSCON(ISEC,ISURF) , ICONX )
 C
 C------ extract control name
         NNAME = INDEX(LINE,' ') - 1
@@ -924,7 +905,7 @@ C------ new control variable... assign slot for it
         DNAME(ICONTROL) = LINE(1:NNAME)
 C
  62     CONTINUE
-        ICONTD(ISCON,ISEC) = ICONTROL
+        ICONTD(ISCON,ISEC,ISURF) = ICONTROL
 C
 C------ read numbers after control variable name
         NINPUT = 6
@@ -935,31 +916,31 @@ C------ read numbers after control variable name
         ENDIF
 C
         IF(NINPUT.LT.1) THEN
-         GAIND(ISCON,ISEC) = 1.0
+         GAIND(ISCON,ISEC,ISURF) = 1.0
         ELSE
-         GAIND(ISCON,ISEC) = RINPUT(1)
+         GAIND(ISCON,ISEC,ISURF) = RINPUT(1)
         ENDIF
 C
         IF(NINPUT.LT.2) THEN
-         XHINGED(ISCON,ISEC) = 0.0
+         XHINGED(ISCON,ISEC,ISURF) = 0.0
         ELSE
-         XHINGED(ISCON,ISEC) = RINPUT(2)
+         XHINGED(ISCON,ISEC,ISURF) = RINPUT(2)
         ENDIF
 C
         IF(NINPUT.LT.5) THEN
-         VHINGED(1,ISCON,ISEC) = 0.0
-         VHINGED(2,ISCON,ISEC) = 0.0
-         VHINGED(3,ISCON,ISEC) = 0.0
+         VHINGED(1,ISCON,ISEC,ISURF) = 0.0
+         VHINGED(2,ISCON,ISEC,ISURF) = 0.0
+         VHINGED(3,ISCON,ISEC,ISURF) = 0.0
         ELSE
-         VHINGED(1,ISCON,ISEC) = RINPUT(3)
-         VHINGED(2,ISCON,ISEC) = RINPUT(4)
-         VHINGED(3,ISCON,ISEC) = RINPUT(5)
+         VHINGED(1,ISCON,ISEC,ISURF) = RINPUT(3)
+         VHINGED(2,ISCON,ISEC,ISURF) = RINPUT(4)
+         VHINGED(3,ISCON,ISEC,ISURF) = RINPUT(5)
         ENDIF
 C
         IF(NINPUT.LT.6) THEN
-         REFLD(ISCON,ISEC) = 1.0
+         REFLD(ISCON,ISEC,ISURF) = 1.0
         ELSE
-         REFLD(ISCON,ISEC) = RINPUT(6)
+         REFLD(ISCON,ISEC,ISURF) = RINPUT(6)
         ENDIF
 C
 C===========================================================================
@@ -975,8 +956,8 @@ C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
 C
 C------ increment design-declaration counter for this section
-        NSDES(ISEC) = NSDES(ISEC) + 1
-        ISDES = MIN( NSDES(ISEC) , ICONX )
+        NSDES(ISEC,ISURF) = NSDES(ISEC,ISURF) + 1
+        ISDES = MIN( NSDES(ISEC,ISURF) , ICONX )
 C
 C------ extract design name
         NNAME = INDEX(LINE,' ') - 1
@@ -999,7 +980,7 @@ C
         GNAME(IDESIGN) = LINE(1:NNAME)
 C
  72     CONTINUE
-        IDESTD(ISDES,ISEC) = IDESIGN
+        IDESTD(ISDES,ISEC,ISURF) = IDESIGN
 C
 C------ read numbers after control variable name
         NINPUT = 1
@@ -1007,9 +988,9 @@ C------ read numbers after control variable name
         IF(ERROR) GO TO 990
 C
         IF(NINPUT.LT.1) THEN
-         GAING(ISDES,ISEC) = 1.0
+         GAING(ISDES,ISEC,ISURF) = 1.0
         ELSE
-         GAING(ISDES,ISEC) = RINPUT(1)
+         GAING(ISDES,ISEC,ISURF) = RINPUT(1)
         ENDIF
 C
 C===========================================================================

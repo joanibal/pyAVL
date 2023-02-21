@@ -24,6 +24,7 @@ python module libavl ! in
             parameter (nrmax=25)
             parameter (ntmax=5000)
             parameter (ibx=300)
+            parameter (iconx=20)
             ! Derived parameters
             parameter (itmax=2*nvmax)
             parameter (ivmax=ivtot+ndmax)
@@ -229,8 +230,9 @@ python module libavl ! in
             ! reals
             real*8 dimension(3,nbmax) :: xyzscal_b
             real*8 dimension(3,nbmax) :: xyztran_b
-            real*8 dimension(nfmax) :: ydupl_b
-            common /body_geom_r/ xyzscal_b, xyztran_b, ydupl_b
+            real*8 dimension(nbmax) :: ydupl_b
+            real*8 dimension(3, nsmax, nbmax) :: xyzles_b
+            common /body_geom_r/ xyzscal_b, xyztran_b, ydupl_b, xyzles_b
             
             ! ---- surface ----
             ! logicals
@@ -240,7 +242,13 @@ python module libavl ! in
             integer dimension(nfmax) :: nsec
             integer dimension(nfmax) :: nvc
             integer dimension(nfmax) :: nvs
-            common /surf_geom_i/ nsec, nvc, nvs
+            integer dimension(nsmax, nfmax) :: nspans
+            integer dimension(nsmax, nfmax) :: nasec
+            integer dimension(iconx, nsmax, nfmax) :: icontd
+            integer dimension(nsmax, nfmax)        :: nscon
+            integer dimension(iconx, nsmax, nfmax) :: idestd
+            integer dimension(nsmax, nfmax)        :: nsdes
+            common /surf_geom_i/ nsec, nvc, nvs, nspans, nasec, icontd, nscon, idestd, nsdes
             ! reals
             real*8 dimension(3,nfmax) :: xyzscal
             real*8 dimension(3,nfmax) :: xyztran
@@ -248,7 +256,21 @@ python module libavl ! in
             real*8 dimension(nfmax) :: ydupl
             real*8 dimension(nfmax) :: cspace
             real*8 dimension(nfmax) :: sspace
-            common /surf_geom_r/ xyzscal, xyztran, ydupl, addinc, cspace, sspace
+            real*8 dimension(nsmax, nfmax) :: sspaces
+            real*8 dimension(3, nsmax, nfmax) :: xyzles
+            real*8 dimension(nsmax, nfmax) :: chords
+            real*8 dimension(nsmax, nfmax) :: aincs
+            real*8 dimension(ibx, nsmax, nfmax) :: xasec
+            real*8 dimension(ibx, nsmax, nfmax) :: sasec
+            real*8 dimension(ibx, nsmax, nfmax) :: tasec
+            real*8 dimension(6, nsmax, nfmax) :: clcdsec
+            real*8 dimension(nsmax, nfmax) :: claf
+            real*8 dimension(iconx, nsmax, nfmax) :: xhinged  
+            real*8 dimension(3, iconx, nsmax, nfmax) :: vhinged 
+            real*8 dimension(iconx, nsmax, nfmax) :: gaind  
+            real*8 dimension(iconx, nsmax, nfmax) :: refld  
+            real*8 dimension(iconx, nsmax, nfmax) :: gaing  
+            common /surf_geom_r/ xyzscal, xyztran, ydupl, addinc, cspace, sspace, sspaces, xyzles, chords, aincs, xasec, sasec, tasec, clcdsec, claf, xhinged, vhinged, gaind, refld, gaing
             ! note that the variables must appear in the same order as in common statement in the AVL.inc file
             
             ! end added params
@@ -509,9 +531,14 @@ python module libavl ! in
             character*4 com
             character*80 carg
         end subroutine trmset
+        
+        
 
         subroutine calcst ! in :libavl:aoper.f
         end subroutine calcst
+        
+        subroutine update_surfaces ! in :libavl:amake.f
+        end subroutine update_surfaces
 
 
     end interface 

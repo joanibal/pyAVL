@@ -18,28 +18,13 @@ C    along with this program; if not, write to the Free Software
 C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 
-      SUBROUTINE MAKESURF(ISURF, 
-     &       XYZLES,CHORDS,AINCS,SSPACES,NSPANS,
-     &       XASEC,SASEC,TASEC,NASEC,
-     &       CLCDSEC,CLAF,
-     &       ICONX, 
-     &       ICONTD,NSCON,GAIND,XHINGED,VHINGED,REFLD,
-     &       IDESTD,NSDES,GAING )
+      SUBROUTINE MAKESURF(ISURF)
 C--------------------------------------------------------------
 C     Sets up all stuff for surface ISURF, 
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
 C
-      REAL XYZLES(3,*),CHORDS(*),AINCS(*),SSPACES(*)
-      INTEGER NSPANS(*), NASEC(*)
-      REAL XASEC(IBX,*), SASEC(IBX,*), TASEC(IBX,*)
-      REAL CLCDSEC(6,*), CLAF(*)
-      INTEGER ICONTD(ICONX,*),NSCON(*),
-     &        IDESTD(ICONX,*),NSDES(*)
-      REAL GAIND(ICONX,*),
-     &     XHINGED(ICONX,*),VHINGED(3,ICONX,*),REFLD(ICONX,*),
-     &     GAING(ICONX,*)
 C
       REAL XYZLEL(3), XYZLER(3)
 C
@@ -92,8 +77,8 @@ C-----------------------------------------------------------------
 C---- section arc lengths of wing trace in y-z plane
       YZLEN(1) = 0.
       DO ISEC = 2, NSEC(ISURF)
-        DY = XYZLES(2,ISEC) - XYZLES(2,ISEC-1)
-        DZ = XYZLES(3,ISEC) - XYZLES(3,ISEC-1)
+        DY = XYZLES(2,ISEC, ISURF) - XYZLES(2,ISEC-1, ISURF)
+        DZ = XYZLES(3,ISEC, ISURF) - XYZLES(3,ISEC-1, ISURF)
         YZLEN(ISEC) = YZLEN(ISEC-1) + SQRT(DY*DY + DZ*DZ)
       ENDDO
 C
@@ -101,7 +86,7 @@ C
       IF(NVS(ISURF).EQ.0) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
        DO ISEC = 1, NSEC(ISURF)-1
-         NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC)
+         NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC, ISURF)
        ENDDO
        IF(NVS(ISURF).GT.KSMAX) THEN
         WRITE(*,*) '*** MAKESURF: Array overflow. Increase KSMAX to',NVS(ISURF)
@@ -115,7 +100,7 @@ C
        DO ISEC = 1, NSEC(ISURF)-1
          DYZLEN = YZLEN(ISEC+1) - YZLEN(ISEC)
 C
-         NVINT = NSPANS(ISEC)
+         NVINT = NSPANS(ISEC, ISURF)
 C
 C------- set spanwise spacing array
          NSPACE = 2*NVINT + 1
@@ -124,7 +109,7 @@ C------- set spanwise spacing array
      &                 NSPACE
           STOP
          ENDIF
-         CALL SPACER(NSPACE,SSPACES(ISEC),FSPACE)
+         CALL SPACER(NSPACE,SSPACES(ISEC, ISURF),FSPACE)
 C
          DO N = 1, NVINT
            IVS = NVS(ISURF) + N
@@ -236,25 +221,31 @@ C
 C
 C---- go over section intervals
       DO 200 ISEC = 1, NSEC(ISURF)-1
-        XYZLEL(1) = XYZSCAL(1,ISURF)*XYZLES(1,ISEC)   + XYZTRAN(1,ISURF)
-        XYZLEL(2) = XYZSCAL(2,ISURF)*XYZLES(2,ISEC)   + XYZTRAN(2,ISURF)
-        XYZLEL(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC)   + XYZTRAN(3,ISURF)
-        XYZLER(1) = XYZSCAL(1,ISURF)*XYZLES(1,ISEC+1) + XYZTRAN(1,ISURF)
-        XYZLER(2) = XYZSCAL(2,ISURF)*XYZLES(2,ISEC+1) + XYZTRAN(2,ISURF)
-        XYZLER(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC+1) + XYZTRAN(3,ISURF)
+        XYZLEL(1) = XYZSCAL(1,ISURF)*XYZLES(1,ISEC,ISURF)   
+     &              + XYZTRAN(1,ISURF)
+        XYZLEL(2) = XYZSCAL(2,ISURF)*XYZLES(2,ISEC,ISURF)   
+     &              + XYZTRAN(2,ISURF)
+        XYZLEL(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC,ISURF)   
+     &              + XYZTRAN(3,ISURF)
+        XYZLER(1) = XYZSCAL(1,ISURF)*XYZLES(1,ISEC+1,ISURF) 
+     &              + XYZTRAN(1,ISURF)
+        XYZLER(2) = XYZSCAL(2,ISURF)*XYZLES(2,ISEC+1,ISURF) 
+     &              + XYZTRAN(2,ISURF)
+        XYZLER(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC+1,ISURF) 
+     &              + XYZTRAN(3,ISURF)
 C
         WIDTH = SQRT(  (XYZLER(2)-XYZLEL(2))**2
      &               + (XYZLER(3)-XYZLEL(3))**2 )
 C
-        CHORDL = XYZSCAL(1,ISURF)*CHORDS(ISEC)
-        CHORDR = XYZSCAL(1,ISURF)*CHORDS(ISEC+1)
+        CHORDL = XYZSCAL(1,ISURF)*CHORDS(ISEC, ISURF)
+        CHORDR = XYZSCAL(1,ISURF)*CHORDS(ISEC+1, ISURF)
 C
-        CLAFL = CLAF(ISEC)
-        CLAFR = CLAF(ISEC+1)
+        CLAFL = CLAF(ISEC,  ISURF)
+        CLAFR = CLAF(ISEC+1,ISURF)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-        AINCL = AINCS(ISEC)   + ADDINC(ISURF)
-        AINCR = AINCS(ISEC+1) + ADDINC(ISURF)
+        AINCL = AINCS(ISEC  , ISURF) + ADDINC(ISURF)
+        AINCR = AINCS(ISEC+1, ISURF) + ADDINC(ISURF)
 cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -267,11 +258,11 @@ C------ set control-declaration lines for each control variable
         DO N = 1, NCONTROL
           ISCONL(N) = 0
           ISCONR(N) = 0
-          DO ISCON = 1, NSCON(ISEC)
-            IF(ICONTD(ISCON,ISEC)  .EQ.N) ISCONL(N) = ISCON
+          DO ISCON = 1, NSCON(ISEC,ISURF)
+            IF(ICONTD(ISCON,ISEC,ISURF)  .EQ.N) ISCONL(N) = ISCON
           ENDDO
-          DO ISCON = 1, NSCON(ISEC+1)
-            IF(ICONTD(ISCON,ISEC+1).EQ.N) ISCONR(N) = ISCON
+          DO ISCON = 1, NSCON(ISEC+1,ISURF)
+            IF(ICONTD(ISCON,ISEC+1,ISURF).EQ.N) ISCONR(N) = ISCON
           ENDDO
         ENDDO
 C
@@ -282,17 +273,17 @@ C------ set design-variable sensitivities of CHSIN and CHCOS
           CHCOSL_G(N) = 0.
           CHCOSR_G(N) = 0.
 C
-          DO ISDES = 1, NSDES(ISEC)
-            IF(IDESTD(ISDES,ISEC).EQ.N) THEN
-             CHSINL_G(N) =  CHCOSL * GAING(ISDES,ISEC)*DTR
-             CHCOSL_G(N) = -CHSINL * GAING(ISDES,ISEC)*DTR
+          DO ISDES = 1, NSDES(ISEC,ISURF)
+            IF(IDESTD(ISDES,ISEC,ISURF).EQ.N) THEN
+             CHSINL_G(N) =  CHCOSL * GAING(ISDES,ISEC,ISURF)*DTR
+             CHCOSL_G(N) = -CHSINL * GAING(ISDES,ISEC,ISURF)*DTR
             ENDIF
           ENDDO
 C
-          DO ISDES = 1, NSDES(ISEC+1)
-            IF(IDESTD(ISDES,ISEC+1).EQ.N) THEN
-             CHSINR_G(N) =  CHCOSR * GAING(ISDES,ISEC+1)*DTR
-             CHCOSR_G(N) = -CHSINR * GAING(ISDES,ISEC+1)*DTR
+          DO ISDES = 1, NSDES(ISEC+1,ISURF)
+            IF(IDESTD(ISDES,ISEC+1,ISURF).EQ.N) THEN
+             CHSINR_G(N) =  CHCOSR * GAING(ISDES,ISEC+1,ISURF)*DTR
+             CHCOSR_G(N) = -CHSINR * GAING(ISDES,ISEC+1,ISURF)*DTR
             ENDIF
           ENDDO
         ENDDO
@@ -369,11 +360,11 @@ C
 C
             ELSE
 C----------- control variable # N is active here
-             GAINDA(N) = GAIND(ICL,ISEC  )*(1.0-FC)
-     &                 + GAIND(ICR,ISEC+1)*     FC
+             GAINDA(N) = GAIND(ICL,ISEC  ,ISURF)*(1.0-FC)
+     &                 + GAIND(ICR,ISEC+1,ISURF)*     FC
 C
-             XHD = CHORDL*XHINGED(ICL,ISEC  )*(1.0-FC)
-     &           + CHORDR*XHINGED(ICR,ISEC+1)*     FC
+             XHD = CHORDL*XHINGED(ICL,ISEC  ,ISURF)*(1.0-FC)
+     &           + CHORDR*XHINGED(ICR,ISEC+1,ISURF)*     FC
              IF(XHD.GE.0.0) THEN
 C------------ TE control surface, with hinge at XHD
               XLED(N) = XHD
@@ -384,18 +375,20 @@ C------------ LE control surface, with hinge at -XHD
               XTED(N) = -XHD
              ENDIF
 C
-             VHX = VHINGED(1,ICL,ISEC)*XYZSCAL(1,ISURF)
-             VHY = VHINGED(2,ICL,ISEC)*XYZSCAL(2,ISURF)
-             VHZ = VHINGED(3,ICL,ISEC)*XYZSCAL(3,ISURF)
+             VHX = VHINGED(1,ICL,ISEC,ISURF)*XYZSCAL(1,ISURF)
+             VHY = VHINGED(2,ICL,ISEC,ISURF)*XYZSCAL(2,ISURF)
+             VHZ = VHINGED(3,ICL,ISEC,ISURF)*XYZSCAL(3,ISURF)
              VSQ = VHX**2 + VHY**2 + VHZ**2
              IF(VSQ.EQ.0.0) THEN
 C------------ default: set hinge vector along hingeline
-              VHX = XYZLES(1,ISEC+1) + ABS(CHORDR*XHINGED(ICR,ISEC+1))
-     &            - XYZLES(1,ISEC  ) - ABS(CHORDL*XHINGED(ICL,ISEC  ))
-              VHY = XYZLES(2,ISEC+1)
-     &            - XYZLES(2,ISEC  )
-              VHZ = XYZLES(3,ISEC+1)
-     &            - XYZLES(3,ISEC  )
+              VHX = XYZLES(1,ISEC+1,ISURF)
+     &              + ABS(CHORDR*XHINGED(ICR,ISEC+1,ISURF))
+     &              - XYZLES(1,ISEC  ,ISURF)
+     &              - ABS(CHORDL*XHINGED(ICL,ISEC,ISURF))
+              VHY = XYZLES(2,ISEC+1,ISURF)
+     &            - XYZLES(2,ISEC  ,ISURF)
+              VHZ = XYZLES(3,ISEC+1,ISURF)
+     &            - XYZLES(3,ISEC  ,ISURF)
               VHX = VHX*XYZSCAL(1,ISURF)
               VHY = VHY*XYZSCAL(2,ISURF)
               VHZ = VHZ*XYZSCAL(3,ISURF)
@@ -407,7 +400,7 @@ C
              VHINGE(2,NSTRIP,N) = VHY/VMOD
              VHINGE(3,NSTRIP,N) = VHZ/VMOD
 C
-             VREFL(NSTRIP,N) = REFLD(ICL,ISEC)
+             VREFL(NSTRIP,N) = REFLD(ICL,ISEC, ISURF)
 C
              IF(XHD .GE. 0.0) THEN
               PHINGE(1,NSTRIP,N) = RLE(1,NSTRIP) + XHD
@@ -424,8 +417,8 @@ C
 C
 C--- Interpolate CD-CL polar defining data from input sections to strips
           DO L = 1, 6
-            CLCD(L,NSTRIP) = (1.0-FC)*CLCDSEC(L,ISEC) 
-     &                      +     FC *CLCDSEC(L,ISEC+1)
+            CLCD(L,NSTRIP) = (1.0-FC)*CLCDSEC(L,ISEC  ,ISURF) 
+     &                      +     FC *CLCDSEC(L,ISEC+1,ISURF)
           END DO
 C--- If the min drag is zero flag the strip as no-viscous data
           LVISCSTRP(NSTRIP) = (CLCD(4,NSTRIP).NE.0.0)
@@ -436,8 +429,8 @@ C
 C
           NSURFS(NSTRIP) = ISURF
 C
-          NSL = NASEC(ISEC  )
-          NSR = NASEC(ISEC+1)
+          NSL = NASEC(ISEC  , ISURF)
+          NSR = NASEC(ISEC+1, ISURF)
 C
           CHORDC = CHORD(NSTRIP)
 C
@@ -471,16 +464,16 @@ C
             RS(2,NVOR) = RLE(2,NSTRIP)
             RS(3,NVOR) = RLE(3,NSTRIP)
 C
-            CALL AKIMA(XASEC(1,ISEC  ),SASEC(1,ISEC  ),NSL,
+            CALL AKIMA(XASEC(1,ISEC,  ISURF),SASEC(1,ISEC,  ISURF),NSL,
      &                 XCP(IVC),SLOPEL, DSDX)
-            CALL AKIMA(XASEC(1,ISEC+1),SASEC(1,ISEC+1),NSR,
+            CALL AKIMA(XASEC(1,ISEC+1,ISURF),SASEC(1,ISEC+1,ISURF),NSR,
      &                 XCP(IVC),SLOPER, DSDX)
             SLOPEC(NVOR) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
      &                    +     FC *(CHORDR/CHORDC)*SLOPER
 C
-            CALL AKIMA(XASEC(1,ISEC  ),SASEC(1,ISEC  ),NSL,
+            CALL AKIMA(XASEC(1,ISEC  ,ISURF),SASEC(1,ISEC  ,ISURF),NSL,
      &                 XVR(IVC),SLOPEL, DSDX)
-            CALL AKIMA(XASEC(1,ISEC+1),SASEC(1,ISEC+1),NSR,
+            CALL AKIMA(XASEC(1,ISEC+1,ISURF),SASEC(1,ISEC+1,ISURF),NSR,
      &                 XVR(IVC),SLOPER, DSDX)
             SLOPEV(NVOR) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
      &                    +     FC *(CHORDR/CHORDC)*SLOPER
@@ -534,7 +527,36 @@ C
 C
       RETURN
       END ! MAKESURF
-
+      
+      subroutine update_surfaces()
+c--------------------------------------------------------------
+c     Updates all surfaces, using the stored data.
+c--------------------------------------------------------------
+      
+      include 'AVL.INC'
+      integer ISURF
+      
+      NSTRIP = 0
+      NVOR = 0
+      
+      do ISURF=1,NSURF
+            write(*,*) 'Updating surface ',ISURF
+            if (ISURF.ne.1) then
+                  if(ldupl(isurf-1)) then 
+                        cycle
+                  end if
+                  call makesurf(ISURF)
+            else
+                  call makesurf(ISURF)
+            endif
+            
+            if(ldupl(isurf)) then
+                  call sdupl(isurf,ydupl(isurf),'ydup')
+            endif
+      end do 
+      
+      end subroutine update_surfaces
+            
 
 
       SUBROUTINE MAKEBODY(IBODY,
@@ -782,7 +804,7 @@ C
 C
   100 CONTINUE
 C
-      NSURF = NSURF + 1
+      
 C
       RETURN
       END ! SDUPL

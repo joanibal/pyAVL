@@ -18,7 +18,8 @@ C    NGMAX   number of design variables
 C
 C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
-C
+C     
+C    ICONX   max number of control or design variable declaration lines per section (20)
       PARAMETER (NVMAX=6000,
      &           NSMAX=400,
      &           NFMAX=30,
@@ -29,7 +30,8 @@ C
      &           NGMAX=20,
      &           NRMAX=25,
      &           NTMAX=5000,
-     &           IBX=300)
+     &           IBX=300,
+     &           ICONX=20)
 C
 C   Derived array limits
 C
@@ -267,7 +269,8 @@ c
       COMMON /BODY_GEOM_R/
      & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
-     & YDUPL_B(NBMAX) ! y duplicate
+     & YDUPL_B(NBMAX), ! y duplicate
+     & XYZLES_B(3, NSMAX, NBMAX) ! leading edge cordinate vector
 c
       LOGICAL LDUPL
       COMMON /SURF_GEOM_L/
@@ -276,15 +279,13 @@ c
       COMMON /SURF_GEOM_I/
      & NSEC(NFMAX),  ! number of sections in surface
      & NVC(NFMAX), ! number of chordwise elements
-     & NVS(NFMAX) ! number of spanwise elements
-C     & SSPACES(NFMAX), ! spanwise spacing vector
-C     & NSPANS(NFMAX), ! number of spanwise elements vector
-C     & NASEC(NFMAX),
-C     & ICONX(NFMAX), ! max number of control or design variable declaration lines per section (20)
-C     & ICONTD(ICONX, NSMAX, NFMAX),
-C     & NSCON(NSMAX, NFMAX),
-C     & IDESTD(ICONX, NSMAX, NFMAX),
-C     & NSDES(NSMAX, NFMAX),
+     & NVS(NFMAX), ! number of spanwise elements
+     & NSPANS(NSMAX, NFMAX), ! number of spanwise elements vector
+     & NASEC(NSMAX, NFMAX),
+     & ICONTD(ICONX, NSMAX, NFMAX), ! control variable index
+     & NSCON(NSMAX, NFMAX), ! number of control variables
+     & IDESTD(ICONX, NSMAX, NFMAX), ! design variable index
+     & NSDES(NSMAX, NFMAX) ! number of design variables
 
       
       COMMON /SURF_GEOM_R/
@@ -293,23 +294,22 @@ C     & NSDES(NSMAX, NFMAX),
      & YDUPL(NFMAX), ! y position of duplicate plane
      & ADDINC(NFMAX), ! additional incidence angle
      & CSPACE(NFMAX), ! chordwise spacing
-     & SSPACE(NFMAX) ! spanwise spacing
-C     & XYZLES(NSMAX, NFMAX), ! leading edge cordinate vector
-C     & CHORDS(NSMAX, NFMAX), ! chord length vectorm
-C     & AINCS(NSMAX, NFMAX), ! incidence angle vector
-C     & XASEC(IBX, NSMAX, NFMAX),  !
-C     & SASEC(IBX, NSMAX, NFMAX),  !
-C     & TASEC(IBX, NSMAX, NFMAX),
+     & SSPACE(NFMAX), ! spanwise spacing
+     & SSPACES(NSMAX, NFMAX), ! spanwise spacing vector
+     & XYZLES(3, NSMAX, NFMAX), ! leading edge cordinate vector
+     & CHORDS(NSMAX, NFMAX), ! chord length vectorm
+     & AINCS(NSMAX, NFMAX), ! incidence angle vector
+     & XASEC(IBX, NSMAX, NFMAX),  ! the x coordinate aifoil section
+     & SASEC(IBX, NSMAX, NFMAX),  ! slope of camber line at xasec
+     & TASEC(IBX, NSMAX, NFMAX),   ! thickness at xasec
+     & CLCDSEC(6, NSMAX, NFMAX),
+     & CLAF(NSMAX, NFMAX),
+     & XHINGED(ICONX, NSMAX, NFMAX), ! hinge location
+     & VHINGED(3, ICONX, NSMAX, NFMAX), ! hinge vector
+     & GAIND(ICONX, NSMAX, NFMAX), ! control surface gain
+     & REFLD(ICONX, NSMAX, NFMAX), ! control surface reflection
+     & GAING(ICONX, NSMAX, NFMax)  ! desgin variable gain
 
-
-C     & CLCDSEC(6, NSMAX, NFMAX),
-C     & CLAF(NSMAX, NFMAX),
-
-C     & XHINGED(ICONX, NSMAX, NFMAX),
-C     & VHINGED(3, ICONX, NSMAX, NFMAX),
-C     & GAIND(ICONX, NSMAX, NFMAX),
-C     & REFLD(ICONX, NSMAX, NFMAX),
-C     & GAING(ICONX, NSMAX, NFMax),
 
 C      !!--- end added variables for python geometry minipulation ---
 
