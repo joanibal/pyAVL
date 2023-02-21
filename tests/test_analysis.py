@@ -22,12 +22,11 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=True)
 
     def test_constrained_alpha_sweep(self):
-        self.avl_solver.addConstraint("D1", 0.00)
-        self.avl_solver.addConstraint("D2", 0.00)
-
+        self.avl_solver.addConstraint('Elevator',  0.00, con_var='Cm pitch moment')
+        self.avl_solver.addConstraint('Rudder', 0.00, con_var="Cn yaw moment")
         self.avl_solver.alphaSweep(0, 10)
 
         np.testing.assert_allclose(
@@ -71,8 +70,8 @@ class TestAnalysisSweep(unittest.TestCase):
         np.testing.assert_allclose(self.avl_solver.CM, np.zeros_like(self.avl_solver.CM), atol=1e-8)
 
     def test_constrained_cl_sweep(self):
-        self.avl_solver.addConstraint("D1", 0.00)
-        self.avl_solver.addConstraint("D2", 0.00)
+        self.avl_solver.addConstraint('Elevator',  0.00, con_var='Cm pitch moment')
+        self.avl_solver.addConstraint('Rudder', 0.00, con_var="Cn yaw moment")
         start_cl = 0.6
         end_cl = 1.6
         increment = 0.1
@@ -99,3 +98,6 @@ class TestAnalysisSweep(unittest.TestCase):
             rtol=1e-4,
         )
         np.testing.assert_allclose(self.avl_solver.CM, np.zeros_like(self.avl_solver.CM), atol=1e-8)
+
+if __name__ == "__main__":
+    unittest.main()
