@@ -75,9 +75,7 @@ class AVLSolver(object):
         self.cref = self.avl.case_r.cref
         self.sref = self.avl.case_r.sref
 
-        # store the control surfaces variables
-        control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
-
+        control_names = self.get_control_names()
         self.control_variables = {}
         for idx_c_var, c_name in enumerate(control_names):
             self.control_variables[c_name] = f"D{idx_c_var+1}"
@@ -252,6 +250,10 @@ class AVLSolver(object):
         for cl in CLs:
             self.addTrimCondition("CL", cl)
             self.executeRun()
+
+    def get_control_names(self) -> list[str]:
+        control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
+        return control_names
 
     def get_surface_names(self) -> list[str]:
         """get the surface names from the geometry"""
