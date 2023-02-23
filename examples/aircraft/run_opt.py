@@ -19,6 +19,7 @@ class AVLSolverComp(om.ExplicitComponent):
         # add the geometric parameters as inputs
         surf_data = self.avl_solver.get_surface_params(geom_only=True)
 
+        # HACK: for now, just add the aincs as an input. need to talk with opendao team about not computing full jacobian
         # for surf in surf_data:
         #     for key in surf_data[surf]:
         # self.add_input(f"{surf}:{key}", val=surf_data[surf][key], tags="geom")
@@ -97,7 +98,6 @@ model.add_constraint("avlsolver.Cm", equals=0.0)
 model.add_objective("avlsolver.CD")
 prob = om.Problem(model)
 prob.driver = om.pyOptSparseDriver()
-# prob.driver.options["optimizer"] = "SNOPT"
 prob.driver.options["optimizer"] = "SLSQP"
 prob.driver.opt_settings = {
     "IFILE": "SLSQP_print.out",
