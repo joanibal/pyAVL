@@ -15,7 +15,7 @@ MACH MDAO AVL
 #Xref    Yref    Zref
 0.0837252385711 0.0 0.0
 # CDp
-0.0
+0.011600
 
 #======================================================
 #--------------------- Main Wing ----------------------
@@ -24,8 +24,8 @@ SURFACE
 Wing
 #Nchordwise  Cspace   [Nspan   Sspace]
      7        1.0      20      -2.0
-# YDUPLICATE
-# 0.0
+YDUPLICATE
+0.0
 SCALE
 1.0  1.0  1.0
 TRANSLATE

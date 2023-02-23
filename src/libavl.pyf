@@ -539,6 +539,9 @@ python module libavl ! in
         
         subroutine update_surfaces ! in :libavl:amake.f
         end subroutine update_surfaces
+        
+        subroutine encalc ! in :libavl:amake.f
+        end subroutine encalc
 
 
     end interface 

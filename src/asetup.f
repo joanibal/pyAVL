@@ -47,7 +47,9 @@ C
 C
 C
       IF(.NOT.LAIC) THEN
-C        WRITE(*,*) ' Building normalwash AIC matrix...'
+        if (lverbose) then
+          WRITE(*,*) ' Building normalwash AIC matrix...'
+        end if
        CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
      &           NVOR,RV1,RV2,NSURFV,CHORDV,
      &           NVOR,RC ,    NSURFV,.FALSE.,

@@ -1063,8 +1063,10 @@ C
       SUBROUTINE RUNINI
       INCLUDE 'AVL.INC'
 C
-C       WRITE(*,*)
-C       WRITE(*,*) 'Initializing run cases...'
+      if (lverbose) then 
+            WRITE(*,*)
+            WRITE(*,*) 'Initializing run cases...'
+      end if
 C
 C---- go over all run cases
       DO IR = 1, NRMAX
@@ -1075,10 +1077,15 @@ C------ index of default constraint for each variable
         ICON(IVROTY,IR) = ICROTY
         ICON(IVROTZ,IR) = ICROTZ
 C
-C         WRITE(*,*)  "========================="
+        
+c      !   if (lverbose)then 
+c      !       WRITE(*,*)  "========================="
+c      !   end if 
 
 C------ default constraint values
-C         WRITE(*,*) "ICALFA", ICALFA
+c      !   if (lverbose)then 
+c            ! WRITE(*,*) "ICALFA", ICALFA
+c      !   end if
         DO IC = 1, ICTOT
           CONVAL(IC,IR) = 0.
 C           WRITE(*,*) "CONVAL(IC,IR)", CONVAL(IC,IR)

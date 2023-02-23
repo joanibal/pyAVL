@@ -126,7 +126,11 @@ class AVLSolver(object):
             raise ValueError(
                 f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}."
             )
-
+        
+        # check that the type of val is correct
+        if not isinstance(val, (int, float)):
+            raise TypeError(f"contraint `val` must be a number. Got {type(val)}")
+        
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
     def addTrimCondition(self, variable, val):
@@ -260,8 +264,15 @@ class AVLSolver(object):
         surf_names = self._convertFortranStringArrayToList(self.avl.case_c.stitle)
         return surf_names
 
-    def get_surface_params(self) -> dict[str, dict[str:any]]:
-        """get the surface level parameters from the geometry"""
+    def get_surface_params(self, geom_only: bool = False) -> dict[str, dict[str:any]]:
+        """get the surface level parameters from the geometry
+        
+        geom_only: only return the geometry parameters of the surface
+            - xle, yle, zle, chord, twist
+            
+        
+        """
+        
         surf_names = self.get_surface_names()
         surf_data = {}
         for idx_surf, surf_name in enumerate(surf_names):
@@ -304,31 +315,43 @@ class AVLSolver(object):
                 "scale": self.avl.surf_geom_r.xyzscal[:, idx_surf].T,
                 "translate": self.avl.surf_geom_r.xyztran[:, idx_surf].T,
                 "angle": np.rad2deg(self.avl.surf_geom_r.addinc[idx_surf]),
-                "nchordwise": self.avl.surf_geom_i.nvc[idx_surf],
-                "cspace": self.avl.surf_geom_r.cspace[idx_surf],
-                "nspan": self.avl.surf_geom_i.nvs[idx_surf],
-                "sspace": self.avl.surf_geom_r.sspace[idx_surf],
-                "sspaces": self.avl.surf_geom_r.sspaces[:num_sec, idx_surf],
-                "nspans": self.avl.surf_geom_i.nspans[:num_sec, idx_surf],
+                
                 "xyzles": self.avl.surf_geom_r.xyzles[:, :num_sec, idx_surf].T,
                 "chords": self.avl.surf_geom_r.chords[:num_sec, idx_surf],
                 "aincs": self.avl.surf_geom_r.aincs[:num_sec, idx_surf],
                 "xasec": self.avl.surf_geom_r.xasec[:nasec, :num_sec, idx_surf].T,
                 "sasec": self.avl.surf_geom_r.sasec[:nasec, :num_sec, idx_surf].T,
                 "tasec": self.avl.surf_geom_r.tasec[:nasec, :num_sec, idx_surf].T,
-                "icontd": icontd,
-                "idestd": idestd,
-                "clcdsec": self.avl.surf_geom_r.clcdsec[:, :num_sec, idx_surf].T,
-                "claf": self.avl.surf_geom_r.claf[:num_sec, idx_surf],
-                "xhinged": xhinged,
-                "vhinged": vhinged,
-                "gaind": gaind,
-                "refld": refld,
-                "gaing": gaing,
-            }
 
-            if self.avl.surf_geom_l.ldupl[idx_surf]:
-                surf_data[surf_name]["yduplicate"] = self.avl.surf_geom_r.ydupl[idx_surf]
+            }
+            
+            if not geom_only:
+                
+                surf_data[surf_name].update({
+                    
+                    # paneling parameters    
+                    "nchordwise": self.avl.surf_geom_i.nvc[idx_surf],
+                    "cspace": self.avl.surf_geom_r.cspace[idx_surf],
+                    "nspan": self.avl.surf_geom_i.nvs[idx_surf],
+                    "sspace": self.avl.surf_geom_r.sspace[idx_surf],
+                    "sspaces": self.avl.surf_geom_r.sspaces[:num_sec, idx_surf],
+                    "nspans": self.avl.surf_geom_i.nspans[:num_sec, idx_surf],
+                                   
+                    # control surface variables
+                    "icontd": icontd,
+                    "idestd": idestd,
+                    "clcdsec": self.avl.surf_geom_r.clcdsec[:, :num_sec, idx_surf].T,
+                    "claf": self.avl.surf_geom_r.claf[:num_sec, idx_surf],
+                    "xhinged": xhinged,
+                    "vhinged": vhinged,
+                    "gaind": gaind,
+                    "refld": refld,
+                    "gaing": gaing,
+                })
+                
+
+                if self.avl.surf_geom_l.ldupl[idx_surf]:
+                    surf_data[surf_name]["yduplicate"] = self.avl.surf_geom_r.ydupl[idx_surf]
 
         return surf_data
 

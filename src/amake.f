@@ -540,9 +540,12 @@ c--------------------------------------------------------------
       NVOR = 0
       
       do ISURF=1,NSURF
-            write(*,*) 'Updating surface ',ISURF
+            if (lverbose) then 
+                  write(*,*) 'Updating surface ',ISURF
+            end if
             if (ISURF.ne.1) then
                   if(ldupl(isurf-1)) then 
+                        ! this surface has already been created
                         cycle
                   end if
                   call makesurf(ISURF)
@@ -554,6 +557,14 @@ c--------------------------------------------------------------
                   call sdupl(isurf,ydupl(isurf),'ydup')
             endif
       end do 
+      
+      CALL ENCALC
+      
+      LAIC = .FALSE.
+      LSRD = .FALSE.
+      LVEL = .FALSE.
+      LSOL = .FALSE.
+      LSEN = .FALSE.
       
       end subroutine update_surfaces
             
