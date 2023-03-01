@@ -157,7 +157,7 @@ class AVLSolver(object):
 
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
-    def get_case_total_data(self) -> dict[str, float]:
+    def get_case_total_data(self):
         # fmt: off
         # This dict has the following structure:
         # python key: [common block name, fortran varaiable name]
@@ -218,7 +218,7 @@ class AVLSolver(object):
 
         return val
 
-    def get_case_surface_data(self) -> dict[str, dict[str, float]]:
+    def get_case_surface_data(self):
         # fmt: off
         # This dict has the following structure:
         # python key: [common block name, fortran varaiable name]
@@ -264,7 +264,7 @@ class AVLSolver(object):
 
         return surf_data
 
-    def get_strip_data(self) -> dict[str, dict[str, np.ndarray]]:
+    def get_strip_data(self):
         # fmt: off
         var_to_avl_var = {
             # geometric quantities
@@ -432,16 +432,16 @@ class AVLSolver(object):
             self.add_trim_condition("CL", cl)
             self.executeRun()
 
-    def get_control_names(self) -> list[str]:
+    def get_control_names(self):
         control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
         return control_names
 
-    def get_surface_names(self) -> list[str]:
+    def get_surface_names(self):
         """get the surface names from the geometry"""
         surf_names = self._convertFortranStringArrayToList(self.avl.case_c.stitle)
         return surf_names
 
-    def get_surface_params(self, geom_only: bool = False) -> dict[str, dict[str:any]]:
+    def get_surface_params(self, geom_only: bool = False):
         """get the surface level parameters from the geometry
 
         geom_only: only return the geometry parameters of the surface
@@ -528,7 +528,7 @@ class AVLSolver(object):
 
         return surf_data
 
-    def set_surface_params(self, surf_data: dict[str, dict[str:any]]) -> None:
+    def set_surface_params(self, surf_data: dict[str, dict[str:any]]):
         """set the give surface data into the current avl object.
         ASSUMES THE CONTROL SURFACE DATA STAYS AT THE SAME LOCATION"""
         surf_names = self.get_surface_names()
@@ -629,15 +629,15 @@ class AVLSolver(object):
         self.surf_CD = np.empty(0)
 
     # Utility functions
-    def get_num_surfaces(self) -> int:
+    def get_num_surfaces(self):
         """Get the number of surfaces in the geometry"""
         return self.avl.case_i.nsurf
 
-    def get_num_strips(self) -> int:
+    def get_num_strips(self):
         """Get the number of strips in the mesh"""
         return self.avl.case_i.nstrip
 
-    def get_mesh_size(self) -> int:
+    def get_mesh_size(self):
         """Get the number of panels in the mesh"""
         return self.avl.case_i.nvor
 
@@ -683,7 +683,7 @@ class CaseData:
 
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         # Data used to normalize the other data (Sref, Cref, Bref, etc.)
         self.reference_data = {}
 
