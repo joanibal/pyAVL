@@ -23,7 +23,7 @@ for alpha in range(10):
     avl_solver.executeRun()
     run_data = avl_solver.get_case_total_data()
     print(
-        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
+        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM SA"]:10.6f}'
     )
 
 

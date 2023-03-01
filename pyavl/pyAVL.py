@@ -23,7 +23,7 @@ import os
 import time
 import copy
 from pprint import pprint
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Any
 
 # =============================================================================
 # External Python modules
@@ -442,7 +442,7 @@ class AVLSolver(object):
         surf_names = self._convertFortranStringArrayToList(self.avl.case_c.stitle)
         return surf_names
 
-    def get_surface_params(self, geom_only: bool = False) -> Dict[str, Dict[str:any]]:
+    def get_surface_params(self, geom_only: bool = False) -> Dict[str, Dict[str, Any]]:
         """get the surface level parameters from the geometry
 
         geom_only: only return the geometry parameters of the surface
@@ -529,7 +529,7 @@ class AVLSolver(object):
 
         return surf_data
 
-    def set_surface_params(self, surf_data: Dict[str, Dict[str:any]]) -> None:
+    def set_surface_params(self, surf_data: Dict[str, Dict[str, any]]) -> None:
         """set the give surface data into the current avl object.
         ASSUMES THE CONTROL SURFACE DATA STAYS AT THE SAME LOCATION"""
         surf_names = self.get_surface_names()
