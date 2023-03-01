@@ -57,8 +57,8 @@ class TestGeom(unittest.TestCase):
                     err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                 )
         
-        self.avl_solver.addConstraint("alpha", 6.00)
-        self.avl_solver.addConstraint("beta", 2.00)
+        self.avl_solver.add_constraint("alpha", 6.00)
+        self.avl_solver.add_constraint("beta", 2.00)
         self.avl_solver.executeRun()
 
         np.testing.assert_allclose(
@@ -84,8 +84,8 @@ class TestGeom(unittest.TestCase):
         assert self.avl_solver.get_num_strips() == 90
         assert self.avl_solver.get_mesh_size() == 780
         
-        self.avl_solver.addConstraint("alpha", 6.00)
-        self.avl_solver.addConstraint("beta", 2.00)
+        self.avl_solver.add_constraint("alpha", 6.00)
+        self.avl_solver.add_constraint("beta", 2.00)
         self.avl_solver.executeRun()
 
         np.testing.assert_allclose(

@@ -344,6 +344,9 @@ python module libavl ! in
             real*8 :: crtot
             real*8 :: cmtot
             real*8 :: cntot
+            real*8 :: crsax
+            real*8 :: cmsax
+            real*8 :: cnsax
             real*8 :: cdvtot
             real*8 :: cdtot_a
             real*8 :: cltot_a
@@ -503,7 +506,7 @@ python module libavl ! in
             common /vrtx_l/ lvnc,lvalbe
             common /case_z/ eval,evec,evaldat
             common /vrtx_i/ nsurfv
-            common /case_r/ version,dtr,pi,ysym,zsym,alfa,beta,vinf,vinf_a,vinf_b,wrot,dtimed,parval,conval,delcon,deldes,sref,cref,bref,xyzref,xyzref0,mach,mach0,cdref,cdref0,vrcore,srcore,clff,cyff,cdff,clff_u,cyff_u,cdff_u,clff_d,cyff_d,cdff_d,clff_g,cyff_g,cdff_g,spanef,spanef_a,spanef_u,spanef_d,spanef_g,cdtot,cltot,cxtot,cytot,cztot,crtot,cmtot,cntot,cdvtot,cdtot_a,cltot_a,cdtot_u,cltot_u,cxtot_u,cytot_u,cztot_u,crtot_u,cmtot_u,cntot_u,cdtot_d,cltot_d,cxtot_d,cytot_d,cztot_d,crtot_d,cmtot_d,cntot_d,cdtot_g,cltot_g,cxtot_g,cytot_g,cztot_g,crtot_g,cmtot_g,cntot_g,chinge,chinge_u,chinge_d,chinge_g,dcl_a0,dcm_a0,dcl_u0,dcm_u0,xnp
+            common /case_r/ version,dtr,pi,ysym,zsym,alfa,beta,vinf,vinf_a,vinf_b,wrot,dtimed,parval,conval,delcon,deldes,sref,cref,bref,xyzref,xyzref0,mach,mach0,cdref,cdref0,vrcore,srcore,clff,cyff,cdff,clff_u,cyff_u,cdff_u,clff_d,cyff_d,cdff_d,clff_g,cyff_g,cdff_g,spanef,spanef_a,spanef_u,spanef_d,spanef_g,cdtot,cltot,cxtot,cytot,cztot,crtot,cmtot,cntot,crsax,cmsax,cnsax,cdvtot,cdtot_a,cltot_a,cdtot_u,cltot_u,cxtot_u,cytot_u,cztot_u,crtot_u,cmtot_u,cntot_u,cdtot_d,cltot_d,cxtot_d,cytot_d,cztot_d,crtot_d,cmtot_d,cntot_d,cdtot_g,cltot_g,cxtot_g,cytot_g,cztot_g,crtot_g,cmtot_g,cntot_g,chinge,chinge_u,chinge_d,chinge_g,dcl_a0,dcm_a0,dcl_u0,dcm_u0,xnp
             common /case_l/ lgeo,lenc,laic,lsrd,lvel,lsol,lsen,lvisc,lmass,lcondef,ldesdef,lptot,lpsurf,lpstrp,lpele,lphinge,lpderiv,lbforce,lnasa_sa,lsa_rates,lmwait,lppar, lverbose
             common /case_i/ luinp,lurun,luout,lustd,lusys,iysym,izsym,matsym,nvor,nstrip,nsurf,nlnode,nbody,icon,nvtot,nctot,nptot,ncontrol,ndesign,nitmax,irun,nrun,irune,irunt,itrim,neigen,neigendat, cpscl
             common /case_c/ frndef,fprdef,fevdef,title,stitle,btitle,rtitle,dname,gname,varnam,connam,varkey,conkey,parnam,parunch

@@ -25,53 +25,65 @@ class TestAnalysisSweep(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     def test_constrained_alpha_sweep(self):
-        self.avl_solver.addConstraint('Elevator',  0.00, con_var='Cm pitch moment')
-        self.avl_solver.addConstraint('Rudder', 0.00, con_var="Cn yaw moment")
-        self.avl_solver.alphaSweep(0, 10)
+        self.avl_solver.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+        self.avl_solver.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 
-        np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array(
-                [
-                    1.229212,
-                    1.322154,
-                    1.414586,
-                    1.506469,
-                    1.597764,
-                    1.688435,
-                    1.778445,
-                    1.867757,
-                    1.956337,
-                    2.044148,
-                    2.131159,
-                ]
-            ),
-            rtol=1e-4,
+        alpha_array = np.arange(0, 10)
+        cl_ref_arr = np.array(
+            [
+                1.229212,
+                1.322154,
+                1.414586,
+                1.506469,
+                1.597764,
+                1.688435,
+                1.778445,
+                1.867757,
+                1.956337,
+                2.044148,
+                2.131159,
+            ]
         )
-        np.testing.assert_allclose(
-            self.avl_solver.CD,
-            np.array(
-                [
-                    0.03059,
-                    0.033488,
-                    0.036577,
-                    0.039849,
-                    0.043298,
-                    0.046915,
-                    0.050691,
-                    0.054619,
-                    0.058687,
-                    0.062887,
-                    0.067207,
-                ]
-            ),
-            rtol=1e-4,
+        cd_ref_arr = np.array(
+            [
+                0.03059,
+                0.033488,
+                0.036577,
+                0.039849,
+                0.043298,
+                0.046915,
+                0.050691,
+                0.054619,
+                0.058687,
+                0.062887,
+                0.067207,
+            ]
         )
-        np.testing.assert_allclose(self.avl_solver.CM, np.zeros_like(self.avl_solver.CM), atol=1e-8)
+        for idx_alpha, alpha in enumerate(alpha_array):
+            self.avl_solver.add_constraint("alpha", alpha)
+
+            self.avl_solver.executeRun()
+            run_data = self.avl_solver.get_case_total_data()
+
+            np.testing.assert_allclose(
+                cl_ref_arr[idx_alpha],
+                run_data["CL"],
+                rtol=1e-4,
+            )
+            np.testing.assert_allclose(
+                cd_ref_arr[idx_alpha],
+                run_data["CD"],
+                rtol=1e-4,
+            )
+            np.testing.assert_allclose(
+                run_data["CM SA"],
+                0.0,
+                atol=1e-8,
+            )
 
     def test_constrained_cl_sweep(self):
-        self.avl_solver.addConstraint('Elevator',  0.00, con_var='Cm pitch moment')
-        self.avl_solver.addConstraint('Rudder', 0.00, con_var="Cn yaw moment")
+        self.avl_solver.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+        self.avl_solver.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
         start_cl = 0.6
         end_cl = 1.6
         increment = 0.1
@@ -98,6 +110,7 @@ class TestAnalysisSweep(unittest.TestCase):
             rtol=1e-4,
         )
         np.testing.assert_allclose(self.avl_solver.CM, np.zeros_like(self.avl_solver.CM), atol=1e-8)
+
 
 if __name__ == "__main__":
     unittest.main()

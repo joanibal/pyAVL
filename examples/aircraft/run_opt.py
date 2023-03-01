@@ -42,7 +42,7 @@ class AVLSolverComp(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         for c_name in self.control_names:
-            self.avl_solver.addConstraint(c_name, inputs[c_name][0])
+            self.avl_solver.add_constraint(c_name, inputs[c_name][0])
 
         # update the surface parameters
         surf_data = self.avl_solver.get_surface_params()

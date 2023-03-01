@@ -177,6 +177,7 @@ C
      & CDTOT, CLTOT,          ! total CD,CL
      & CXTOT, CYTOT, CZTOT,   ! total Cx,Cy,Cz
      & CRTOT, CMTOT, CNTOT,   ! total Cl,Cm,Cn
+     & CRSAX, CMSAX, CNSAX,   ! total Cl,Cm,Cn in stability axis
      & CDVTOT,                ! total viscous CD
      & CDTOT_A, CLTOT_A,            ! sensitivities wrt alpha
      & CDTOT_U(NUMAX),CLTOT_U(NUMAX),                !sens wrt U,W

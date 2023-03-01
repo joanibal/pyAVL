@@ -973,13 +973,17 @@ C---- set VINF() vector from initial ALFA,BETA
 C
       IF(NCONTROL.GT.0) THEN
 C----- set GAM_D
-ccc       WRITE(*,*) ' Solving for vortex control-var sensitivities...'
+       if (lverbose) then
+           WRITE(*,*) ' Solving for vortex control-var sensitivities...'
+       end if 
        CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
       ENDIF
 C
       IF(NDESIGN.GT.0) THEN
 C----- set GAM_G
-ccc       WRITE(*,*) ' Solving for vortex  design-var sensitivities...'
+      if (lverbose) then
+          WRITE(*,*) ' Solving for vortex  design-var sensitivities...'
+      end if
        CALL GDCALC(NDESIGN ,LDESDEF,ENC_G,GAM_G)
       ENDIF
 C
@@ -1656,8 +1660,8 @@ C---- set freestream velocity components from alpha, beta
 C
 C---- calculate forces and sensitivities
       CALL AERO
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
 C
-C       WRITE(*,*) 'XNP:', XNP
 C---- set stability-axes rates (RX,RY,RZ) in terms of body-axes rates
       CA = COS(ALFA)
       SA = SIN(ALFA)
@@ -1684,9 +1688,9 @@ C
       WROT_A(3)  = -RZ*SA + RX*CA   !!! =  WROT(1)
 C
 C
-      CRSAX = CRTOT*CA + CNTOT*SA
+      CRSAX = DIR*(CRTOT*CA + CNTOT*SA)
       CMSAX = CMTOT              
-      CNSAX = CNTOT*CA - CRTOT*SA  
+      CNSAX = DIR*(CNTOT*CA - CRTOT*SA)
       CRSAX_A = -CRTOT*SA + CNTOT*CA
       CNSAX_A = -CNTOT*SA - CRTOT*CA
 C

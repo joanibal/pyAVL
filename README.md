@@ -36,11 +36,11 @@ from pyavl import AVLSolver
 import numpy as np
 
 avl_solver = AVLSolver(geo_file="aircraft.avl")
-avl_solver.addConstraint('alpha', 0.00)
+avl_solver.add_constraint('alpha', 0.00)
 
 # surface names form geometry file
-avl_solver.addConstraint('Elevator',  0.00, con_var='Cm pitch moment')
-avl_solver.addConstraint('Rudder', 0.00, con_var="Cn yaw moment")
+avl_solver.add_constraint('Elevator',  0.00, con_var='Cm pitch moment')
+avl_solver.add_constraint('Rudder', 0.00, con_var="Cn yaw moment")
 
 avl_solver.executeRun()
 

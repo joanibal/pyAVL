@@ -22,6 +22,7 @@ History
 import os
 import time
 import copy
+from pprint import pprint
 
 # =============================================================================
 # External Python modules
@@ -37,6 +38,7 @@ from . import MExt
 
 class AVLSolver(object):
     def __init__(self, geo_file=None, mass_file=None, debug=False):
+        # This is important for creating multiple instances of the AVL solver that do not share memory
         curDir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
         time.sleep(0.1)  # this is necessary for some reason?!
         self.avl = MExt.MExt("libavl", curDir, debug=debug)._module
@@ -80,7 +82,7 @@ class AVLSolver(object):
         for idx_c_var, c_name in enumerate(control_names):
             self.control_variables[c_name] = f"D{idx_c_var+1}"
 
-    def addConstraint(self, var, val, con_var=None):
+    def add_constraint(self, var, val, con_var=None):
         self.__exe = False
 
         avl_variables = {
@@ -126,14 +128,14 @@ class AVLSolver(object):
             raise ValueError(
                 f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}."
             )
-        
+
         # check that the type of val is correct
-        if not isinstance(val, (int, float)):
-            raise TypeError(f"contraint `val` must be a number. Got {type(val)}")
-        
+        if not isinstance(val, (int, float, np.floating, np.integer)):
+            raise TypeError(f"contraint `val` must be a int or float. Got {type(val)}")
+
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
-    def addTrimCondition(self, variable, val):
+    def add_trim_condition(self, variable, val):
         self.__exe = False
 
         options = {
@@ -155,10 +157,183 @@ class AVLSolver(object):
 
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
+    def get_case_total_data(self) -> dict[str, float]:
+        # fmt: off
+        # This dict has the following structure:
+        # python key: [common block name, fortran varaiable name]
+        var_to_avl_var = {
+            # lift and drag from surface integration (wind frame)
+            "CL": ["CASE_R", "CLTOT"],
+            "CD": ["CASE_R", "CDTOT"],
+            "CDv": ["CASE_R", "CDVTOT"], # viscous drag
+            
+            # lift and drag calculated from farfield integration
+            "CLff": ["CASE_R", "CLFF"],
+            "CYff": ["CASE_R", "CDFF"],
+            "CDi": ["CASE_R", "CDFF"], # viscous drag
+            
+            # non-dimensionalized forces 
+            "CX": ["CASE_R", "CXTOT"], 
+            "CY": ["CASE_R", "CYTOT"], 
+            "CZ": ["CASE_R", "CZTOT"],   
+            
+            # non-dimensionalized moments (body frame)
+            "CR BA": ["CASE_R", "CRTOT"],
+            "CM BA": ["CASE_R", "CMTOT"],
+            "CN BA": ["CASE_R", "CNTOT"],
+
+            # non-dimensionalized moments (stablity frame)
+            "CR SA": ["CASE_R", "CRSAX"],
+            "CM SA": ["CASE_R", "CMSAX"],
+            "CN SA": ["CASE_R", "CNSAX"],
+            
+            # spanwise efficiency
+            "e": ["CASE_R", "SPANEF"],
+        }
+        # fmt: on
+
+        total_data = {}
+
+        for key, avl_key in var_to_avl_var.items():
+            val = self.get_avl_fort_var(*avl_key)
+            # [()] becuase all the data is stored as a ndarray.
+            # for scalars this results in a 0-d array.
+            # It is easier to work with floats so we extract the value with [()]
+            total_data[key] = val[()]
+
+        return total_data
+
+    def get_avl_fort_var(self, common_block, variable):
+        # this had to be split up into two steps to work
+
+        # get the corresponding common block object.
+        # it must be lowercase becuase of f2py
+        common_block = getattr(self.avl, common_block.lower())
+
+        # get the value of the variable from the common block
+        val = getattr(common_block, variable.lower())
+
+        # convert from fortran ordering to c ordering
+        val = val.ravel(order="F").reshape(val.shape[::-1], order="C")
+
+        return val
+
+    def get_case_surface_data(self) -> dict[str, dict[str, float]]:
+        # fmt: off
+        # This dict has the following structure:
+        # python key: [common block name, fortran varaiable name]
+        var_to_avl_var = {
+            # surface contributions to total lift and drag from surface integration (wind frame)
+            "CL": ["SURF_R", "CLSURF"],
+            "CD": ["SURF_R", "CDSURF"],
+            "CDv": ["SURF_R", "CDVSURF"],  # viscous drag
+            
+            # non-dimensionalized forces 
+            "CX": ["SURF_R", "CXSURF"], 
+            "CY": ["SURF_R", "CYSURF"], 
+            "CZ": ["SURF_R", "CZSURF"],   
+            
+            # non-dimensionalized moments (body frame)
+            "CR": ["SURF_R", "CRSURF"],
+            "CM": ["SURF_R", "CMSURF"],
+            "CN": ["SURF_R", "CNSURF"],
+            
+            # forces non-dimentionalized by surface quantities
+            # uses surface area instead of sref and takes moments about leading edge
+            "CL surf" : ["SURF_R", "CL_SRF"],
+            "CD surf" : ["SURF_R", "CD_SRF"],
+            "CMLE surf" : ["SURF_R", "CMLE_SRF"],
+            
+            #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
+        }
+        # fmt: on
+
+        surf_names = self.get_surface_names()
+
+        # add a dictionary for each surface that will be filled later
+        surf_data = {}
+        for surf in surf_names:
+            surf_data[surf] = {}
+
+        for key, avl_key in var_to_avl_var.items():
+            vals = self.get_avl_fort_var(*avl_key)
+
+            # add the values to corresponding surface dict
+            for idx_surf, surf_name in enumerate(surf_names):
+                surf_data[surf_name][key] = vals[idx_surf]
+
+        return surf_data
+
+    def get_strip_data(self) -> dict[str, dict[str, np.ndarray]]:
+        # fmt: off
+        var_to_avl_var = {
+            # geometric quantities
+            "chord": ["STRP_R", "CHORD"],
+            "width": ["STRP_R", "WSTRIP"],
+            "XYZ LE": ["STRP_R", "RLE"], #control point leading edge coordinates
+            "twist": ["STRP_R", "AINC"],
+            
+            # strip contributions to total lift and drag from strip integration
+            "CL": ["STRP_R", "CLSTRP"],
+            "CD": ["STRP_R", "CDSTRP"],
+            
+            # strip contributions to non-dimensionalized forces 
+            "CX": ["STRP_R", "CXSTRP"], 
+            "CY": ["STRP_R", "CYSTRP"], 
+            "CZ": ["STRP_R", "CZSTRP"],   
+            
+            
+            # strip contributions to total moments (body frame)
+            "CM": ["STRP_R", "CMSTRP"],
+            "CN": ["STRP_R", "CNSTRP"],
+            "CR": ["STRP_R", "CRSTRP"],
+            
+            
+            # forces non-dimentionalized by strip quantities
+            "CL strip" : ["STRP_R", "CL_LSTRP"],
+            "CD strip" : ["STRP_R", "CD_LSTRP"],
+            "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
+            "CM strip" : ["STRP_R", "CF_STRP"], # moments in 3 directions
+        }    
+        
+        surf_names = self.get_surface_names()
+
+        # add a dictionary for each surface that will be filled later
+        strip_data = {}
+        for surf in surf_names:
+            strip_data[surf] = {}
+        
+        
+        for key, avl_key in var_to_avl_var.items():
+            
+            vals = self.get_avl_fort_var(*avl_key)
+            
+            # add the values to corresponding surface dict
+            for idx_surf, surf_name in enumerate(surf_names):
+                    
+                idx_srp_beg, idx_srp_end = self.get_surface_strip_indices(idx_surf)
+                strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
+            
+        return strip_data
+
+    def get_surface_strip_indices(self, idx_surf):
+        num_strips = np.trim_zeros(self.avl.surf_i.nj)
+        idx_srp_beg = np.sum(num_strips[:idx_surf])
+        idx_srp_end = np.sum(num_strips[: idx_surf + 1])
+
+        return idx_srp_beg, idx_srp_end
+
     def executeRun(self):
         self.__exe = True
 
+        # run the analysis (equivalent to the avl command `x` in the oper menu)
         self.avl.oper()
+        self.avl.calcst()
+        self.get_case_total_data()
+        # self.get_case_surface_data()
+        # self.get_strip_data()
+        # extract the resulting case data form the fortran layer
+        # The extracted data is stored in the CaseData object
 
         self.alpha = np.append(self.alpha, float(self.avl.case_r.alfa))  # *(180.0/np.pi) # returend in radians)
         self.beta = np.append(self.beta, float(self.avl.case_r.beta))  # *(180.0/np.pi) # returend in radians)
@@ -224,12 +399,12 @@ class AVLSolver(object):
         surf_CLs = (np.trim_zeros(self.avl.surf_r.clsurf)).reshape(len(np.trim_zeros(self.avl.surf_r.clsurf)), 1)
         surf_CDs = (np.trim_zeros(self.avl.surf_r.cdsurf)).reshape(len(np.trim_zeros(self.avl.surf_r.cdsurf)), 1)
 
-        if self.surf_CL.size == 0:
-            self.surf_CL = surf_CLs
-            self.surf_CD = surf_CDs
-        else:
-            self.surf_CL = surf_CLs = np.hstack((self.surf_CL, surf_CLs))
-            self.surf_CD = surf_CDs = np.hstack((self.surf_CD, surf_CDs))
+        # if self.surf_CL.size == 0:
+        #     self.surf_CL = surf_CLs
+        #     self.surf_CD = surf_CDs
+        # else:
+        #     self.surf_CL = surf_CLs = np.hstack((self.surf_CL, surf_CLs))
+        #     self.surf_CD = surf_CDs = np.hstack((self.surf_CD, surf_CDs))
 
     def calcNP(self):
         # executeRun must be run first
@@ -241,18 +416,20 @@ class AVLSolver(object):
         self.NP = self.avl.case_r.xnp
         # print 'Xnp:', self.avl.case_r.xnp
 
-    def alphaSweep(self, start_alpha, end_alpha, increment=1):
-        alphas = np.arange(start_alpha, end_alpha + increment, increment)
+    # def alphaSweep(self, start_alpha, end_alpha, increment=1):
+    #     alphas = np.arange(start_alpha, end_alpha + increment, increment)
 
-        for alf in alphas:
-            self.addConstraint("alpha", alf)
-            self.executeRun()
+    #     case_data = []
+    #     for alf in alphas:
+    #         self.add_constraint("alpha", alf)
+    #         self.executeRun()
+    #         case_data.append(self.get_case_total_data())
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
         CLs = np.arange(start_CL, end_CL + increment, increment)
 
         for cl in CLs:
-            self.addTrimCondition("CL", cl)
+            self.add_trim_condition("CL", cl)
             self.executeRun()
 
     def get_control_names(self) -> list[str]:
@@ -266,13 +443,13 @@ class AVLSolver(object):
 
     def get_surface_params(self, geom_only: bool = False) -> dict[str, dict[str:any]]:
         """get the surface level parameters from the geometry
-        
+
         geom_only: only return the geometry parameters of the surface
             - xle, yle, zle, chord, twist
-            
-        
+
+
         """
-        
+
         surf_names = self.get_surface_names()
         surf_data = {}
         for idx_surf, surf_name in enumerate(surf_names):
@@ -315,40 +492,36 @@ class AVLSolver(object):
                 "scale": self.avl.surf_geom_r.xyzscal[:, idx_surf].T,
                 "translate": self.avl.surf_geom_r.xyztran[:, idx_surf].T,
                 "angle": np.rad2deg(self.avl.surf_geom_r.addinc[idx_surf]),
-                
                 "xyzles": self.avl.surf_geom_r.xyzles[:, :num_sec, idx_surf].T,
                 "chords": self.avl.surf_geom_r.chords[:num_sec, idx_surf],
                 "aincs": self.avl.surf_geom_r.aincs[:num_sec, idx_surf],
                 "xasec": self.avl.surf_geom_r.xasec[:nasec, :num_sec, idx_surf].T,
                 "sasec": self.avl.surf_geom_r.sasec[:nasec, :num_sec, idx_surf].T,
                 "tasec": self.avl.surf_geom_r.tasec[:nasec, :num_sec, idx_surf].T,
-
             }
-            
+
             if not geom_only:
-                
-                surf_data[surf_name].update({
-                    
-                    # paneling parameters    
-                    "nchordwise": self.avl.surf_geom_i.nvc[idx_surf],
-                    "cspace": self.avl.surf_geom_r.cspace[idx_surf],
-                    "nspan": self.avl.surf_geom_i.nvs[idx_surf],
-                    "sspace": self.avl.surf_geom_r.sspace[idx_surf],
-                    "sspaces": self.avl.surf_geom_r.sspaces[:num_sec, idx_surf],
-                    "nspans": self.avl.surf_geom_i.nspans[:num_sec, idx_surf],
-                                   
-                    # control surface variables
-                    "icontd": icontd,
-                    "idestd": idestd,
-                    "clcdsec": self.avl.surf_geom_r.clcdsec[:, :num_sec, idx_surf].T,
-                    "claf": self.avl.surf_geom_r.claf[:num_sec, idx_surf],
-                    "xhinged": xhinged,
-                    "vhinged": vhinged,
-                    "gaind": gaind,
-                    "refld": refld,
-                    "gaing": gaing,
-                })
-                
+                surf_data[surf_name].update(
+                    {
+                        # paneling parameters
+                        "nchordwise": self.avl.surf_geom_i.nvc[idx_surf],
+                        "cspace": self.avl.surf_geom_r.cspace[idx_surf],
+                        "nspan": self.avl.surf_geom_i.nvs[idx_surf],
+                        "sspace": self.avl.surf_geom_r.sspace[idx_surf],
+                        "sspaces": self.avl.surf_geom_r.sspaces[:num_sec, idx_surf],
+                        "nspans": self.avl.surf_geom_i.nspans[:num_sec, idx_surf],
+                        # control surface variables
+                        "icontd": icontd,
+                        "idestd": idestd,
+                        "clcdsec": self.avl.surf_geom_r.clcdsec[:, :num_sec, idx_surf].T,
+                        "claf": self.avl.surf_geom_r.claf[:num_sec, idx_surf],
+                        "xhinged": xhinged,
+                        "vhinged": vhinged,
+                        "gaind": gaind,
+                        "refld": refld,
+                        "gaing": gaing,
+                    }
+                )
 
                 if self.avl.surf_geom_l.ldupl[idx_surf]:
                     surf_data[surf_name]["yduplicate"] = self.avl.surf_geom_r.ydupl[idx_surf]
@@ -416,6 +589,14 @@ class AVLSolver(object):
             self.avl.surf_geom_r.claf[:num_sec, idx_surf] = surf_data[surf_name]["claf"]
 
         self.avl.update_surfaces()
+
+    # def write_geom_file(self, filename):
+    #     """write the current avl geometry to a file"""
+    #     surf_geom = self.get_surface_params()
+
+    # def __write_surface(self, fid, surf_name, surf_data):
+    #     """write a surface to a file"""
+    #     fid.write("SURFACE
 
     def resetData(self):
         self.__exe = False
@@ -493,71 +674,29 @@ class AVLSolver(object):
 
         return strList
 
-    # def calcSectionalCPDist(self):
 
-    #     for N in [1, self.avl.case_i.nsurf]:
+class CaseData:
+    """class to hold the resulting data from a single run.
 
-    #         J1 = self.avl.surf_i.jfrst(N)
-    #         JN = J1 + self.avl.surf_i.nj - 1
-    #         JINC = 1
+    The data is stored in dictionaries that are indexed by the surface name.
+    The dictionary names are related to oper command used to show the data.
 
-    #         CPSCL = self.avl.   cpfac*  self.avl.case_r.cref
+    """
 
-    #         for
+    def __init__(self) -> None:
+        # Data used to normalize the other data (Sref, Cref, Bref, etc.)
+        self.reference_data = {}
 
-    #
+        # Data used to define the run conditions (alpha, beta, etc.)
+        self.condition_data = {}
 
+        # Data of the forces and moments for everything (total_data), each surface (surface_data), each body (body_data), each strip (strip_data), and each element (element_data)
+        self.total_data = {}
+        self.surface_data = {}
+        self.body_data = {}
+        self.strip_data = {}
+        self.element_data = {}
 
-#### fortran code
-
-#       DO N = 1, NSURF
-
-#         J1 = JFRST(N)
-#         JN = JFRST(N) + NJ(N)-1
-#         JINC = 1
-
-
-#            CPSCL = CPFAC*CREF
-
-
-#          IP = 0
-#          DO J = J1, JN, JINC
-#            I1 = IJFRST(J)
-#            NV = NVSTRP(J)
-#            DO II = 1, NV
-#              IV = I1 + II-1
-#              XAVE = RV(1,IV)
-#              YAVE = RV(2,IV)
-#              ZAVE = RV(3,IV)
-#              DELYZ = DCP(IV) * CPSCL
-#              XLOAD = XAVE
-#              YLOAD = YAVE + DELYZ*ENSY(J)
-#              ZLOAD = ZAVE + DELYZ*ENSZ(J)
-
-# c             XLOAD = XAVE + DELYZ*ENC(1,IV)
-# c             YLOAD = YAVE + DELYZ*ENC(2,IV)
-# c             ZLOAD = ZAVE + DELYZ*ENC(3,IV)
-
-#              IF(II.GT.1) THEN
-#                IP = IP+1
-#                PTS_LINES(1,1,IP) = XLOADOLD
-#                PTS_LINES(2,1,IP) = YLOADOLD
-#                PTS_LINES(3,1,IP) = ZLOADOLD
-#                PTS_LINES(1,2,IP) = XLOAD
-#                PTS_LINES(2,2,IP) = YLOAD
-#                PTS_LINES(3,2,IP) = ZLOAD
-#                ID_LINES(IP) = 0
-#              ENDIF
-#              XLOADOLD = XLOAD
-#              YLOADOLD = YLOAD
-#              ZLOADOLD = ZLOAD
-#            END DO
-#          END DO
-#          NLINES = IP
-#          NPROJ = 2*NLINES
-#          CALL VIEWPROJ(PTS_LINES,NPROJ,PTS_LPROJ)
-#          CALL PLOTLINES(NLINES,PTS_LPROJ,ID_LINES)
-#          CALL NEWCOLOR(ICOL)
-#          CALL NEWPEN(IPN)
-#         ENDIF
-# C
+        # Data of the stability derivatives in the stability axis (self.stability_axis_derivs) and body axis (self.body_axis_derivs)
+        self.stability_axis_derivs = {}
+        self.body_axis_derivs = {}
