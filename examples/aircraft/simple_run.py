@@ -11,7 +11,6 @@ avl_solver.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 avl_solver.set_case_parameter("Mach", 0.3)
 
 # This is the method that acutally runs the analysis
-avl_solver.executeRun()
 avl_solver.execute_run()
 
 print("----------------- alpha sweep ----------------")
