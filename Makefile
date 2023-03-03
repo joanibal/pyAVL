@@ -29,7 +29,7 @@ default:
 	# rm src/amode.o || :
 	# rm src/eispack.o || :
 
-	rm python/pyavl.so || :
+	rm pyavl/avl.so || :
 	ln -s ./config/config.LINUX_GFORTRAN.mk common.mk
 	( cd src && make) || exit 1; 
 	f2py  --fcompiler=gfortran --f77flags='-O2 -fdefault-real-8 -fPIC -g -fcheck=all' -c -m  libavl src/libavl.pyf src/libavl.a 

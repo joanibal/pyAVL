@@ -7,7 +7,7 @@ MACH MDAO AVL
 # SI Used: m, kg, etc
 
 #Mach
-0.0
+0.1
 #IYsym   IZsym   Zsym
  0       0       0
 #Sref    Cref    b_wing

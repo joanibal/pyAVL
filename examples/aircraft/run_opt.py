@@ -53,21 +53,19 @@ class AVLSolverComp(om.ExplicitComponent):
             # update the corresponding parameter in the surface data
             surf_data[surf][param] = inputs[input_var[0]]
 
-        # self.avl_solver.resetData()
 
-        # self.avl_solver.executeRun()
+        # self.avl_solver.execute_run()
         # print('aincs', inputs["Wing:aincs"], f"CL:{self.avl_solver.CL} CD:{self.avl_solver.CD} Cm:{self.avl_solver.CM}")
         self.avl_solver.set_surface_params(surf_data)
 
-        self.avl_solver.resetData()
 
-        self.avl_solver.executeRun()
+        self.avl_solver.execute_run()
 
         # set the outputs
-
-        outputs["CL"] = self.avl_solver.CL
-        outputs["CD"] = self.avl_solver.CD
-        outputs["Cm"] = self.avl_solver.CM
+        run_data = self.avl_solver.get_case_total_data()
+        outputs["CL"] = run_data["CL"]
+        outputs["CD"] = run_data["CD"]
+        outputs["Cm"] = run_data["Cm"]
         print(
             "aincs",
             inputs["Wing:aincs"],

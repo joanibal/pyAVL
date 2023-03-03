@@ -3,6 +3,8 @@
 
 python module libavl ! in 
     interface  ! in :libavl
+        ! TODO: import from AVL.INC directly to avoid duplication
+        ! include 'AVL.INC'
         subroutine avl ! in :libavl:avl.f
             ! parameters from include 'AINDEX.INC'
             parameter (ivtot=5)
@@ -542,6 +544,10 @@ python module libavl ! in
         
         subroutine update_surfaces ! in :libavl:amake.f
         end subroutine update_surfaces
+        
+        subroutine set_params(ir) ! in :libavl:amode.f
+            integer :: ir
+        end subroutine set_params
 
 
     end interface 

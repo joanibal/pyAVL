@@ -59,25 +59,25 @@ class TestGeom(unittest.TestCase):
         
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
-        self.avl_solver.executeRun()
+        self.avl_solver.execute_run()
 
+        
         np.testing.assert_allclose(
-            np.rad2deg(self.avl_solver.alpha),
-            np.array([6.0]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("alpha"),
+            6.0,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            np.rad2deg(self.avl_solver.beta),
-            np.array([2.0]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("beta"),
+            2.0,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array([5.407351]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("CL"),
+            5.407351081559913,
+            rtol=1e-8,
         )
         
-        self.avl_solver.resetData()
         self.avl_solver.set_surface_params(data)                
         
         assert self.avl_solver.get_num_surfaces() == 5
@@ -86,22 +86,22 @@ class TestGeom(unittest.TestCase):
         
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
-        self.avl_solver.executeRun()
+        self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            np.rad2deg(self.avl_solver.alpha),
-            np.array([6.0]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("alpha"),
+            6.0,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            np.rad2deg(self.avl_solver.beta),
-            np.array([2.0]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("beta"),
+            2.0,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array([5.407351]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("CL"),
+            5.407351081559913,
+            rtol=1e-8,
         )
 
         # data

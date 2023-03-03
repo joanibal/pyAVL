@@ -31,85 +31,92 @@ class TestAnalysisSweep(unittest.TestCase):
         alpha_array = np.arange(0, 10)
         cl_ref_arr = np.array(
             [
-                1.229212,
-                1.322154,
-                1.414586,
-                1.506469,
-                1.597764,
-                1.688435,
-                1.778445,
-                1.867757,
-                1.956337,
-                2.044148,
-                2.131159,
+                1.2349061238204873,
+                1.3282779560514677,
+                1.42113603863798  ,
+                1.5134418218893897,
+                1.6051572516385355,
+                1.6962448080698307,
+                1.7866675434128751,
+                1.8763891184181036,
+                1.9653738375342211,
+                2.053586682710641 
             ]
         )
         cd_ref_arr = np.array(
             [
-                0.03059,
-                0.033488,
-                0.036577,
-                0.039849,
-                0.043298,
-                0.046915,
-                0.050691,
-                0.054619,
-                0.058687,
-                0.062887,
-                0.067207,
+                0.030753634421301752,
+                0.033676747268002544,
+                0.03679211508827116 ,
+                0.040092804096450746,
+                0.04357129507051221 ,
+                0.047219503496354835,
+                0.05102880128527856 ,
+                0.0549900400052339  ,
+                0.05909357556230493 ,
+                0.06332929426488881 
             ]
         )
         for idx_alpha, alpha in enumerate(alpha_array):
             self.avl_solver.add_constraint("alpha", alpha)
 
-            self.avl_solver.executeRun()
+            self.avl_solver.execute_run()
             run_data = self.avl_solver.get_case_total_data()
-
+            
             np.testing.assert_allclose(
                 cl_ref_arr[idx_alpha],
                 run_data["CL"],
-                rtol=1e-4,
+                rtol=1e-8,
             )
             np.testing.assert_allclose(
                 cd_ref_arr[idx_alpha],
                 run_data["CD"],
-                rtol=1e-4,
+                rtol=1e-8,
             )
             np.testing.assert_allclose(
-                run_data["CM SA"],
+                run_data["CM"],
                 0.0,
                 atol=1e-8,
             )
-
+            
     def test_constrained_cl_sweep(self):
         self.avl_solver.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
         self.avl_solver.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
-        start_cl = 0.6
-        end_cl = 1.6
-        increment = 0.1
-        self.avl_solver.CLSweep(start_cl, end_cl, increment)
 
-        np.testing.assert_allclose(self.avl_solver.CL, np.arange(start_cl, end_cl + increment, increment))
-        np.testing.assert_allclose(
-            self.avl_solver.CD,
-            np.array(
-                [
-                    0.016546,
-                    0.018124,
-                    0.019949,
-                    0.022023,
-                    0.024343,
-                    0.02691,
-                    0.029722,
-                    0.032778,
-                    0.036076,
-                    0.039612,
-                    0.043385,
-                ]
-            ),
-            rtol=1e-4,
-        )
-        np.testing.assert_allclose(self.avl_solver.CM, np.zeros_like(self.avl_solver.CM), atol=1e-8)
+        cd_ref_arr = np.array([
+                            0.01654814255244833,
+                            0.018124778345018383,
+                            0.01994896285331091,
+                            0.02202067604738557,
+                            0.024339528639367926,
+                            0.026904749658315106,
+                            0.029715171166770832,
+                            0.03276920986323026,
+                            0.03606484526169707,
+                            0.03959959407831794,
+                            0.043370480383046583
+                        ])
+        cl_arr = np.arange(0.6, 1.7, 0.1)
+        for idx_cl, cl in enumerate(cl_arr):
+            self.avl_solver.add_trim_condition("CL", cl)
+            self.avl_solver.execute_run()
+            run_data = self.avl_solver.get_case_total_data()
+
+            np.testing.assert_allclose(
+                cl,
+                run_data["CL"],
+                rtol=1e-8,
+            )
+            np.testing.assert_allclose(
+                cd_ref_arr[idx_cl],
+                run_data["CD"],
+                rtol=1e-8,
+            )
+            np.testing.assert_allclose(
+                run_data["CM"],
+                0.0,
+                atol=1e-8,
+            )
 
 
 if __name__ == "__main__":

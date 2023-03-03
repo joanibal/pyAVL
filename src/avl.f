@@ -1103,6 +1103,7 @@ C------ default dimensional run case parameters
         ENDDO
         PARVAL(IPGEE,IR) = GEE0
         PARVAL(IPRHO,IR) = RHO0
+        PARVAL(IPMACH,IR) = MACH0
 C
 C------ default CG location is the input reference location
         PARVAL(IPXCG,IR) = XYZREF0(1)

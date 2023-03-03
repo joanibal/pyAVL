@@ -1197,20 +1197,24 @@ C
         IF(INFO .GE. 1) THEN
 C------- display Newton deltas
          IF(ITER.EQ.1) THEN
-C           WRITE(*,*)
-C           WRITE(*,1902) 'iter',
-C      &            ' d(alpha)  ',
-C      &            ' d(beta)   ',
-C      &            ' d(pb/2V)  ',
-C      &            ' d(qc/2V)  ',
-C      &            ' d(rb/2V)  ',
-C      &            (DNAME(K), K=1, NCONTROL)
+            if (lverbose) then
+           WRITE(*,*)
+           WRITE(*,1902) 'iter',
+     &            ' d(alpha)  ',
+     &            ' d(beta)   ',
+     &            ' d(pb/2V)  ',
+     &            ' d(qc/2V)  ',
+     &            ' d(rb/2V)  ',
+     &            (DNAME(K), K=1, NCONTROL)
+            endif
  1902     FORMAT(1X,A4,5A11,1X,30A11)
          ENDIF
-C          WRITE(*,1905) ITER, 
-C      &                 DAL/DTR, DBE/DTR, 
-C      &                 DWX*BREF/2.0, DWY*CREF/2.0, DWZ*BREF/2.0,
-C      &                 (DDC(K), K=1, NCONTROL)
+         if (lverbose) then
+       WRITE(*,1905) ITER, 
+     &                 DAL/DTR, DBE/DTR, 
+     &                 DWX*BREF/2.0, DWY*CREF/2.0, DWZ*BREF/2.0,
+     &                 (DDC(K), K=1, NCONTROL)
+         end if 
  1905    FORMAT(1X,I3,20E11.3)
         ENDIF
 C

@@ -32,105 +32,110 @@ class TestConstraints(unittest.TestCase):
     def test_angles(self):
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
-        self.avl_solver.executeRun()
+        self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            np.rad2deg(self.avl_solver.alpha),
-            np.array([6.0]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("alpha"),
+            6.0,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            np.rad2deg(self.avl_solver.beta),
-            np.array([2.0]),
-            rtol=1e-4,
+            self.avl_solver.get_case_parameter("beta"),
+            2.0,
+            rtol=1e-8,
+        )
+        run_data = self.avl_solver.get_case_total_data()
+        np.testing.assert_allclose(
+            run_data["CL"],
+            1.83005581269135,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array([1.821967]),
-            rtol=1e-4,
+            run_data["CD"],
+            0.054208182783309425,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CD,
-            np.array([0.053871]),
-            rtol=1e-4,
-        )
-        np.testing.assert_allclose(
-            self.avl_solver.CM,
-            np.array([-0.195797]),
-            rtol=1e-4,
+            run_data["CM"],
+            -0.19528584013607497,
+            rtol=1e-8,
         )
 
     def test_control_surfaces(self):
         self.avl_solver.add_constraint("D1", 10.00)
         self.avl_solver.add_constraint("D2", 5.00)
-        self.avl_solver.executeRun()
-        np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array([1.005553]),
-            rtol=1e-4,
-        )
-        np.testing.assert_allclose(
-            self.avl_solver.CD,
-            np.array([0.038557]),
-            rtol=1e-4,
-        )
-        np.testing.assert_allclose(
-            self.avl_solver.CM,
-            np.array([0.956897]),
-            rtol=1e-4,
-        )
+        self.avl_solver.execute_run()
+        run_data = self.avl_solver.get_case_total_data()
         
+        np.testing.assert_allclose(
+            run_data["CL"],
+            1.0106168310619361,
+            rtol=1e-8,
+        )
+        np.testing.assert_allclose(
+            run_data["CD"],
+            0.03876013948341263,
+            rtol=1e-8,
+        )
+        np.testing.assert_allclose(
+            run_data["CM"],
+            0.959676732257107,
+            rtol=1e-8,
+        )
+
     def test_control_surfaces_names(self):
         """test that the control surface names are can be used as well"""
         self.avl_solver.add_constraint("Elevator", 10.00)
         self.avl_solver.add_constraint("Rudder", 5.00)
-        self.avl_solver.executeRun()
+        self.avl_solver.execute_run()
+        run_data = self.avl_solver.get_case_total_data()
         np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array([1.005553]),
-            rtol=1e-4,
+            run_data["CL"],
+            1.0106168310619361,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CD,
-            np.array([0.038557]),
-            rtol=1e-4,
+            run_data["CD"],
+            0.03876013948341263,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CM,
-            np.array([0.956897]),
-            rtol=1e-4,
+            run_data["CM"],
+            0.959676732257107,
+            rtol=1e-8,
         )
 
     def test_trim(self):
         # TODO: parametrize for the other options
         self.avl_solver.add_trim_condition("CL", 1.0)
-        self.avl_solver.executeRun()
+        self.avl_solver.execute_run()
+        np.testing.assert_allclose(
+            self.avl_solver.get_case_parameter("alpha"),
+            -1.8615972119506075,
+            rtol=1e-8,
+        )
+        np.testing.assert_allclose(
+            self.avl_solver.get_case_parameter("beta"),
+            0.0,
+            rtol=1e-8,
+        )
 
+        run_data = self.avl_solver.get_case_total_data()
 
         np.testing.assert_allclose(
-            self.avl_solver.alpha,
-            np.array([-0.031734]),
-            rtol=1e-4,
+            run_data["CL"],
+            1.0,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.beta,
-            np.array([0.0]),
-            rtol=1e-4,
+            run_data["CD"],
+            0.025388893842317614,
+            rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.CL,
-            np.array([1.0]),
-            rtol=1e-4,
-        )
-        np.testing.assert_allclose(
-            self.avl_solver.CD,
-            np.array([0.025359]),
-            rtol=1e-4,
-        )
-        np.testing.assert_allclose(
-            self.avl_solver.CM,
-            np.array([0.252352]),
-            rtol=1e-4,
+            run_data["CM"],
+            0.2558492940049343,
+            rtol=1e-8,
         )
 
 

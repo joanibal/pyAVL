@@ -24,6 +24,7 @@ import time
 import copy
 from pprint import pprint
 from typing import Dict, List, Tuple, Union, Any
+import warnings
 
 # =============================================================================
 # External Python modules
@@ -43,8 +44,6 @@ class AVLSolver(object):
         curDir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
         time.sleep(0.1)  # this is necessary for some reason?!
         self.avl = MExt.MExt("libavl", curDir, debug=debug)._module
-
-        self.resetData()
 
         if not (geo_file is None):
             try:
@@ -83,9 +82,42 @@ class AVLSolver(object):
         for idx_c_var, c_name in enumerate(control_names):
             self.control_variables[c_name] = f"D{idx_c_var+1}"
 
-    def add_constraint(self, var, val, con_var=None):
-        self.__exe = False
+        #  the case parameters are stored in a 1d array,
+        # these indices correspond to the position of each parameter in that arra
+        self.param_idx_dict = {
+            "alpha": 0,
+            "beta": 1,
+            "pb/2V": 2,
+            "qc/2V": 3,
+            "rb/2V": 4,
+            "CL": 5,
+            "CD0": 6,
+            "bank": 7,
+            "elevation": 8,
+            "heading": 9,
+            "Mach": 10,
+            "velocity": 11,
+            "density": 12,
+            "grav.acc.": 13,
+            "turn rad.": 14,
+            "load fac.": 15,
+            "X cg": 16,
+            "Y cg": 17,
+            "Z cg": 18,
+            "mass": 19,
+            "Ixx": 20,
+            "Iyy": 21,
+            "Izz": 22,
+            "Ixy": 23,
+            "Iyz": 24,
+            "Izx": 25,
+            "visc CL_a": 26,
+            "visc CL_u": 27,
+            "visc CM_a": 28,
+            "visc CM_u": 29,
+        }
 
+    def add_constraint(self, var, val, con_var=None):
         avl_variables = {
             "alpha": "A",
             "beta": "B",
@@ -137,8 +169,6 @@ class AVLSolver(object):
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
     def add_trim_condition(self, variable, val):
-        self.__exe = False
-
         options = {
             "bankAng": ["B"],
             "CL": ["C"],
@@ -146,9 +176,9 @@ class AVLSolver(object):
             "mass": ["M"],
             "dens": ["D"],
             "G": ["G"],
-            "X_cg": ["X"],
-            "Y_cg": ["Y"],
-            "Z_cg": ["Z"],
+            "X cg": ["X"],
+            "Y cg": ["Y"],
+            "Z cg": ["Z"],
         }
 
         if not (variable in options):
@@ -180,12 +210,12 @@ class AVLSolver(object):
             
             # non-dimensionalized moments (body frame)
             "CR BA": ["CASE_R", "CRTOT"],
-            "CM BA": ["CASE_R", "CMTOT"],
+            "CM": ["CASE_R", "CMTOT"],
             "CN BA": ["CASE_R", "CNTOT"],
 
             # non-dimensionalized moments (stablity frame)
             "CR SA": ["CASE_R", "CRSAX"],
-            "CM SA": ["CASE_R", "CMSAX"],
+            # "CM SA": ["CASE_R", "CMSAX"], # This is the same in both frames
             "CN SA": ["CASE_R", "CNSAX"],
             
             # spanwise efficiency
@@ -216,6 +246,20 @@ class AVLSolver(object):
 
         # convert from fortran ordering to c ordering
         val = val.ravel(order="F").reshape(val.shape[::-1], order="C")
+
+        return val
+
+    def set_avl_fort_var(self, common_block, variable, val):
+        # convert from fortran ordering to c ordering
+        val = val.ravel(order="C").reshape(val.shape[::-1], order="F")
+
+        # this had to be split up into two steps to work
+        # get the corresponding common block object.
+        # it must be lowercase becuase of f2py
+        common_block = getattr(self.avl, common_block.lower())
+
+        # get the value of the variable from the common block
+        setattr(common_block, variable.lower(), val)
 
         return val
 
@@ -264,6 +308,59 @@ class AVLSolver(object):
                 surf_data[surf_name][key] = vals[idx_surf]
 
         return surf_data
+
+    def get_case_parameter(self, param_key: str) -> float:
+        """
+        analogous to ruinont Modify parameters for the oper menu to view parameters.
+        """
+        parvals = self.get_avl_fort_var("CASE_R", "PARVAL")
+
+        # [0] becuase pyavl only supports 1 run case
+        param_val = parvals[0][self.param_idx_dict[param_key]]
+
+        return param_val
+
+    def set_case_parameter(self, param_key: str, param_val: float) -> None:
+        """
+        analogous to ruinont Modify parameters for the oper menu to view parameters.
+        """
+        # warn the user that alpha, beta,
+        if param_key is ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]:
+            raise ValueError(
+                "alpha, beta, pb/2V, qc/2V, rb/2V, and CL are not allowed to be set,\n\
+                             they are calculated during each run based on the contraints. to specify\n\
+                             one of these values use the set_contrain method."
+            )
+
+        parvals = self.get_avl_fort_var("CASE_R", "PARVAL")
+        # [0] becuase pyavl only supports 1 run case
+        parvals[0][self.param_idx_dict[param_key]] = param_val
+
+        self.set_avl_fort_var("CASE_R", "PARVAL", parvals)
+
+        # (1) here becuase we want to set the first runcase with fortran indexing (the only one)
+        self.avl.set_params(1)
+
+    # def get_condition_data(self) -> Dict[str, float]:
+    #     """get the data defining the run condition from the fortran layer"""
+    #     # fmt: off
+    #     var_to_avl_var = {
+    #         "alpha": ["CASE_R", "ALPHA"],
+    #         "beta": ["CASE_R", "BETA"],
+    #         "Vinf": ["CASE_R", "VINF"],
+    #         "mach": ["CASE_R", "MACH"],
+    #     }
+    #     # fmt: on
+    #     condition_data = {}
+
+    #     for key, avl_key in var_to_avl_var.items():
+    #         val = self.get_avl_fort_var(*avl_key)
+    #         # [()] becuase all the data is stored as a ndarray.
+    #         # for scalars this results in a 0-d array.
+    #         # It is easier to work with floats so we extract the value with [()]
+    #         condition_data[key] = val[()]
+
+    #     return condition_data
 
     def get_strip_data(self) -> Dict[str, Dict[str, np.ndarray]]:
         # fmt: off
@@ -325,113 +422,22 @@ class AVLSolver(object):
         return idx_srp_beg, idx_srp_end
 
     def executeRun(self):
-        self.__exe = True
+        warnings.warn("executeRun is deprecated, use execute_run instead")
+        self.execute_run()
 
+    def execute_run(self):
         # run the analysis (equivalent to the avl command `x` in the oper menu)
         self.avl.oper()
+
+        # needed for stability derivaties
         self.avl.calcst()
-        self.get_case_total_data()
-        # self.get_case_surface_data()
-        # self.get_strip_data()
-        # extract the resulting case data form the fortran layer
-        # The extracted data is stored in the CaseData object
-
-        self.alpha = np.append(self.alpha, float(self.avl.case_r.alfa))  # *(180.0/np.pi) # returend in radians)
-        self.beta = np.append(self.beta, float(self.avl.case_r.beta))  # *(180.0/np.pi) # returend in radians)
-        self.CL = np.append(self.CL, float(self.avl.case_r.cltot))
-        self.CD = np.append(
-            self.CD, float(self.avl.case_r.cdtot)
-        )  # = np append(self.avl.case_r.cdvtot)  for total viscous)
-        self.CDV = np.append(
-            self.CDV, float(self.avl.case_r.cdvtot)
-        )  # = np append(self.avl.case_r.cdvtot)  for total viscous)
-        self.CDFF = np.append(self.CDFF, float(self.avl.case_r.cdff))
-        self.CM = np.append(self.CM, float(self.avl.case_r.cmtot))
-        self.span_eff = np.append(self.span_eff, float(self.avl.case_r.spanef))
-
-        deflecs = (np.trim_zeros(self.avl.case_r.delcon)).reshape(len(np.trim_zeros(self.avl.case_r.delcon)), 1)
-        # print deflecs,  self.avl.case_r.delcon
-        # x.astype(int)
-
-        if self.control_deflection.size == 0:
-            self.control_deflection = deflecs
-        else:
-            self.control_deflection = np.hstack((self.control_deflection, deflecs))
-
-        self.velocity = np.append(self.velocity, np.asarray(self.avl.case_r.vinf))
-
-        # get section properties
-        # NS = self.avl.surf_i.nj[0]
-        num_strips = np.trim_zeros(self.avl.surf_i.nj)
-
-        # print NS
-        # print np.trim_zeros(self.avl.strp_r.clstrp[:])
-
-        # start = 0
-        sec_CLs = []
-        sec_CDs = []
-        sec_CMs = []
-        sec_CNs = []
-        sec_CRs = []
-        sec_Chords = []
-        sec_Yles = []
-        sec_widths = []
-        end = 0
-        for i in range(0, len(num_strips)):
-            start = end
-            end = start + num_strips[i]
-            sec_CLs.append(self.avl.strp_r.clstrp[start:end])
-            sec_CDs.append(self.avl.strp_r.cdstrp[start:end])
-            sec_CMs.append(self.avl.strp_r.cmstrp[start:end])
-            sec_CNs.append(self.avl.strp_r.cnstrp[start:end])
-            sec_CRs.append(self.avl.strp_r.crstrp[start:end])
-            sec_Chords.append(self.avl.strp_r.chord[start:end])
-            sec_Yles.append(self.avl.strp_r.rle[1][start:end])
-            sec_widths.append(self.avl.strp_r.wstrip[start:end])
-
-        self.sec_CL.append(sec_CLs)
-        self.sec_CD.append(sec_CDs)
-        self.sec_CM.append(sec_CMs)
-        self.sec_CN.append(sec_CNs)
-        self.sec_CR.append(sec_CRs)
-        self.sec_Chord = sec_Chords
-        self.sec_Yle = sec_Yles
-        self.sec_width = sec_widths
-        surf_CLs = (np.trim_zeros(self.avl.surf_r.clsurf)).reshape(len(np.trim_zeros(self.avl.surf_r.clsurf)), 1)
-        surf_CDs = (np.trim_zeros(self.avl.surf_r.cdsurf)).reshape(len(np.trim_zeros(self.avl.surf_r.cdsurf)), 1)
-
-        # if self.surf_CL.size == 0:
-        #     self.surf_CL = surf_CLs
-        #     self.surf_CD = surf_CDs
-        # else:
-        #     self.surf_CL = surf_CLs = np.hstack((self.surf_CL, surf_CLs))
-        #     self.surf_CD = surf_CDs = np.hstack((self.surf_CD, surf_CDs))
-
-    def calcNP(self):
-        # executeRun must be run first
-
-        if not (self.__exe):
-            raise RuntimeError(":  executeRun() must be called first")
-
-        self.avl.calcst()
-        self.NP = self.avl.case_r.xnp
-        # print 'Xnp:', self.avl.case_r.xnp
-
-    # def alphaSweep(self, start_alpha, end_alpha, increment=1):
-    #     alphas = np.arange(start_alpha, end_alpha + increment, increment)
-
-    #     case_data = []
-    #     for alf in alphas:
-    #         self.add_constraint("alpha", alf)
-    #         self.executeRun()
-    #         case_data.append(self.get_case_total_data())
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
         CLs = np.arange(start_CL, end_CL + increment, increment)
 
         for cl in CLs:
             self.add_trim_condition("CL", cl)
-            self.executeRun()
+            self.execute_run()
 
     def get_control_names(self) -> List[str]:
         control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
@@ -599,36 +605,6 @@ class AVLSolver(object):
     #     """write a surface to a file"""
     #     fid.write("SURFACE
 
-    def resetData(self):
-        self.__exe = False
-
-        self.alpha = np.zeros(0)
-        self.beta = np.zeros(0)
-        self.CL = np.zeros(0)
-        self.CD = np.zeros(0)
-        self.CDV = np.zeros(0)
-        self.CDFF = np.zeros(0)
-        self.CM = np.zeros(0)
-        self.span_eff = np.zeros(0)
-
-        self.elev_def = np.zeros(0)
-        self.rud_def = np.zeros(0)
-
-        self.velocity = np.zeros(0)
-
-        self.control_deflection = np.empty(0)
-
-        self.sec_CL = []
-        self.sec_CD = []
-        self.sec_CM = []
-        self.sec_CN = []
-        self.sec_CR = []
-        self.sec_Chord = []
-        self.sec_Yle = []
-
-        self.surf_CL = np.empty(0)
-        self.surf_CD = np.empty(0)
-
     # Utility functions
     def get_num_surfaces(self) -> int:
         """Get the number of surfaces in the geometry"""
@@ -687,9 +663,6 @@ class CaseData:
     def __init__(self) -> None:
         # Data used to normalize the other data (Sref, Cref, Bref, etc.)
         self.reference_data = {}
-
-        # Data used to define the run conditions (alpha, beta, etc.)
-        self.condition_data = {}
 
         # Data of the forces and moments for everything (total_data), each surface (surface_data), each body (body_data), each strip (strip_data), and each element (element_data)
         self.total_data = {}

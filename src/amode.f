@@ -123,10 +123,11 @@ C
  815  CONTINUE
 C------------------------------------------------------
       IF    (COMAND.EQ.'    ') THEN
-       IF(LPLOT) CALL PLEND
-       LPLOT = .FALSE.
-       CALL CLRZOOM
-       IRUN = IRUN0
+      ! removed plotting
+      !  IF(LPLOT) CALL PLEND
+      !  LPLOT = .FALSE.
+      !  CALL CLRZOOM
+      !  IRUN = IRUN0
        RETURN
 C
       ELSEIF(COMAND.EQ.'?   ') THEN
@@ -232,12 +233,13 @@ C
           TMAX = 0.
           FMIN = 0.
           FMAX = 0.
-          CALL PLEMAP(XORG0,YORG0, 
-     &                IRUN1,IR,
-     &                KEVIEW,IRVIEW,
-     &                LPROOT,LPRNUM,OVERLAY,
-     &                TMIN,TMAX,TDEL,TFAC,
-     &                FMIN,FMAX,FDEL,FFAC )
+          ! removed plotting
+!           CALL PLEMAP(XORG0,YORG0, 
+!      &                IRUN1,IR,
+!      &                KEVIEW,IRVIEW,
+!      &                LPROOT,LPRNUM,OVERLAY,
+!      &                TMIN,TMAX,TDEL,TFAC,
+!      &                FMIN,FMAX,FDEL,FFAC )
 C
           WRITE(*,*)
           CALL EIGLST(6,IR)
@@ -256,12 +258,13 @@ C-------------------------------------------------------------------
 C
  51     XORG0 = 0.0
         YORG0 = 0.0
-        CALL PLEMAP(XORG0,YORG0, 
-     &              IRUN1,IRUN2,
-     &              KEVIEW,IRVIEW,
-     &              LPROOT,LPRNUM,OVERLAY,
-     &              TMIN,TMAX,TDEL,TFAC,
-     &              FMIN,FMAX,FDEL,FFAC )
+        ! removed plotting
+!         CALL PLEMAP(XORG0,YORG0, 
+!      &              IRUN1,IRUN2,
+!      &              KEVIEW,IRVIEW,
+!      &              LPROOT,LPRNUM,OVERLAY,
+!      &              TMIN,TMAX,TDEL,TFAC,
+!      &              FMIN,FMAX,FDEL,FFAC )
         CHPLOT = COMAND(1:2)
 C
 C-------------------------------------------------------------------
@@ -281,18 +284,20 @@ C------ make root map plot first
         TMAX = 0.
         FMIN = 0.
         FMAX = 0.
-        CALL PLEMAP(XORG0,YORG0, 
-     &              IRUN1,IRUN2,
-     &              KEVIEW,IRVIEW,
-     &              LPROOT,LPRNUM,OVERLAY,
-     &              TMIN,TMAX,TDEL,TFAC,
-     &              FMIN,FMAX,FDEL,FFAC )
+      ! removed plotting
+!         CALL PLEMAP(XORG0,YORG0, 
+!      &              IRUN1,IRUN2,
+!      &              KEVIEW,IRVIEW,
+!      &              LPROOT,LPRNUM,OVERLAY,
+!      &              TMIN,TMAX,TDEL,TFAC,
+!      &              FMIN,FMAX,FDEL,FFAC )
        ENDIF
 C
        WRITE(*,*)
        WRITE(*,*) 'Click on root of eigenmode to be viewed...'
 C
-       CALL GETCURSORXY(XC1,YC1,CHKEY)
+      ! removed plotting
+      !  CALL GETCURSORXY(XC1,YC1,CHKEY)
        XE1 = (XC1-XORG0)/TFAC + TMIN
        YE1 = (YC1-YORG0)/FFAC + FMIN
 C
@@ -335,7 +340,8 @@ C
         GO TO 810
        ENDIF
 C
-       CALL PLOTMD(AZIMOB, ELEVOB, TILTOB, ROBINV, KEIG, IR)
+      ! removed plotting
+      !  CALL PLOTMD(AZIMOB, ELEVOB, TILTOB, ROBINV, KEIG, IR)
 C
        KEVIEW = KEIG
        IRVIEW = IR
@@ -352,12 +358,14 @@ C---- Blowup window
 C
        DCROSS = 2.0
        WRITE(*,*) 'Mark off corners of blowup area'
-       CALL GETCURSORXY(XC1,YC1,CHKEY)
-       CALL PLSYMB(XC1,YC1,DCROSS,3,0.0,0)
-       CALL PLFLUSH
-       CALL GETCURSORXY(XC2,YC2,CHKEY)
-       CALL PLSYMB(XC2,YC2,DCROSS,3,0.0,0)
-       CALL PLFLUSH
+      !  CALL GETCURSORXY(XC1,YC1,CHKEY)
+      ! removing plotting
+      !  CALL PLSYMB(XC1,YC1,DCROSS,3,0.0,0)
+      !  CALL PLFLUSH
+      !  CALL GETCURSORXY(XC2,YC2,CHKEY)
+      ! removing plotting
+      !  CALL PLSYMB(XC2,YC2,DCROSS,3,0.0,0)
+      !  CALL PLFLUSH
 C
        XE1 = TMIN+(XC1-XORG0)/TFAC
        YE1 = FMIN+(YC1-YORG0)/FFAC
@@ -369,8 +377,9 @@ C
        FMIN = MIN( YE1 , YE2 )
        FMAX = MAX( YE1 , YE2 )
 C
-       CALL AXISADJ(TMIN,TMAX, TTOT, TDEL, NANN)
-       CALL AXISADJ(FMIN,FMAX, FTOT, FDEL, NANN)
+      ! removed plotting
+      !  CALL AXISADJ(TMIN,TMAX, TTOT, TDEL, NANN)
+      !  CALL AXISADJ(FMIN,FMAX, FTOT, FDEL, NANN)
 C
        COMAND = 'P   '
        GO TO 815
@@ -389,18 +398,20 @@ C
 C-------------------------------------------------------------------
 C---- Annotate
       ELSEIF(COMAND.EQ.'A   ') THEN
-       IF(LPLOT) THEN
-        CALL ANNOT(CH)
-       ELSE
-        WRITE(*,*) 'No active plot'
-       ENDIF
+      ! removed plotting
+            !  IF(LPLOT) THEN
+      !   CALL ANNOT(CH)
+      !  ELSE
+      !   WRITE(*,*) 'No active plot'
+      !  ENDIF
 C
 C-------------------------------------------------------------------
 C---- Hardcopy
       ELSEIF(COMAND.EQ.'H   ') THEN
-       IF(LPLOT) CALL PLEND
-       LPLOT = .FALSE.
-       CALL REPLOT(IDEVH)
+       ! removed plotting
+       ! IF(LPLOT) CALL PLEND
+      !  LPLOT = .FALSE.
+      !  CALL REPLOT(IDEVH)
 C
 C-------------------------------------------------------------------
 C---- Change time integration parameters
@@ -1681,6 +1692,29 @@ C
       END ! RUNLST
 
 
+      SUBROUTINE set_params(IR)
+      include 'AVL.INC'
+      integer IR
+            PHI   = PARVAL(IPPHI ,IR)
+            THE   = PARVAL(IPTHE ,IR)
+            MACH  = PARVAL(IPMACH,IR)
+            VEE   = PARVAL(IPVEE ,IR)
+            RHO   = PARVAL(IPRHO ,IR)
+            GEE   = PARVAL(IPGEE ,IR)
+            RMASS = PARVAL(IPMASS,IR)
+            RIXX  = PARVAL(IPIXX ,IR)
+            RIYY  = PARVAL(IPIYY ,IR)
+            RIZZ  = PARVAL(IPIZZ ,IR)
+            XCG   = PARVAL(IPXCG ,IR)
+            YCG   = PARVAL(IPYCG ,IR)
+            ZCG   = PARVAL(IPZCG ,IR)
+            CD0   = PARVAL(IPCD0 ,IR)
+            DCL_A = PARVAL(IPCLA ,IR)
+            DCL_U = PARVAL(IPCLU ,IR)
+            DCM_A = PARVAL(IPCMA ,IR)
+            DCM_U = PARVAL(IPCMU ,IR)
+      end subroutine set_params
+            
 
       SUBROUTINE PARMOD(IRE)
       INCLUDE 'AVL.INC'
@@ -1715,24 +1749,7 @@ C----- jump back here just for menu
        CALL CFRAC(IR,NRUN,PROMPT,NPR)
        WRITE(*,2000) PROMPT(1:NPR),RTITLE(IR)
 C
-       PHI   = PARVAL(IPPHI ,IR)
-       THE   = PARVAL(IPTHE ,IR)
-       MACH  = PARVAL(IPMACH,IR)
-       VEE   = PARVAL(IPVEE ,IR)
-       RHO   = PARVAL(IPRHO ,IR)
-       GEE   = PARVAL(IPGEE ,IR)
-       RMASS = PARVAL(IPMASS,IR)
-       RIXX  = PARVAL(IPIXX ,IR)
-       RIYY  = PARVAL(IPIYY ,IR)
-       RIZZ  = PARVAL(IPIZZ ,IR)
-       XCG   = PARVAL(IPXCG ,IR)
-       YCG   = PARVAL(IPYCG ,IR)
-       ZCG   = PARVAL(IPZCG ,IR)
-       CD0   = PARVAL(IPCD0 ,IR)
-       DCL_A = PARVAL(IPCLA ,IR)
-       DCL_U = PARVAL(IPCLU ,IR)
-       DCM_A = PARVAL(IPCMA ,IR)
-       DCM_U = PARVAL(IPCMU ,IR)
+       call set_params(ir)
 C
        WRITE(*,2105) 'B  bank      = ', PHI  , 'deg'
        WRITE(*,2105) 'E  elevation = ', THE  , 'deg'
