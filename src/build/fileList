@@ -1,0 +1,31 @@
+fortranFiles =
+
+f77Files =	aero.f\
+		aic.f\
+		ainput.f\
+		airutil.f\
+		amake.f\
+		amass.f\
+		amode.f\
+		aoper.f\
+		aoutput.f\
+		asetup.f\
+		atpforc.f\
+		atrim.f\
+		autil.f\
+		avl.f\
+		cdcl.f\
+		getvm.f\
+		hidden.f\
+		matrix.f\
+		matrix-lapack.f\
+		matrix-linpack.f\
+		matrix-lapack.f\
+		second.f\
+		second_g77.f\
+		second_ifc.f\
+		sgutil.f\
+		spline.f\
+		userio.f\
+		eispack.f\
+
