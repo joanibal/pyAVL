@@ -28,7 +28,7 @@ to install in development mode
 The API of pyAVL was made to mirror the usage of AVL through its text interface. 
 
 The AVL wrapper is implemented in the `AVLSolver` class. 
-To use this wrapper, first one must initialize the `AVLSoilver` object with a geometry file and optionally a mass file. 
+To use this wrapper, first one must initialize the `AVLSolver` object with a geometry file and optionally a mass file. 
 After, the user can add constraints and then execute the run to generate data. 
 Below is a basic example of this workflow. 
 ```python
