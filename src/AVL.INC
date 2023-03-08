@@ -116,7 +116,8 @@ C
      &        LBFORCE,
      &        LNASA_SA, LSA_RATES,
      &        LMWAIT,
-     &        LVERBOSE
+     &        LVERBOSE,
+     &        LTIMING
       LOGICAL LPPAR
       COMMON /CASE_L/
      & LGEO,   ! T if geometry exists
@@ -141,7 +142,8 @@ C
      & LSA_RATES,   ! T if stability-axis rates are to be used
      & LMWAIT,      ! T if mode display is to wait for real time
      & LPPAR(IPMAX),          ! T if parameter value is to be plotted
-     & LVERBOSE             ! debug flag to trigger writing out typical avl output
+     & LVERBOSE,             ! debug flag to trigger writing out typical avl output
+     & LTIMING             ! debug flag to trigger writing out timing info
       COMMON /CASE_R/
      & VERSION,          ! AVL version number
      & DTR,     PI,      ! 3.14159/180 ,  3.14159

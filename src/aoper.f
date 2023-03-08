@@ -920,6 +920,9 @@ C---------------------------------------------------
       INCLUDE 'AVL.INC'
       REAL VSYS(IVMAX,IVMAX), VRES(IVMAX), DDC(NDMAX), WORK(IVMAX)
       INTEGER IVSYS(IVMAX)
+      real t0, t1, t2, t3, t4, t5, t6, t7, t8, t9
+      real t10, t11, t12, t13, t14, t15, t16, t17, t18, t19
+
 C
 C---- convergence epsilon, max angle limit (radians)
       DATA EPS, DMAX / 0.00002, 1.0 /
@@ -948,9 +951,15 @@ C----- new Mach number invalidates close to everything that's stored
        LSOL = .FALSE.
        LSEN = .FALSE.
       ENDIF
+      call cpu_time(t0)
+
 C
 C---- set, factor AIC matrix and induced-velocity matrix (if they don't exist)
       CALL SETUP
+      if (ltiming) then 
+            call cpu_time(t1)
+            write(*,*) ' SETUP time: ', t1 - t0
+      end if
 C
       IF(NITER.GT.0) THEN
 C----- might as well directly set operating variables if they are known
@@ -964,12 +973,20 @@ C
 C----- set GAM_U
 ccc       WRITE(*,*) ' Solving for unit-freestream vortex circulations...'
       CALL GUCALC
+      if (ltiming) then 
+            call cpu_time(t2)
+            write(*,*) ' GUCALC time: ',  t2 - t1
+      end if
 C
 C-------------------------------------------------------------
 C---- calculate initial operating state
 C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
+      if (ltiming) then 
+            call cpu_time(t3)
+            write(*,*) ' VINFAB time: ', t3 - t2
+      end if
 C
       IF(NCONTROL.GT.0) THEN
 C----- set GAM_D
@@ -978,6 +995,11 @@ C----- set GAM_D
        end if 
        CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
       ENDIF
+      if (ltiming) then 
+            call cpu_time(t4)  
+            write(*,*) ' GDCALC time: ', t4 - t3
+      end if
+      
 C
       IF(NDESIGN.GT.0) THEN
 C----- set GAM_G
@@ -986,15 +1008,31 @@ C----- set GAM_G
       end if
        CALL GDCALC(NDESIGN ,LDESDEF,ENC_G,GAM_G)
       ENDIF
+      if (ltiming) then 
+            call cpu_time(t5)  
+            write(*,*) ' GDCALC time: ', t5 - t4
+      end if
 C
 C---- sum AIC matrices to get GAM,SRC,DBL
       CALL GAMSUM
+      if (ltiming) then 
+            call cpu_time(t6)  
+            write(*,*) ' GAMSUM time: ', t6 - t5   
+      end if
 C
 C---- sum AIC matrices to get WC,WV
       CALL VELSUM
+      if (ltiming) then 
+            call cpu_time(t7)  
+            write(*,*) ' VELSUM time: ', t7 - t6
+      end if
 C
 C---- compute forces
       CALL AERO
+      if (ltiming) then 
+            call cpu_time(t8)  
+            write(*,*) ' AERO time: ', t8 - t7
+      end if
 C
 C---- Newton loop for operating variables
       DO 190 ITER = 1, NITER
@@ -1181,7 +1219,24 @@ C
 C
 C------ LU-factor,  and back-substitute RHS
         CALL LUDCMP(IVMAX,NVTOT,VSYS,IVSYS,WORK)
+        if (ltiming) then 
+            call cpu_time(t9)  
+            write(*,*) ITER, ' LUDCMP time: ', t9 - t8
+        end if
+
         CALL BAKSUB(IVMAX,NVTOT,VSYS,IVSYS,VRES)
+        if (ltiming) then 
+            call cpu_time(t10)  
+            write(*,*) ITER, ' BAKSUB time: ', t10 - t9
+        end if
+!         WRITE(*,1902) 'iter',
+!      &            ' d(alpha)  ',
+!      &            ' d(beta)   ',
+!      &            ' d(pb/2V)  ',
+!      &            ' d(qc/2V)  ',
+!      &            ' d(rb/2V)  ',
+!      &            (DNAME(K), K=1, NCONTROL)
+
 C
 C------ set Newton deltas
         DAL = -VRES(IVALFA)
@@ -1264,6 +1319,11 @@ C
 C
 C------ set VINF() vector from new ALFA,BETA
         CALL VINFAB
+        if (ltiming) then 
+            call cpu_time(t11)  
+            write(*,*) ITER, ' VINFAB time: ', t11 - t10
+        end if
+
 C
         IF(NCONTROL.GT.0) THEN
 C------- set new GAM_D
@@ -1283,6 +1343,10 @@ C------ sum AIC matrices to get WC,WV
 C
 C------ compute forces
         CALL AERO
+        if (ltiming) then 
+            call cpu_time(t12)  
+            write(*,*) ITER, ' other  time: ', t12 - t11
+        end if
 C
 C
 C------ convergence check
@@ -1322,6 +1386,11 @@ C       WRITE(*,*)  'ALFA: ', ALFA
 C       WRITE(*,*) 'PARVAL(IPALFA,IR): ', PARVAL(IPALFA,IR)
 
       LSEN = .TRUE.
+      if (ltiming) then 
+            call cpu_time(t19)
+            write(*,*) ' TOTAL time: ', t19 - t0
+      end if
+
       RETURN
 C
       END ! EXEC

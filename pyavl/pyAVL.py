@@ -39,7 +39,7 @@ from . import MExt
 
 
 class AVLSolver(object):
-    def __init__(self, geo_file=None, mass_file=None, debug=False):
+    def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
         # This is important for creating multiple instances of the AVL solver that do not share memory
         curDir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
         time.sleep(0.1)  # this is necessary for some reason?!
@@ -64,6 +64,9 @@ class AVLSolver(object):
             self.avl.avl()
             if debug:
                 self.avl.case_l.lverbose = True
+            
+            if timing:
+                self.avl.case_l.ltiming = True
 
             self.avl.loadgeo(geo_file)
 
@@ -651,6 +654,12 @@ class AVLSolver(object):
 
         return strList
 
+    def solve():
+        """
+            use scipy's linear solves to solve the system of equations. 
+        """
+        pass
+        
 
 class CaseData:
     """class to hold the resulting data from a single run.
