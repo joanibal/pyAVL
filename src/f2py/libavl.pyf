@@ -513,11 +513,31 @@ python module libavl ! in
             common /case_i/ luinp,lurun,luout,lustd,lusys,iysym,izsym,matsym,nvor,nstrip,nsurf,nlnode,nbody,icon,nvtot,nctot,nptot,ncontrol,ndesign,nitmax,irun,nrun,irune,irunt,itrim,neigen,neigendat, cpscl
             common /case_c/ frndef,fprdef,fevdef,title,stitle,btitle,rtitle,dname,gname,varnam,connam,varkey,conkey,parnam,parunch
             common /vrtx_r/ rv1,rv2,rv,rc,rs,rl,radl,dxv,chordv,slopev,slopec,dcontrol,vhinge,phinge,vrefl,enc,env,enc_d,enc_g,env_d,env_g,dcp,dcp_u,dcp_d,dcp_g,gam,gam_u_0,gam_u_d,gam_u_g,gam_u,gam_d,gam_g,src,dbl,src_u,dbl_u,wcsrd_u,wvsrd_u
+            
+                ! derivative variables
+            REAL*8 rled(3, nsmax)
+            REAL*8 clstrpd(nsmax)
+            REAL*8 cltotd
+            REAL*8 wrotd(3)
+            REAL*8 chordd(nsmax)
+            REAL*8 xyzrefd(3)
+            REAL*8 vinfd(3)
+            REAL*8 clsurfd(nfmax)
+            REAL*8 rv1d(3, nvmax)
+            REAL*8 rv2d(3, nvmax)
+            REAL*8 wstripd(nsmax)
+            REAL*8 alfad
+            REAL*8 ensyd(nsmax)
+            REAL*8 enszd(nsmax)
+            REAL*8 gamd(nvmax)
+            COMMON /vrtx_r_d/ rv1d, rv2d, gamd
+            COMMON /strp_r_d/ rled, chordd, wstripd, ensyd, enszd
+            COMMON /case_r_d/ alfad, vinfd, xyzrefd, cltotd
         end subroutine avl
         
         subroutine oper ! in :libavl:aoper.f
         end subroutine oper
-
+        
         subroutine loadgeo(fildef) ! in :libavl:avl.f
             character*80 :: fildef
         end subroutine loadgeo
@@ -549,6 +569,8 @@ python module libavl ! in
             integer :: ir
         end subroutine set_params
 
-
+        subroutine sfforc_d ! in :libavl:aero_d.f
+        end subroutine sfforc_d
+        
     end interface 
 end python module libavl

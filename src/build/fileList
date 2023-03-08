@@ -28,4 +28,7 @@ f77Files =	aero.f\
 		spline.f\
 		userio.f\
 		eispack.f\
+		ad_src/forward_ad_src/aero_d.f\
+		ad_src/forward_ad_src/aic_d.f\
+		ad_src/forward_ad_src/cdcl_d.f\
 

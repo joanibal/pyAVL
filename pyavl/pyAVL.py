@@ -393,25 +393,25 @@ class AVLSolver(object):
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
             "CM strip" : ["STRP_R", "CF_STRP"], # moments in 3 directions
         }    
-        
+        # fmt: on
+
         surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
         strip_data = {}
         for surf in surf_names:
             strip_data[surf] = {}
-        
-        
+
         for key, avl_key in var_to_avl_var.items():
-            
+
             vals = self.get_avl_fort_var(*avl_key)
-            
+
             # add the values to corresponding surface dict
             for idx_surf, surf_name in enumerate(surf_names):
-                    
+
                 idx_srp_beg, idx_srp_end = self.get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
-            
+
         return strip_data
 
     def get_surface_strip_indices(self, idx_surf):
@@ -651,26 +651,10 @@ class AVLSolver(object):
 
         return strList
 
+# Derivative routines
+    def get_deriv(self):
+        self.avl.case_r_d.alfad =  1.0
+        
+        self.avl.sfforc_d()
 
-class CaseData:
-    """class to hold the resulting data from a single run.
-
-    The data is stored in dictionaries that are indexed by the surface name.
-    The dictionary names are related to oper command used to show the data.
-
-    """
-
-    def __init__(self) -> None:
-        # Data used to normalize the other data (Sref, Cref, Bref, etc.)
-        self.reference_data = {}
-
-        # Data of the forces and moments for everything (total_data), each surface (surface_data), each body (body_data), each strip (strip_data), and each element (element_data)
-        self.total_data = {}
-        self.surface_data = {}
-        self.body_data = {}
-        self.strip_data = {}
-        self.element_data = {}
-
-        # Data of the stability derivatives in the stability axis (self.stability_axis_derivs) and body axis (self.body_axis_derivs)
-        self.stability_axis_derivs = {}
-        self.body_axis_derivs = {}
+        print('cl_d', self.avl.case_r_d.cltotd)
