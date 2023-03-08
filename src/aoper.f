@@ -1319,10 +1319,6 @@ C
 C
 C------ set VINF() vector from new ALFA,BETA
         CALL VINFAB
-        if (ltiming) then 
-            call cpu_time(t11)  
-            write(*,*) ITER, ' VINFAB time: ', t11 - t10
-        end if
 
 C
         IF(NCONTROL.GT.0) THEN
@@ -1337,15 +1333,25 @@ C------- set new GAM_G
 C
 C------ sum AIC matrices to get GAM,SRC,DBL
         CALL GAMSUM
+        if (ltiming) then 
+            call cpu_time(t11)  
+            write(*,*) ITER, ' other1 time: ', t11 - t10
+        end if
+
 C
 C------ sum AIC matrices to get WC,WV
         CALL VELSUM
+        if (ltiming) then 
+            call cpu_time(t12)  
+            write(*,*) ITER, ' VELSUM time: ', t12 - t11
+        end if
+C
 C
 C------ compute forces
         CALL AERO
         if (ltiming) then 
-            call cpu_time(t12)  
-            write(*,*) ITER, ' other  time: ', t12 - t11
+            call cpu_time(t13)  
+            write(*,*) ITER, ' other2 time: ', t13 - t12
         end if
 C
 C
