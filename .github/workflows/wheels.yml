@@ -19,7 +19,8 @@ jobs:
           - [windows-2019, win, AMD64]
 
 
-        python: [["cp38", "3.8"], ["cp39", "3.9"], ["cp310", "3.10"]]
+          python: [["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11.0-alpha - 3.11.0"]]
+
     steps:
     
       - name: Checkout pyAVL
@@ -28,7 +29,7 @@ jobs:
       # Used to host cibuildwheel
       - uses: actions/setup-python@v4.2.0
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: win_amd64 - install rtools
         run: |
