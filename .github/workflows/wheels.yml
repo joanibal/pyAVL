@@ -25,7 +25,8 @@ jobs:
         # - [macos-11, macosx, x86_64]
         - [windows-2019, win, AMD64]
         
-        python: [ ["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11.0-alpha - 3.11.0"]]
+        # python: [ ["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11.0-alpha - 3.11.0"]]
+        python: [ ["cp39", "3.9"] ]
 
 
     env:
@@ -45,7 +46,7 @@ jobs:
         run: |
           # mingw-w64
           choco install rtools --no-progress
-          echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
+          echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH
         if: ${{ runner.os == 'Windows' && env.IS_32_BIT == 'false' }}
 
 

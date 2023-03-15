@@ -41,8 +41,7 @@ if is_windows
     add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
     # Force gcc to float64 long doubles for compatibility with MSVC
     # builds, for C only.
-    # add_project_arguments('-mlong-double-64', language: 'c')
-    add_project_arguments('-m64', language: 'c')
+    add_project_arguments('-mlong-double-64', language: 'c')
     # Make fprintf("%zd") work (see https://github.com/rgommers/scipy/issues/118)
     add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
     # Manual add of MS_WIN64 macro when not using MSVC.
@@ -65,9 +64,10 @@ if is_windows
 endif
 
 
-_linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
-version_link_args = ['-Wl,--version-script=' + _linker_script]
+# _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
 # version_link_args = ['-Wl,--version-script=' + _linker_script]
+# version_link_args = ['-Wl,']
+version_link_args = ['-Wl,--image-base -Wl,0x10000000']
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')
