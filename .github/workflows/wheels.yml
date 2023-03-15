@@ -1,6 +1,12 @@
 name: Wheel builder
 
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - master
+    pull_request:
+      - master
+
 
 jobs:
   build_wheels:
