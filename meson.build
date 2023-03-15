@@ -50,10 +50,6 @@ if is_windows
     if bitness == '64'
       add_project_arguments('-DMS_WIN64', language: ['c', 'cpp', 'fortran'])
     endif
-    # Silence warnings emitted by PyOS_snprintf for (%zd), see
-    # https://github.com/rgommers/scipy/issues/118.
-    # Use as c_args for extensions containing Cython code
-    cython_c_args += ['-Wno-format-extra-args', '-Wno-format']
   endif
   if meson.get_compiler('fortran').get_id() == 'gcc'
     add_project_link_arguments(gcc_link_args, language: ['fortran'])
