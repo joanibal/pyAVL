@@ -33,7 +33,7 @@ ff = meson.get_compiler('fortran')
 is_windows = host_machine.system() == 'windows'
 
 is_mingw = is_windows and cc.get_id() == 'gcc'
-
+message('is_windows', is_windows, 'is_mingw', is_mingw)
 if is_windows
   # For mingw-w64, link statically against the UCRT.
   gcc_link_args = ['-lucrt', '-static']
@@ -64,8 +64,9 @@ if is_windows
 endif
 
 
-_linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
-version_link_args = ['-Wl,--version-script=' + _linker_script]
+# _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
+# version_link_args = ['-Wl,--version-script=' + _linker_script]
+# version_link_args = ['-Wl,--version-script=' + _linker_script]
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')
