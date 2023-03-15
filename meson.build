@@ -42,6 +42,7 @@ if is_windows
     # Force gcc to float64 long doubles for compatibility with MSVC
     # builds, for C only.
     add_project_arguments('-mlong-double-64', language: 'c')
+    add_project_arguments('-mlong-double-64', language: 'f')
     add_project_arguments('-mcmodel=medium', language: ['c', 'cpp', 'fortran'])
     # Make fprintf("%zd") work (see https://github.com/rgommers/scipy/issues/118)
     add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
@@ -128,14 +129,22 @@ dependency_map = {
 # Fortran warning flags
 
 _fflag_Wno_maybe_uninitialized = ff.get_supported_arguments('-Wno-maybe-uninitialized')
-_fflag_Wunused_variable = ff.get_supported_arguments('-Wunused-variable')
+_fflag_Wno_unused_variable = ff.get_supported_arguments('-Wno-unused-variable')
+_fflag_Wno_align_commons = ff.get_supported_arguments('-Wno-align-commons')
+_fflag_Wno_unused_label = ff.get_supported_arguments('-Wno-unused-label')
+_fflag_Wno_character_truncation = ff.get_supported_arguments('-Wno-character-truncation')
+_fflag_Wno_unused_dummy_argument = ff.get_supported_arguments('-Wno-unused-dummy-argument')
 
 # The default list of warnings to ignore from Fortran code. There is a lot of
 # old, vendored code that is very bad and we want to compile it silently (at
 # least with GCC and Clang)
 ff_args = ff.get_supported_arguments(
  _fflag_Wno_maybe_uninitialized,
- _fflag_Wunused_variable,
+ _fflag_Wno_unused_variable,
+ _fflag_Wno_align_commons, 
+ _fflag_Wno_unused_label,
+ _fflag_Wno_character_truncation,
+ _fflag_Wno_unused_dummy_argument
 )
 
 
