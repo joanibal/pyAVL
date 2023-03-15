@@ -66,9 +66,9 @@ endif
 
 
 # _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
-# version_link_args = ['-Wl,--version-script=' + _linker_script]
-version_link_args = ['-Wl,--image-base,0x10000000']
-version_link_args = ['-mcmodel=medium']
+# link_args = ['-Wl,--version-script=' + _linker_script]
+link_args = ['-Wl,--image-base,0x10000000']
+link_args = ['-mcmodel=medium']
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')
@@ -95,21 +95,6 @@ inc_np = include_directories(incdir_numpy)
 #).stdout().strip()
 incdir_f2py = incdir_numpy / '..' / '..' / 'f2py' / 'src'
 inc_f2py = include_directories(incdir_f2py)
-
-numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
-
-fortranobject_c = incdir_f2py / 'fortranobject.c'
-# Share this object across multiple modules.
-fortranobject_lib = static_library('_fortranobject',
-  fortranobject_c,
-  c_args: numpy_nodepr_api,
-  dependencies: py3_dep,
-  include_directories: [inc_np, inc_f2py],
-)
-fortranobject_dep = declare_dependency(
-  link_with: fortranobject_lib,
-  include_directories: [inc_np, inc_f2py],
-)
 
 
 # TODO: 64-bit BLAS and LAPACK
@@ -153,6 +138,7 @@ ff_args = ff.get_supported_arguments(
  _fflag_Wunused_variable,
 )
 
+
 ff_args += [
   '-ffixed-line-length-80', 
   '-std=legacy',
@@ -160,9 +146,28 @@ ff_args += [
   '-fPIC'
 ]
 
+numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
+
+cc_args = [numpy_nodepr_api]
+
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
+  cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
 endif
+
+fortranobject_c = incdir_f2py / 'fortranobject.c'
+# Share this object across multiple modules.
+fortranobject_lib = static_library('_fortranobject',
+  fortranobject_c,
+  c_args: cc_args,
+  dependencies: py3_dep,
+  include_directories: [inc_np, inc_f2py],
+)
+fortranobject_dep = declare_dependency(
+  link_with: fortranobject_lib,
+  include_directories: [inc_np, inc_f2py],
+)
+
 
 # c = run_command('source' / 'grab-all-fortran-files.py', check: true)
 # snopt_source_files = c.stdout().strip().split('\n')
@@ -210,9 +215,9 @@ py3.extension_module('libavl',
     include_directories: [inc_np, inc_f2py],
     dependencies: [lapack, blas, fortranobject_dep],
     subdir: 'pyavl',
-    link_args: version_link_args,
+    link_args: link_args,
     fortran_args: ff_args,
-    c_args: numpy_nodepr_api,
+    c_args: cc_args,
     install : true,
     link_language: 'fortran'
                    
