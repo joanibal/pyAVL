@@ -67,7 +67,7 @@ endif
 # _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
 # version_link_args = ['-Wl,--version-script=' + _linker_script]
 # version_link_args = ['-Wl,']
-version_link_args = ['-Wl,--image-base -Wl,0x10000000']
+version_link_args = ['-Wl,--image-base,0x10000000']
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')
@@ -142,12 +142,14 @@ dependency_map = {
 # Fortran warning flags
 
 _fflag_Wno_maybe_uninitialized = ff.get_supported_arguments('-Wno-maybe-uninitialized')
+_fflag_Wunused_variable = ff.get_supported_arguments('-Wunused-variable')
 
 # The default list of warnings to ignore from Fortran code. There is a lot of
 # old, vendored code that is very bad and we want to compile it silently (at
 # least with GCC and Clang)
 ff_args = ff.get_supported_arguments(
  _fflag_Wno_maybe_uninitialized,
+ _fflag_Wunused_variable,
 )
 
 ff_args += [
