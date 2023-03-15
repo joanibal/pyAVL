@@ -40,10 +40,18 @@ from . import MExt
 
 class AVLSolver(object):
     def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
+        # TODO: fix MExt to work with pyavl.lib packages
         # This is important for creating multiple instances of the AVL solver that do not share memory
-        curDir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
-        time.sleep(0.1)  # this is necessary for some reason?!
-        self.avl = MExt.MExt("libavl", curDir, debug=debug)._module
+        # module_dir = os.path.dirname(os.path.realpath(__file__))
+        # module_name = os.path.basename(module_dir)
+        # avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
+        # # get just the file name
+        # avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        # self.avl = MExt.MExt("libavl", module_name, lib_so_file=avl_lib_so_file, debug=debug)._module
+
+        from . import libavl
+
+        self.avl = libavl
 
         if not (geo_file is None):
             try:
@@ -64,7 +72,7 @@ class AVLSolver(object):
             self.avl.avl()
             if debug:
                 self.avl.case_l.lverbose = True
-            
+
             if timing:
                 self.avl.case_l.ltiming = True
 
@@ -396,25 +404,22 @@ class AVLSolver(object):
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
             "CM strip" : ["STRP_R", "CF_STRP"], # moments in 3 directions
         }    
-        
+        # fmt: on
         surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
         strip_data = {}
         for surf in surf_names:
             strip_data[surf] = {}
-        
-        
+
         for key, avl_key in var_to_avl_var.items():
-            
             vals = self.get_avl_fort_var(*avl_key)
-            
+
             # add the values to corresponding surface dict
             for idx_surf, surf_name in enumerate(surf_names):
-                    
                 idx_srp_beg, idx_srp_end = self.get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
-            
+
         return strip_data
 
     def get_surface_strip_indices(self, idx_surf):
@@ -656,10 +661,10 @@ class AVLSolver(object):
 
     def solve():
         """
-            use scipy's linear solves to solve the system of equations. 
+        use scipy's linear solves to solve the system of equations.
         """
         pass
-        
+
 
 class CaseData:
     """class to hold the resulting data from a single run.

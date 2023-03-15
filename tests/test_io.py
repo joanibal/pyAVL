@@ -30,9 +30,8 @@ class TestInput(unittest.TestCase):
         assert avl_solver.get_mesh_size() == 780
 
     def test_read_geom_and_mass(self):
-        AVLSolver(geo_file=geom_file, mass_file=mass_file)
-
-
+        avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        assert avl_solver.get_avl_fort_var("CASE_L", "LMASS")
 # TODO: add test for output (write out geom, mass, and stabilty)
 
 

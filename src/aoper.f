@@ -1229,13 +1229,7 @@ C------ LU-factor,  and back-substitute RHS
             call cpu_time(t10)  
             write(*,*) ITER, ' BAKSUB time: ', t10 - t9
         end if
-!         WRITE(*,1902) 'iter',
-!      &            ' d(alpha)  ',
-!      &            ' d(beta)   ',
-!      &            ' d(pb/2V)  ',
-!      &            ' d(qc/2V)  ',
-!      &            ' d(rb/2V)  ',
-!      &            (DNAME(K), K=1, NCONTROL)
+
 
 C
 C------ set Newton deltas

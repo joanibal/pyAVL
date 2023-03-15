@@ -1,0 +1,62 @@
+# this is based on scipy
+
+[build-system]
+build-backend = 'mesonpy'
+requires = [
+    "meson>=0.60.0", # the "frontend" that configures the build
+    "ninja", # the "backend" that actually calls compilers
+    "oldest-supported-numpy", # numpy needed for f2py
+    "meson-python>=0.9.0", # python build-backend interface for meson
+    "wheel", 
+]
+
+
+[project]
+name = "pyavl"
+license = {file = "LICENSE.txt"}
+description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code."
+dependencies = [
+    "numpy>=1.19",
+]
+readme = "README.md"
+dynamic = ['version']
+
+
+[tool.cibuildwheel]
+skip = "cp36-* cp37-* cp38-* pp* *_ppc64le *_i686 *_s390x"
+build-verbosity = "3"
+# gmpy2 and scikit-umfpack are usually added for testing. However, there are
+# currently wheels missing that make the test script fail.
+test-command = "bash {project}/tools/wheels/cibw_test_command.sh {project}"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
+before-build = "bash {project}/tools/wheels/cibw_before_build_linux.sh {project}"
+
+[tool.cibuildwheel.macos]
+before-build = "bash {project}/tools/wheels/cibw_before_build_macos.sh {project}"
+
+[tool.cibuildwheel.windows]
+before-build = "bash {project}/tools/wheels/cibw_before_build_win.sh {project}"
+repair-wheel-command = "bash ./tools/wheels/repair_windows.sh {wheel} {dest_dir}"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win32"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_amd64"
+# can use pkg-config detection for win_amd64 because the installed rtools
+# provide a working pkg-config.
+# An alternative is to set CMAKE_PREFIX_PATH="c:/opt/openblas/if_32/32"
+# Don't use double backslash for path separators, they don't get passed
+# to the build correctly
+# environment = { CMAKE_PREFIX_PATH="c:/opt/64" }
+environment = { PKG_CONFIG_PATH="c:/opt/64/lib/pkgconfig" }
+
+[project.urls]
+homepage = "https://github.com/joanibal/pyavl"
+# documentation =
+source = "https://github.com/joanibal/pyavl"
+# download = 
+tracker = "https://github.com/joanibal/pyavl/issues"

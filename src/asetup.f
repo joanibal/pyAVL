@@ -111,12 +111,12 @@ C
        end if 
        CALL LUDCMP(NVMAX,NVOR,AICN,IAPIV,WORK)
 C
+      LAIC = .TRUE.
+      ENDIF
       if (ltiming) then 
         call cpu_time(t3)
         write(*,*) '  LUDCMP time: ', t3 - t2
       end if
-       LAIC = .TRUE.
-      ENDIF
 C
 C
       IF(.NOT.LSRD) THEN
