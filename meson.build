@@ -62,15 +62,9 @@ if is_windows
   endif
 endif
 
-# Deal with M_PI & friends; add `use_math_defines` to c_args or cpp_args
-# Cython doesn't always get this right itself (see, e.g., gh-16800), so
-# explicitly add the define as a compiler flag for Cython-generated code.
-if is_windows
-  use_math_defines = ['-D_USE_MATH_DEFINES']
-else
-  use_math_defines = []
-endif
 
+_linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
+version_link_args = ['-Wl,--version-script=' + _linker_script]
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')
@@ -189,6 +183,7 @@ py3.extension_module('libavl',
     include_directories: [inc_np, inc_f2py],
     dependencies: [lapack, blas, fortranobject_dep],
     subdir: 'pyavl',
+    link_args: version_link_args,
     install : true,
     link_language: 'fortran',
     fortran_args: ['-ffixed-line-length-80', 
