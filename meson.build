@@ -147,6 +147,13 @@ ff_args = ff.get_supported_arguments(
  _fflag_Wno_maybe_uninitialized,
 )
 
+ff_args += [
+  '-ffixed-line-length-80', 
+  '-std=legacy',
+  '-fdefault-real-8',
+  '-fPIC'
+]
+
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
 endif
@@ -201,13 +208,13 @@ py3.extension_module('libavl',
     fortran_args: ff_args,
     install : true,
     link_language: 'fortran',
-    fortran_args: ['-ffixed-line-length-80', 
-                   '-std=legacy',
-                   '-Wno-align-commons',
-                   '-Wmaybe-uninitialized', 
-                   '-O2',
-                   '-fdefault-real-8',
-                   '-fPIC']
+    # fortran_args: ['-ffixed-line-length-80', 
+    #                '-std=legacy',
+    #                '-Wno-align-commons',
+    #                '-Wmaybe-uninitialized', 
+    #                '-O2',
+    #                '-fdefault-real-8',
+    #                '-fPIC']
                    
 )
 
