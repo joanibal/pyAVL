@@ -207,7 +207,7 @@ py3.extension_module('libavl',
     subdir: 'pyavl',
     link_args: version_link_args,
     fortran_args: ff_args,
-    c_args: numpy_nodepr_api
+    c_args: numpy_nodepr_api,
     install : true,
     link_language: 'fortran'
                    
