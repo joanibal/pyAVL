@@ -10,6 +10,12 @@ requires = [
     "wheel", 
 ]
 
+[tool.meson-python.args]
+# dist    = ['dist-argument_1', 'dist-argument_2', '...']
+# setup   = ['setup-argument_1', 'setup-argument_2', '...']
+compile = ['-v']
+# install = ['install-argument_1', 'install-argument_2', '...']
+
 
 [project]
 name = "pyavl"
