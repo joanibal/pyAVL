@@ -10,11 +10,11 @@ requires = [
     "wheel", 
 ]
 
-[tool.meson-python.args]
-dist    = ['-v']
-setup   = ['-v']
-compile = ['-v']
-install = ['-v']
+# [tool.meson-python.args]
+# dist    = ['-v']
+# setup   = ['-v']
+# compile = ['-v']
+# install = ['-v']
 
 
 [project]
