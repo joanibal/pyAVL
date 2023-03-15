@@ -47,6 +47,7 @@ if is_windows
     # Manual add of MS_WIN64 macro when not using MSVC.
     # https://bugs.python.org/issue28267
     bitness = run_command('_build_utils/gcc_build_bitness.py').stdout().strip()
+    message('windows bitness is ', bitness)
     if bitness == '64'
       add_project_arguments('-DMS_WIN64', language: ['c', 'cpp', 'fortran'])
     endif
@@ -206,15 +207,9 @@ py3.extension_module('libavl',
     subdir: 'pyavl',
     link_args: version_link_args,
     fortran_args: ff_args,
+    c_args: numpy_nodepr_api
     install : true,
-    link_language: 'fortran',
-    # fortran_args: ['-ffixed-line-length-80', 
-    #                '-std=legacy',
-    #                '-Wno-align-commons',
-    #                '-Wmaybe-uninitialized', 
-    #                '-O2',
-    #                '-fdefault-real-8',
-    #                '-fPIC']
+    link_language: 'fortran'
                    
 )
 
