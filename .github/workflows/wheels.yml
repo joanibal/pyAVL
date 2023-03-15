@@ -21,12 +21,14 @@ jobs:
 
         python: [["cp38", "3.8"], ["cp39", "3.9"], ["cp310", "3.10"]]
     steps:
-      - uses: actions/checkout@v3
+    
+      - name: Checkout pyAVL
+        uses: actions/checkout@v3
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v4.2.0
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: win_amd64 - install rtools
         run: |
