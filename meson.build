@@ -139,7 +139,7 @@ dependency_map = {
 # Fortran warning flags
 
 _fflag_Wno_maybe_uninitialized = ff.get_supported_arguments('-Wno-maybe-uninitialized')
-_fflag
+
 # The default list of warnings to ignore from Fortran code. There is a lot of
 # old, vendored code that is very bad and we want to compile it silently (at
 # least with GCC and Clang)
