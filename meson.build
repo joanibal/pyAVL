@@ -136,6 +136,30 @@ dependency_map = {
   'LAPACK': lapack,
 }
 
+# Fortran warning flags
+_fflag_Wno_argument_mismatch = ff.get_supported_arguments('-Wno-argument-mismatch')
+_fflag_Wno_conversion = ff.get_supported_arguments('-Wno-conversion')
+_fflag_Wno_intrinsic_shadow = ff.get_supported_arguments('-Wno-intrinsic-shadow')
+_fflag_Wno_maybe_uninitialized = ff.get_supported_arguments('-Wno-maybe-uninitialized')
+_fflag_Wno_surprising = ff.get_supported_arguments('-Wno-surprising')
+_fflag_Wno_uninitialized = ff.get_supported_arguments('-Wno-uninitialized')
+_fflag_Wno_unused_dummy_argument = ff.get_supported_arguments('-Wno-unused-dummy-argument')
+_fflag_Wno_unused_label = ff.get_supported_arguments('-Wno-unused-label')
+_fflag_Wno_unused_variable = ff.get_supported_arguments('-Wno-unused-variable')
+_fflag_Wno_tabs = ff.get_supported_arguments('-Wno-tabs')
+# The default list of warnings to ignore from Fortran code. There is a lot of
+# old, vendored code that is very bad and we want to compile it silently (at
+# least with GCC and Clang)
+fortran_ignore_warnings = ff.get_supported_arguments(
+ _fflag_Wno_argument_mismatch,
+ _fflag_Wno_conversion,
+ _fflag_Wno_maybe_uninitialized,
+ _fflag_Wno_unused_dummy_argument,
+ _fflag_Wno_unused_label,
+ _fflag_Wno_unused_variable,
+ _fflag_Wno_tabs,
+)
+
 
 # c = run_command('source' / 'grab-all-fortran-files.py', check: true)
 # snopt_source_files = c.stdout().strip().split('\n')
@@ -184,6 +208,7 @@ py3.extension_module('libavl',
     dependencies: [lapack, blas, fortranobject_dep],
     subdir: 'pyavl',
     link_args: version_link_args,
+    fortran_args: fortran_ignore_warnings,
     install : true,
     link_language: 'fortran',
     fortran_args: ['-ffixed-line-length-80', 
