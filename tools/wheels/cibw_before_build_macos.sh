@@ -20,7 +20,7 @@ if [[ $PLATFORM == "macosx-x86_64" ]]; then
 
   #GFORTRAN=$(type -p gfortran-9)
   #sudo ln -s $GFORTRAN /usr/local/bin/gfortran
-  # same version of gfortran as the openblas-libs and scipy-wheel builds
+  # same version of gfortran as the openblas-libs and pyavl-wheel builds
   curl -L https://github.com/isuruf/gcc/releases/download/gcc-11.3.0-2/gfortran-darwin-x86_64-native.tar.gz -o gfortran.tar.gz
 
   GFORTRAN_SHA256=$(shasum -a 256 gfortran.tar.gz)
