@@ -41,8 +41,7 @@ if is_windows
     add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
     # Force gcc to float64 long doubles for compatibility with MSVC
     # builds, for C only.
-    add_project_arguments('-mlong-double-64', language: 'c')
-    add_project_arguments('-mlong-double-64', language: 'f')
+    add_project_arguments('-mlong-double-64', language: ['c', 'fortran'])
     add_project_arguments('-mcmodel=medium', language: ['c', 'cpp', 'fortran'])
     # Make fprintf("%zd") work (see https://github.com/rgommers/scipy/issues/118)
     add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
