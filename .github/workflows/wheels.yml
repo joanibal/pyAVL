@@ -74,6 +74,7 @@ jobs:
             DYLD_LIBRARY_PATH=/usr/local/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
 
       - uses: actions/upload-artifact@v3
+        name: upload the wheels
         with:
           path: ./wheelhouse/*.whl
           name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
@@ -87,6 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
+        name: download the wheels
         with:
           name: artifact
           path: dist
