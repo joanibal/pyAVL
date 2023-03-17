@@ -10,12 +10,6 @@ requires = [
     "wheel", 
 ]
 
-# [tool.meson-python.args]
-# dist    = ['-v']
-# setup   = ['-v']
-# compile = ['-v']
-# install = ['-v']
-
 
 [project]
 name = "pyavl-wrapper"
@@ -25,15 +19,12 @@ dependencies = [
     "numpy>=1.19",
 ]
 readme = "README.md"
-version = "1.1.0"
-# dynamic = ['version']
+version = "1.1.0" # this automatically updates __init__.py
 
 
 [tool.cibuildwheel]
 skip = "cp36-* cp37-* pp* *_ppc64le *_i686 *_s390x"
 build-verbosity = "3"
-# gmpy2 and scikit-umfpack are usually added for testing. However, there are
-# currently wheels missing that make the test script fail.
 test-command = "bash {project}/tools/wheels/cibw_test_command.sh {project}"
 
 [tool.cibuildwheel.linux]

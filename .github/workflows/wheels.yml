@@ -26,8 +26,6 @@ jobs:
         # - [windows-2019, win, AMD64]
         
         python: [ ["cp38", "3.8"],["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11.0-alpha - 3.11.0"]]
-        # python: [ ["cp38", "3.8"],["cp39", "3.9"]]
-        # python: [ ["cp39", "3.9"] ]
 
 
     env:
@@ -98,7 +96,6 @@ jobs:
         id: download
         name: download the wheels
         with:
-          # name: artifact
           path: wheelhouse
 
       - name: 'Echo download path'
@@ -106,21 +103,19 @@ jobs:
         
       - name: Display structure of downloaded files
         run: ls -R
-        # working-directory: dist
       
       - name: make dist dir
         run: mkdir dist
         
       - name: Move wheels to dist
         run: bash tools/wheels/move_wheels.sh
-        # working-directory: dist
 
-      - name: Publish distribution 📦 to Test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # packages-dir: wheelhouse/
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository-url: https://test.pypi.org/legacy/
+      # - name: Publish distribution 📦 to Test PyPI
+      #   uses: pypa/gh-action-pypi-publish@release/v1
+      #   with:
+      #     # packages-dir: wheelhouse/
+      #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      #     repository-url: https://test.pypi.org/legacy/
 
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.ref, 'refs/tags')
