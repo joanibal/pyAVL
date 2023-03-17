@@ -76,7 +76,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         name: upload the wheels
         with:
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl
           # name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
   
 
@@ -90,6 +90,7 @@ jobs:
       - uses: actions/download-artifact@v3
         name: download the wheels
         with:
+          # name: artifact
           path: dist
 
       - name: Publish distribution 📦 to Test PyPI
@@ -97,7 +98,7 @@ jobs:
         with:
           # packages-dir: wheelhouse/
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
+          repository-url: https://test.pypi.org/legacy/
 
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.ref, 'refs/tags')
