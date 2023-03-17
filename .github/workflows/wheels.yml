@@ -90,7 +90,6 @@ jobs:
       - uses: actions/download-artifact@v3
         name: download the wheels
         with:
-          name: artifact
           path: dist
 
       - name: Publish distribution 📦 to Test PyPI
