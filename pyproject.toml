@@ -18,7 +18,7 @@ requires = [
 
 
 [project]
-name = "pyavl"
+name = "pyavl-wrapper"
 license = {file = "LICENSE.txt"}
 description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code."
 dependencies = [
