@@ -108,6 +108,9 @@ jobs:
         run: ls -R
         # working-directory: dist
       
+      - name: make dist dir
+        run: mkdir dist
+        
       - name: Move wheels to dist
         run: bash tools/wheels/move_wheels.sh
         # working-directory: dist
