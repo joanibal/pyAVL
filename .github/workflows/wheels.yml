@@ -76,8 +76,8 @@ jobs:
       - uses: actions/upload-artifact@v3
         name: upload the wheels
         with:
-          path: ./dist/*.whl
-          # name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
+          path: ./wheelhouse/*.whl
+          name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
   
 
   
