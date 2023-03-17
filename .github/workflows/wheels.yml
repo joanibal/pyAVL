@@ -77,7 +77,7 @@ jobs:
         name: upload the wheels
         with:
           path: ./wheelhouse/*.whl
-          name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}.whl
+          # name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
   
 
   
