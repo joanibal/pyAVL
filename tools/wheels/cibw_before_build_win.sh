@@ -8,7 +8,7 @@ printenv
 cat $PROJECT_DIR/tools/wheels/LICENSE_win32.txt >> $PROJECT_DIR/LICENSE.txt
 
 # Install Openblas
-PYTHONPATH=tools python -c "import openblas_support; openblas_support.make_init('scipy')"
+PYTHONPATH=tools python -c "import openblas_support; openblas_support.make_init('pyavl')"
 mkdir -p /c/opt/32/lib/pkgconfig
 mkdir -p /c/opt/64/lib/pkgconfig
 

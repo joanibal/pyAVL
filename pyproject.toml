@@ -10,20 +10,27 @@ requires = [
     "wheel", 
 ]
 
+# [tool.meson-python.args]
+# dist    = ['-v']
+# setup   = ['-v']
+# compile = ['-v']
+# install = ['-v']
+
 
 [project]
-name = "pyavl"
+name = "pyavl-wrapper"
 license = {file = "LICENSE.txt"}
 description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code."
 dependencies = [
     "numpy>=1.19",
 ]
 readme = "README.md"
-dynamic = ['version']
+version = "1.1.0"
+# dynamic = ['version']
 
 
 [tool.cibuildwheel]
-skip = "cp36-* cp37-* cp38-* pp* *_ppc64le *_i686 *_s390x"
+skip = "cp36-* cp37-* pp* *_ppc64le *_i686 *_s390x"
 build-verbosity = "3"
 # gmpy2 and scikit-umfpack are usually added for testing. However, there are
 # currently wheels missing that make the test script fail.

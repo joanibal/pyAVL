@@ -3,9 +3,14 @@
 pyAVL is a stripped down version of Mark Drela and Harold Youngren's famous AVL code wrapped in python with f2py.
 This allows one to more easily conduct large parameter sweeps in AVL or to include AVL into a larger model. 
 Additionally, this wrapper provides access to more data than is available through traditional file output. 
-Unlike in the output files which is limit to about 4 digits, the user has access to the full precision data. 
+Unlike in the output files which is limit to about 4 digits, the user has access to the full double precision data. 
 
 # Installation
+The best way to get pyAVL is to install it through pip
+```
+pip install pyavl
+```
+
 To compile the avl library use 
 ```
 make
