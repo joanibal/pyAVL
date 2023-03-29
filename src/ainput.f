@@ -716,6 +716,7 @@ C
         if(lverbose)then
         WRITE(*,*) '    Reading airfoil from file: ',CNAME(1:NCN)
         end if 
+        AFILES(ISEC, ISURF) = CNAME(1:NCN)        
         NBLDS = 1
         CALL READBL(CNAME,IBX,NBLDS,XB,YB,NB,NBL,
      &               ANAME,XINL,XOUT,YBOT,YTOP)

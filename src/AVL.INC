@@ -58,6 +58,8 @@ C
       CHARACTER*80  FRNDEF, FPRDEF, FEVDEF
       CHARACTER*80 TITLE
       CHARACTER*40 STITLE, BTITLE, RTITLE
+      CHARACTER*80 AFILES
+      
       CHARACTER*16 DNAME, GNAME
       CHARACTER*12 VARNAM, CONNAM
       CHARACTER*12 VARKEY
@@ -70,6 +72,7 @@ C
      & FEVDEF,         ! default eigenvalue save file
      & TITLE,          ! configuration title
      & STITLE(NFMAX),  ! surface title
+     & AFILES(NSMAX,NFMAX),  ! airfoil file names
      & BTITLE(NBMAX),  ! body title
      & RTITLE(NRMAX),  ! run case title
      & DNAME(NDMAX),   ! control variable name
