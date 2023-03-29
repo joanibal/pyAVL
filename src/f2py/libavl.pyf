@@ -514,29 +514,89 @@ python module libavl ! in
             common /case_c/ frndef,fprdef,fevdef,title,stitle,btitle,rtitle,dname,gname,varnam,connam,varkey,conkey,parnam,parunch
             common /vrtx_r/ rv1,rv2,rv,rc,rs,rl,radl,dxv,chordv,slopev,slopec,dcontrol,vhinge,phinge,vrefl,enc,env,enc_d,enc_g,env_d,env_g,dcp,dcp_u,dcp_d,dcp_g,gam,gam_u_0,gam_u_d,gam_u_g,gam_u,gam_d,gam_g,src,dbl,src_u,dbl_u,wcsrd_u,wvsrd_u
             
-                ! derivative variables
-            REAL*8 rled(3, nsmax)
-            REAL*8 clstrpd(nsmax)
-            REAL*8 cltotd
-            REAL*8 wrotd(3)
-            REAL*8 chordd(nsmax)
-            REAL*8 xyzrefd(3)
-            REAL*8 vinfd(3)
-            REAL*8 clsurfd(nfmax)
-            REAL*8 rv1d(3, nvmax)
-            REAL*8 rv2d(3, nvmax)
-            REAL*8 wstripd(nsmax)
-            REAL*8 alfad
-            REAL*8 ensyd(nsmax)
-            REAL*8 enszd(nsmax)
-            REAL*8 gamd(nvmax)
-            COMMON /vrtx_r_d/ rv1d, rv2d, gamd
-            COMMON /strp_r_d/ rled, chordd, wstripd, ensyd, enszd
-            COMMON /case_r_d/ alfad, vinfd, xyzrefd, cltotd
+            ! derivative variables
+            real*8 cnsurfd(nfmax)
+            real*8 vinf_ad(3)
+            real*8 vinf_bd(3)
+            real*8 rled(3, nsmax)
+            real*8 clst_ad(nsmax)
+            real*8 clbdyd(nbmax)
+            real*8 clst_dd(nsmax, ndmax)
+            real*8 clstrpd(nsmax)
+            real*8 crs_dd(nfmax, ndmax)
+            real*8 cmtot_dd(ndmax)
+            real*8 cntotd
+            real*8 cytotd
+            real*8 clst_ud(nsmax, numax)
+            real*8 cmst_dd(nsmax, ndmax)
+            real*8 cmstrpd(nsmax)
+            real*8 crs_ud(nfmax, numax)
+            real*8 cmtotd
+            real*8 cysurfd(nfmax)
+            real*8 cytot_dd(ndmax)
+            real*8 crst_dd(nsmax, ndmax)
+            real*8 crstrpd(nsmax)
+            real*8 cmtot_ud(numax)
+            real*8 cltotd
+            real*8 wrotd(3)
+            real*8 cmst_ud(nsmax, numax)
+            real*8 chordd(nsmax)
+            real*8 cnst_dd(nsmax, ndmax)
+            real*8 cns_dd(nfmax, ndmax)
+            real*8 cytot_ud(numax)
+            real*8 crst_ud(nsmax, numax)
+            real*8 cnstrpd(nsmax)
+            real*8 cys_dd(nfmax, ndmax)
+            real*8 crbdyd(nbmax)
+            real*8 xyzrefd(3)
+            real*8 vinfd(3)
+            real*8 cms_dd(nfmax, ndmax)
+            real*8 clsurfd(nfmax)
+            real*8 rv1d(3, nvmax)
+            real*8 rv2d(3, nvmax)
+            real*8 cls_ad(nfmax)
+            real*8 wstripd(nsmax)
+            real*8 cnst_ud(nsmax, numax)
+            real*8 cns_ud(nfmax, numax)
+            real*8 cltot_ad
+            real*8 cls_dd(nfmax, ndmax)
+            real*8 cys_ud(nfmax, numax)
+            real*8 cltot_dd(ndmax)
+            real*8 cntot_dd(ndmax)
+            real*8 betad
+            real*8 alfad
+            real*8 cms_ud(nfmax, numax)
+            real*8 crtot_dd(ndmax)
+            real*8 cyst_dd(nsmax, ndmax)
+            real*8 cmsurfd(nfmax)
+            real*8 cystrpd(nsmax)
+            real*8 cls_ud(nfmax, numax)
+            real*8 crsurfd(nfmax)
+            real*8 cltot_ud(numax)
+            real*8 crtotd
+            real*8 ensyd(nsmax)
+            real*8 cnbdyd(nbmax)
+            real*8 enszd(nsmax)
+            real*8 cntot_ud(numax)
+            real*8 cybdyd(nbmax)
+            real*8 crtot_ud(numax)
+            real*8 cmbdyd(nbmax)
+            real*8 cyst_ud(nsmax, numax)
+            real*8 gamd(nvmax)
+            common /body_r_d/ clbdyd, cybdyd, crbdyd, cnbdyd, cmbdyd
+            common /vrtx_r_d/ rv1d, rv2d, gamd
+            common /strp_r_d/ rled, chordd, wstripd, ensyd, enszd, clstrpd, cystrpd, crstrpd, cnstrpd, cmstrpd, clst_ad, clst_ud, cyst_ud, crst_ud, cnst_ud, cmst_ud, clst_dd, cyst_dd, crst_dd, cnst_dd, cmst_dd
+            common /surf_r_d/ clsurfd, cysurfd, crsurfd, cnsurfd, cmsurfd, cls_ad, cls_ud, cys_ud, crs_ud, cns_ud, cms_ud, cls_dd, cys_dd, crs_dd, cns_dd, cms_dd
+            common /case_r_d/ alfad, betad, cltotd, vinfd, vinf_ad, vinf_bd, xyzrefd, wrotd, cytotd, crtotd, cmtotd, cntotd, cltot_ad, cltot_ud, cytot_ud, crtot_ud, cmtot_ud, cntot_ud, cltot_dd, cytot_dd, crtot_dd, cmtot_dd, cntot_dd
+
         end subroutine avl
         
         subroutine oper ! in :libavl:aoper.f
         end subroutine oper
+        
+        subroutine aero ! in :libavl:aero.f
+        end subroutine aero
+        
         
         subroutine loadgeo(fildef) ! in :libavl:avl.f
             character*80 :: fildef
@@ -557,7 +617,7 @@ python module libavl ! in
             character*80 carg
         end subroutine trmset
         
-        
+
 
         subroutine calcst ! in :libavl:aoper.f
         end subroutine calcst
@@ -569,8 +629,8 @@ python module libavl ! in
             integer :: ir
         end subroutine set_params
 
-        subroutine sfforc_d ! in :libavl:aero_d.f
-        end subroutine sfforc_d
+        subroutine aero_d ! in :libavl:aero_d.f
+        end subroutine aero_d
         
     end interface 
 end python module libavl

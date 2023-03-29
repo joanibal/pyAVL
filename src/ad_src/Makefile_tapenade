@@ -20,7 +20,7 @@ I_RES_FILES := $(ALL_RES_FILES)
 
 # ====================== Full List of Routines ==================
 fullRoutines = "\
-	AERO(GAM,RV1,RV2,RLE, XYZREF, CHORD, WSTRIP, ALFA, VINF, ENSZ, ENSY)>(CLTOT) \
+	AERO(GAM, RV1, RV2, RLE, XYZREF, CHORD, WSTRIP, ALFA, VINF, ENSZ, ENSY)>(CLTOT, CDTOT) \
 "
 
 default: ad_forward 
@@ -44,65 +44,28 @@ ad_forward:
 	$(I_RES_FILES) \
 	-O forward_ad_src
 
-view-html:
-	xdg-open forward_ad_src/tapenadehtml/tapenade.html
-
-
-# Run the auto-edit file:
-# 	python autoEdit/autoEditForward.py temp_forward outputForward
-
-# # Remove preprocessor files
-# 	make -f Makefile_tapenade cleanpreprocess_res
-
 ad_reverse:
 # First delete the holding directory if it exists
-	rm -fr temp_reverse
+	rm -fr reverse_ad_src
 
 # Next create the holidng directory:
-	mkdir -p temp_reverse
+	mkdir -p reverse_ad_src
 
 # Run preprocessor on all input files
-	make -f Makefile_tapenade preprocess_reverse
+# make -f Makefile_tapenade preprocess_reverse
 
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
 	-html \
 	-head $(fullRoutines) \
-	-adjvarname %d \
-	-adjfuncname %_b \
 	-reverse \
-	-msglevel 30 \
 	$(TAPENADE_PRECISION) \
-	-noisize \
-	-O temp_reverse  \
-	$(I_RES_FILES)
+	$(I_RES_FILES) \
+	-O forward_ad_src
 
-# Run the auto-edit file:
-	python autoEdit/autoEditReverse.py temp_reverse outputReverse
+view-html:
+	xdg-open forward_ad_src/tapenadehtml/tapenade.html
 
-# Remove preprocessor files
-	make -f Makefile_tapenade cleanpreprocess_res
-
-
-preprocess_forward:
-	@echo "Preprocessing all input files for forward mode AD..."
-	@for file in $(ALL_RES_FILES); do \
-		echo Preprocessing $$file; \
-		cpp -DUSE_TAPENADE -DTAPENADE_FORWARD -traditional -P  $$file $$file.f90; \
-	done
-
-preprocess_reverse:
-	@echo "Preprocessing all input files for reverse mode AD..."
-	@for file in $(ALL_RES_FILES); do \
-		echo Preprocessing $$file; \
-		cpp -DUSE_TAPENADE -DTAPENADE_REVERSE -traditional -P $$file $$file.f90; \
-	done
-
-cleanpreprocess_res:
-	@echo "Cleaning up residual preprocessed files..."
-	@for file in $(ALL_RES_FILES); do \
-		rm $$file.f90; \
-	done
 
 all:	 default
 
