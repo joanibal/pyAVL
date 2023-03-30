@@ -36,12 +36,8 @@ class TestGeom(unittest.TestCase):
                 "nspans": np.array([5, 4, 3, 2, 1]),
                 "sspaces": np.array([-1.0, 0.0, 1.0, 2.0, 3.0]),
                 "aincs": np.deg2rad(np.array([0.5, 0.4, 0.3, 0.2, 0.1])),
-                "chords": np.array([0.5,0.4,0.3,0.2,0.1]),
-                "xyzles": np.array([[0,   0,     0],
-                                    [0.1, 1.0, 0.01],
-                                    [0.2, 2.0, 0.02],
-                                    [0.3, 3.0, 0.03],
-                                    [0.4, 4.0, 0.04]]),
+                "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
+                "xyzles": np.array([[0, 0, 0], [0.1, 1.0, 0.01], [0.2, 2.0, 0.02], [0.3, 3.0, 0.03], [0.4, 4.0, 0.04]]),
             },
         }
 
@@ -56,12 +52,11 @@ class TestGeom(unittest.TestCase):
                     atol=1e-8,
                     err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                 )
-        
+
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
         self.avl_solver.execute_run()
 
-        
         np.testing.assert_allclose(
             self.avl_solver.get_case_parameter("alpha"),
             6.0,
@@ -77,13 +72,13 @@ class TestGeom(unittest.TestCase):
             5.407351081559913,
             rtol=1e-8,
         )
-        
-        self.avl_solver.set_surface_params(data)                
-        
+
+        self.avl_solver.set_surface_params(data)
+
         assert self.avl_solver.get_num_surfaces() == 5
         assert self.avl_solver.get_num_strips() == 90
         assert self.avl_solver.get_mesh_size() == 780
-        
+
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
         self.avl_solver.execute_run()
