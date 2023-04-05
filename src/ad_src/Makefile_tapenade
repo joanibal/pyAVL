@@ -7,30 +7,37 @@ TAPENADE_PRECISION = -i4 -dr8 -r8
 
 ALL_RES_FILES =	$(SRC)/aero.f\
 				$(SRC)/aoper.f\
+				$(SRC)/asetup.f\
 				$(SRC)/aic.f\
-				$(SRC)/cdcl.f\
-				$(SRC)/AVL.INC\
-				$(SRC)/AINDEX.INC\
+				$(SRC)/amake.f\
+				$(SRC)/cdcl.f
 				
 
 # intermediate preprocessed files.
 I_RES_FILES := $(ALL_RES_FILES)
 
 # ---------------------------------------------------------------------
-
+# If you modify these variables you must check that the necessary intermmidate variables are in AVL_ad_seeds.inc. 
+# to check compare the variables in AVL_ad_seeds.inc with the variables in AVL_d.inc and AVL_b.inc.
+# you also need to add any new files to `src/build/fileList`
 # ====================== Full List of Routines ==================
 fullRoutines = "\
 	AERO(GAM, RV1, RV2, RLE, XYZREF, CHORD, WSTRIP, ALFA, VINF, ENSZ, ENSY)>(CLTOT, CDTOT) \
+	update_surfaces(ADDINC)>(ENC,ENV, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
+	get_res(ALFA)>(RES)\
 "
+# update_surfaces(XYZSCAL, XYZTRAN, ADDINC, XYZLES, CHORDS, AINCS, XASEC, SASEC, TASEC, XHINGED, CLCDSEC, CLAF)>(ENC, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
 
 default: ad_forward 
 
 ad_forward:
 # First delete the holding directory if it exists
 	rm -fr forward_ad_src
+	rm -fr forward_tmp
 
 # Next create the holidng directory:
 	mkdir -p forward_ad_src
+	mkdir -p forward_tmp
 
 # Run preprocessor on all input files
 # make -f Makefile_tapenade preprocess_forward
@@ -38,18 +45,25 @@ ad_forward:
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
 	-html \
+	-I $(SRC)/includes \
 	-head $(fullRoutines) \
+	-tgtvarname %_diff \
+	-tgtfuncname %_d \
 	-forward \
 	$(TAPENADE_PRECISION) \
 	$(I_RES_FILES) \
-	-O forward_ad_src
-
+	-O forward_tmp
+	
+	python ad_utils/edit_ad_src.py forward_tmp forward_ad_src forward
+	
 ad_reverse:
 # First delete the holding directory if it exists
 	rm -fr reverse_ad_src
+	rm -fr reverse_tmp
 
 # Next create the holidng directory:
 	mkdir -p reverse_ad_src
+	mkdir -p reverse_tmp
 
 # Run preprocessor on all input files
 # make -f Makefile_tapenade preprocess_reverse
@@ -57,11 +71,16 @@ ad_reverse:
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
 	-html \
+	-I $(SRC)/includes \
 	-head $(fullRoutines) \
+	-adjvarname %_diff \
+	-adjfuncname %_b \
 	-reverse \
 	$(TAPENADE_PRECISION) \
 	$(I_RES_FILES) \
-	-O forward_ad_src
+	-O reverse_tmp
+	
+	python ad_utils/edit_ad_src.py reverse_tmp reverse_ad_src reverse
 
 view-html:
 	xdg-open forward_ad_src/tapenadehtml/tapenade.html
