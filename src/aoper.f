@@ -951,6 +951,10 @@ C----- new Mach number invalidates close to everything that's stored
 C
 C---- set, factor AIC matrix and induced-velocity matrix (if they don't exist)
       CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
 C
       IF(NITER.GT.0) THEN
 C----- might as well directly set operating variables if they are known
@@ -962,7 +966,9 @@ C----- might as well directly set operating variables if they are known
       ENDIF
 C
 C----- set GAM_U
-ccc       WRITE(*,*) ' Solving for unit-freestream vortex circulations...'
+      if (lverbose) then
+      WRITE(*,*) ' Solving for unit-freestream vortex circulations...'
+      endif
       CALL GUCALC
 C
 C-------------------------------------------------------------
@@ -1874,4 +1880,60 @@ C
       RETURN
       END ! OUTSTRP
 
+C ============= Added to AVL ===============
 
+      subroutine exec_rhs
+      include "AVL.INC"
+      CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
+      ! add this back in?     
+C----- might as well directly set operating variables if they are known
+C      IF(ICON(IVALFA,IR).EQ.ICALFA) ALFA    = CONVAL(ICALFA,IR)*DTR
+C      IF(ICON(IVBETA,IR).EQ.ICBETA) BETA    = CONVAL(ICBETA,IR)*DTR
+C      IF(ICON(IVROTX,IR).EQ.ICROTX) WROT(1) = CONVAL(ICROTX,IR)*2./BREF
+C      IF(ICON(IVROTY,IR).EQ.ICROTY) WROT(2) = CONVAL(ICROTY,IR)*2./CREF
+C      IF(ICON(IVROTZ,IR).EQ.ICROTZ) WROT(3) = CONVAL(ICROTZ,IR)*2./BREF
+C
+C-------------------------------------------------------------
+C---- calculate initial operating state
+C
+C---- set VINF() vector from initial ALFA,BETA
+      CALL VINFAB
+      
+      call set_vel_rhs
+      
+C---- copy RHS vector into GAM that will be used for soluiton
+      GAM = RHS
+      
+      CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
+
+      end !subroutine solve_rhs
+      
+      subroutine get_res
+      INCLUDE "AVL.INC"
+C---  
+      write(*,*) 'LAIC', LAIC
+      IF(.NOT.LAIC) THEN
+            CALL build_AIC
+      end if
+      ! IF(.NOT.LAIC) THEN
+      !       call factor_AIC
+      ! ENDIF
+C---- set VINF() vector from initial ALFA,BETA
+      CALL VINFAB
+            
+      call set_vel_rhs
+
+      
+      call mat_prod(AICN, GAM, NVOR, res)
+      
+C---- add the RHS vector to the residual
+      do I = 1, NVOR
+            res(I) = res(I) - RHS(I)
+      enddo      
+      
+      
+      end !get_res

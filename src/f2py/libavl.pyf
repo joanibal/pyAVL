@@ -278,6 +278,7 @@ python module libavl ! in
             ! end added params
             real*8 :: amach
             real*8 dimension(nvmax,nvmax) :: aicn
+            real*8 dimension(nvmax,nvmax) :: aicn_lu
             real*8 dimension(3,nvmax,nvmax) :: wc_gam
             real*8 dimension(3,nvmax,nvmax) :: wv_gam
             real*8 dimension(3,nvmax) :: wc
@@ -488,6 +489,8 @@ python module libavl ! in
             real*8 dimension(3,nlmax,numax) :: dbl_u
             real*8 dimension(3,nvmax,numax) :: wcsrd_u
             real*8 dimension(3,nvmax,numax) :: wvsrd_u
+            real*8 dimension(nvmax) :: rhs
+            real*8 dimension(nvmax) :: res
             common /strp_r/ rle,chord,rle1,chord1,rle2,chord2,wstrip,tanle,tante,clcd,saxfr,ess,ensy,ensz,xsref,ysref,zsref,ainc,ainc_g,cdstrp,clstrp,cxstrp,cystrp,czstrp,crstrp,cnstrp,cmstrp,cdst_a,clst_a,cdst_u,clst_u,cxst_u,cyst_u,czst_u,crst_u,cnst_u,cmst_u,cdst_d,clst_d,cxst_d,cyst_d,czst_d,crst_d,cnst_d,cmst_d,cdst_g,clst_g,cxst_g,cyst_g,czst_g,crst_g,cnst_g,cmst_g,cf_strp,cm_strp,cnrmstrp,caxlstrp,cd_lstrp,cl_lstrp,cdv_lstrp,cltstrp,clastrp,cmc4,cmle,cnc,dwwake,cnc_u,cnc_d,cnc_g
             common /un_c/ unchl,unchm,uncht,unchf,unchs,unchv,uncha,unchi,unchd
             common /surf_i/ nj,nk,ifrst,jfrst,imags,lscomp
@@ -504,7 +507,7 @@ python module libavl ! in
             common /solv_i/ iapiv
             common /surf_r/ cdsurf,clsurf,cxsurf,cysurf,czsurf,crsurf,cnsurf,cmsurf,cdvsurf,cds_a,cls_a,cds_u,cls_u,cxs_u,cys_u,czs_u,crs_u,cns_u,cms_u,cds_d,cls_d,cxs_d,cys_d,czs_d,crs_d,cns_d,cms_d,cds_g,cls_g,cxs_g,cys_g,czs_g,crs_g,cns_g,cms_g,cf_srf,cm_srf,cl_srf,cd_srf,cmle_srf,ssurf,cavesurf,vbody
             
-            common /solv_r/ amach,aicn,wc_gam,wv_gam,wc,wc_u,wc_d,wc_g,wv,wv_u,wv_d,wv_g
+            common /solv_r/ amach,aicn,aicn_lu, wc_gam,wv_gam,wc,wc_u,wc_d,wc_g,wv,wv_u,wv_d,wv_g
             common /vrtx_l/ lvnc,lvalbe
             common /case_z/ eval,evec,evaldat
             common /vrtx_i/ nsurfv
@@ -512,7 +515,7 @@ python module libavl ! in
             common /case_l/ lgeo,lenc,laic,lsrd,lvel,lsol,lsen,lvisc,lmass,lcondef,ldesdef,lptot,lpsurf,lpstrp,lpele,lphinge,lpderiv,lbforce,lnasa_sa,lsa_rates,lmwait,lppar, lverbose
             common /case_i/ luinp,lurun,luout,lustd,lusys,iysym,izsym,matsym,nvor,nstrip,nsurf,nlnode,nbody,icon,nvtot,nctot,nptot,ncontrol,ndesign,nitmax,irun,nrun,irune,irunt,itrim,neigen,neigendat, cpscl
             common /case_c/ frndef,fprdef,fevdef,title,stitle,btitle,rtitle,dname,gname,varnam,connam,varkey,conkey,parnam,parunch
-            common /vrtx_r/ rv1,rv2,rv,rc,rs,rl,radl,dxv,chordv,slopev,slopec,dcontrol,vhinge,phinge,vrefl,enc,env,enc_d,enc_g,env_d,env_g,dcp,dcp_u,dcp_d,dcp_g,gam,gam_u_0,gam_u_d,gam_u_g,gam_u,gam_d,gam_g,src,dbl,src_u,dbl_u,wcsrd_u,wvsrd_u
+            common /vrtx_r/ rv1,rv2,rv,rc,rs,rl,radl,dxv,chordv,slopev,slopec,dcontrol,vhinge,phinge,vrefl,enc,env,enc_d,enc_g,env_d,env_g,dcp,dcp_u,dcp_d,dcp_g,gam,gam_u_0,gam_u_d,gam_u_g,gam_u,gam_d,gam_g,src,dbl,src_u,dbl_u,wcsrd_u,wvsrd_u, rhs, res
             
             ! derivative variables
             real*8 cnsurfd(nfmax)
@@ -628,9 +631,21 @@ python module libavl ! in
         subroutine set_params(ir) ! in :libavl:amode.f
             integer :: ir
         end subroutine set_params
+        
+        subroutine set_vel_rhs ! in :libavl:aoper.f
+        end subroutine set_vel_rhs
+        
+        subroutine exec_rhs ! in :libavl:aoper.f
+        end subroutine exec_rhs
+        
+        subroutine get_res ! in :libavl:aoper.f
+        end subroutine get_res
 
         subroutine aero_d ! in :libavl:aero_d.f
         end subroutine aero_d
+        
+        subroutine aero_b ! in :libavl:aero_b.f
+        end subroutine aero_b
         
     end interface 
 end python module libavl

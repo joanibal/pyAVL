@@ -40,66 +40,19 @@ C
 C...COMMENTS   
 C
       INCLUDE 'AVL.INC'
-      REAL WORK(NVMAX)
+      
 C
       AMACH = MACH
       BETM = SQRT(1.0 - AMACH**2)
 C
 C
       IF(.NOT.LAIC) THEN
-        if (lverbose) then
-          WRITE(*,*) ' Building normalwash AIC matrix...'
-        end if
-       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-     &           NVOR,RV1,RV2,NSURFV,CHORDV,
-     &           NVOR,RC ,    NSURFV,.FALSE.,
-     &           WC_GAM,NVMAX)
-       DO I = 1, NVOR
-         DO J = 1, NVOR
-           AICN(I,J) = WC_GAM(1,I,J)*ENC(1,I)
-     &               + WC_GAM(2,I,J)*ENC(2,I)
-     &               + WC_GAM(3,I,J)*ENC(3,I)
-           LVNC(I) = .TRUE.
-ccc           write(*,*) i, j, aicn(i,j)  !@@@
-         ENDDO
-       ENDDO
-
-C----- process each surface which does not shed a wake
-       DO 10 N = 1, NSURF
-         IF(LFWAKE(N)) GO TO 10
-
-C------- go over TE control points on this surface
-         J1 = JFRST(N)
-         JN = JFRST(N) + NJ(N)-1
-C
-         DO J = J1, JN
-           I1 = IJFRST(J)
-           IV = IJFRST(J) + NVSTRP(J) - 1
-
-C--------- clear system row for TE control point
-           DO JV = 1, NVOR
-             AICN(IV,JV) = 0.
-           ENDDO
-           LVNC(IV) = .FALSE.
-
-C--------- set  sum_strip(Gamma) = 0  for this strip
-           DO JV = I1, IV
-             AICN(IV,JV) = 1.0
-           ENDDO
-         ENDDO
- 10    CONTINUE
-
+        CALL build_AIC
 C
 CC...Holdover from HPV hydro project for forces near free surface
 CC...Eliminates excluded vortices from eqns which are below z=Zsym 
 C      CALL MUNGEA
 C
-       if(lverbose) then
-        WRITE(*,*) ' Factoring normalwash AIC matrix...'
-       end if 
-       CALL LUDCMP(NVMAX,NVOR,AICN,IAPIV,WORK)
-C
-       LAIC = .TRUE.
       ENDIF
 C
 C
@@ -149,6 +102,66 @@ C
       END ! SETUP
 
 
+      SUBROUTINE build_AIC
+      INCLUDE 'AVL.INC'
+      AMACH = MACH
+      BETM = SQRT(1.0 - AMACH**2)
+      
+      
+        if (lverbose) then
+          WRITE(*,*) ' Building normalwash AIC matrix...'
+        end if
+       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
+     &           NVOR,RV1,RV2,NSURFV,CHORDV,
+     &           NVOR,RC ,    NSURFV,.FALSE.,
+     &           WC_GAM,NVMAX)
+       DO I = 1, NVOR
+         DO J = 1, NVOR
+           AICN(I,J) = WC_GAM(1,I,J)*ENC(1,I)
+     &               + WC_GAM(2,I,J)*ENC(2,I)
+     &               + WC_GAM(3,I,J)*ENC(3,I)
+           LVNC(I) = .TRUE.
+         ENDDO
+       ENDDO
+
+C----- process each surface which does not shed a wake
+       DO 10 N = 1, NSURF
+         IF(LFWAKE(N)) GO TO 10
+
+C------- go over TE control points on this surface
+         J1 = JFRST(N)
+         JN = JFRST(N) + NJ(N)-1
+C
+         DO J = J1, JN
+           I1 = IJFRST(J)
+           IV = IJFRST(J) + NVSTRP(J) - 1
+
+C--------- clear system row for TE control point
+           DO JV = 1, NVOR
+             AICN(IV,JV) = 0.
+           ENDDO
+           LVNC(IV) = .FALSE.
+
+C--------- set  sum_strip(Gamma) = 0  for this strip
+           DO JV = I1, IV
+             AICN(IV,JV) = 1.0
+           ENDDO
+         ENDDO
+ 10    CONTINUE
+       end ! build_AIC
+       
+      SUBROUTINE factor_AIC
+       INCLUDE 'AVL.INC'
+       REAL WORK(NVMAX)
+       
+       if(lverbose) then
+        WRITE(*,*) ' Factoring normalwash AIC matrix...'
+       end if 
+       AICN_LU = AICN
+       CALL LUDCMP(NVMAX,NVOR,AICN_LU,IAPIV,WORK)
+C
+       LAIC = .TRUE.
+      END ! factor_AIC
  
       SUBROUTINE GUCALC
       INCLUDE 'AVL.INC'
@@ -197,12 +210,12 @@ C--------- just clear r.h.s.
           ENDIF
         ENDDO
 
-        CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_U_0(1,IU))
+        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
-          CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_U_D(1,IU,N))
+          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
         DO N = 1, NDESIGN
-          CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_U_G(1,IU,N))
+          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
         ENDDO
  10   CONTINUE
 C
@@ -248,12 +261,12 @@ C--------- just clear r.h.s.
            ENDDO
           ENDIF
         ENDDO
-        CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_U_0(1,IU))
+        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
-          CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_U_D(1,IU,N))
+          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
         DO N = 1, NDESIGN
-          CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_U_G(1,IU,N))
+          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
         ENDDO
    20 CONTINUE
 C
@@ -316,7 +329,7 @@ C...Eliminates excluded vortex equations for strips with z<Zsym
 ccc      CALL MUNGEB(GAM_Q(1,IQ))
 C********************************************************************
 C
-        CALL BAKSUB(NVMAX,NVOR,AICN,IAPIV,GAM_Q(1,IQ))
+        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_Q(1,IQ))
  100  CONTINUE
 C
       RETURN
@@ -518,3 +531,61 @@ C
 C
       RETURN
       END ! WSENS
+      
+      subroutine set_vel_rhs
+      include 'AVL.INC'
+      real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)
+      
+      DO I = 1, NVOR
+        IF(LVNC(I)) THEN
+          VUNIT(1) = 0.
+          VUNIT(2) = 0.
+          VUNIT(3) = 0.
+          
+          WUNIT(1) = 0.
+          WUNIT(2) = 0.
+          WUNIT(3) = 0.
+           IF(LVALBE(I)) THEN
+            VUNIT(1) = VINF(1)
+            VUNIT(2) = VINF(2)
+            VUNIT(3) = VINF(3)
+            
+            WUNIT(1) = WROT(1)
+            WUNIT(2) = WROT(2)
+            WUNIT(3) = WROT(3)
+            
+           ENDIF
+           
+           RROT(1) = RC(1,I) - XYZREF(1)
+           RROT(2) = RC(2,I) - XYZREF(2)
+           RROT(3) = RC(3,I) - XYZREF(3)
+           CALL CROSS(RROT,WUNIT,VUNIT_W_term)
+           
+           VUNIT = VUNIT + VUNIT_W_term
+           
+           RHS(I) = -DOT(ENC(1,I),VUNIT)
+        ELSE
+          RHS(I) = 0
+        endif
+        
+      enddo
+
+        
+      end !set_vel_rhs
+      
+      subroutine mat_prod(mat, vec, n, out_vec)
+        include 'AVL.INC'
+        real mat(NVMAX,NVMAX), vec(NVMAX), out_vec(NVMAX)
+        
+        out_vec = 0.
+        
+        DO J = 1, n
+          DO I = 1, n
+            out_vec(I) = out_vec(I) +  mat(I,J)*vec(J)
+          enddo 
+        enddo
+        
+      end !mat_prod
+        
+                 
+        
