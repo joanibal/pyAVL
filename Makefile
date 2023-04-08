@@ -5,6 +5,7 @@
 default:
 # Check if the config.mk file is in the config dir.
 	@if [ ! -f "config/config.mk" ]; then \
+	echo "WARNING: this method of compiling is deprecated use meson insted!"; \
 	echo "Before compiling, copy an existing config file from the "; \
 	echo "config/defaults/ directory to the config/ directory and  "; \
 	echo "rename to config.mk. For example:"; \
@@ -25,6 +26,7 @@ clean:
 	rm -fr src_cs/build/*.o
 	rm -fr src_cs/build/*.a
 	rm -fr src_cs/build/*.so
+	rm -fr pyavl/*.so
 	rm -f *~ config.mk;
 
 pyavl_build:

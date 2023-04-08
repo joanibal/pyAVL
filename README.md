@@ -3,9 +3,31 @@
 pyAVL is a stripped down version of Mark Drela and Harold Youngren's famous AVL code wrapped in python with f2py.
 This allows one to more easily conduct large parameter sweeps in AVL or to include AVL into a larger model. 
 Additionally, this wrapper provides access to more data than is available through traditional file output. 
-Unlike in the output files which is limit to about 4 digits, the user has access to the full precision data. 
+Unlike in the output files which is limit to about 4 digits, the user has access to the full double precision data. 
 
 # Installation
+The best way to get pyAVL is to install it through pip
+```
+pip install pyavl-wrapper
+```
+This version even comes packaged with OpenBLAS for faster analysis. 
+
+
+Currently, only Linux and macOS are supported. 
+The process of building on Windows still has issues. 
+For now Windows users will have to use pyAVL through Windows subsystem for Linux (WSL).
+
+
+## building locally
+If you want to make pyAVL locally then you have to clone the repository and use the following process.
+
+In the root directory run
+```
+pip install . 
+```
+
+<!-- ## building step by step
+
 To compile the avl library use 
 ```
 make
@@ -22,10 +44,11 @@ or
 ```
 pip install . -e 
 ```
-to install in development mode 
+to install in development mode  -->
 
 # Basic usage
 The API of pyAVL was made to mirror the usage of AVL through its text interface. 
+The user loads in a geometry file, adds constraints, and then executes analysis runs.
 
 The AVL wrapper is implemented in the `AVLSolver` class. 
 To use this wrapper, first one must initialize the `AVLSolver` object with a geometry file and optionally a mass file. 

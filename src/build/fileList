@@ -17,10 +17,7 @@ f77Files =	aero.f\
 		cdcl.f\
 		getvm.f\
 		hidden.f\
-		matrix.f\
-		matrix-lapack.f\
-		matrix-linpack.f\
-		matrix-lapack.f\
+		matrix-lapackdp.f\
 		second.f\
 		second_g77.f\
 		second_ifc.f\

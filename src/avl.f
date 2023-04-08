@@ -823,6 +823,7 @@ C
       INCLUDE 'AVL.INC'
       
       LVERBOSE = .FALSE.
+      LTIMING = .FALSE.
 C
 C---- flag for forces in standard NASA stability axes (as in Etkin)
       LNASA_SA  = .TRUE.

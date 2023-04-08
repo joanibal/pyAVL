@@ -40,20 +40,32 @@ C
 C...COMMENTS   
 C
       INCLUDE 'AVL.INC'
-      
+      REAL WORK(NVMAX)
+      real t0, t1, t2, t3, t4, t5
 C
       AMACH = MACH
       BETM = SQRT(1.0 - AMACH**2)
 C
 C
+      if (ltiming) then 
+        call cpu_time(t0)
+      end if
       IF(.NOT.LAIC) THEN
         CALL build_AIC
-C
+        if (ltiming) then 
+          call cpu_time(t2)
+          write(*,*) '  nowake time: ', t2 - t1
+        end if 
+
 CC...Holdover from HPV hydro project for forces near free surface
 CC...Eliminates excluded vortices from eqns which are below z=Zsym 
 C      CALL MUNGEA
 C
       ENDIF
+      if (ltiming) then 
+        call cpu_time(t3)
+        write(*,*) '  LUDCMP time: ', t3 - t2
+      end if
 C
 C
       IF(.NOT.LSRD) THEN
@@ -76,6 +88,10 @@ C
      &            WCSRD_U,NVMAX)
         LSRD = .TRUE.
       ENDIF
+      if (ltiming) then 
+        call cpu_time(t4)
+        write(*,*) '  s+doub time: ', t4 - t3
+      end if
 
 C
       IF(.NOT.LVEL) THEN
@@ -98,6 +114,10 @@ C
        LVEL = .TRUE.
       ENDIF
 C
+      if (ltiming) then 
+        call cpu_time(t5)
+        write(*,*) '  bo vel mat time: ', t5 - t4
+      end if
       RETURN
       END ! SETUP
 
@@ -464,6 +484,40 @@ C--------------------------------------------------
 C     Sums AIC components to get WC, WV
 C--------------------------------------------------
 C
+      ! I (josh) changed the loop order for speed. 
+      ! It should be equivalent to the new code, but test coverage is low.
+      ! I am leaving it hear as a reminder of the original code.
+
+      ! DO I = 1, NVOR
+      !   DO K = 1, 3
+      !     WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
+      ! &            + WCSRD_U(K,I,2)*VINF(2)
+      ! &            + WCSRD_U(K,I,3)*VINF(3)
+      ! &            + WCSRD_U(K,I,4)*WROT(1)
+      ! &            + WCSRD_U(K,I,5)*WROT(2)
+      ! &            + WCSRD_U(K,I,6)*WROT(3)
+      !     WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+      ! &            + WVSRD_U(K,I,2)*VINF(2)
+      ! &            + WVSRD_U(K,I,3)*VINF(3)
+      ! &            + WVSRD_U(K,I,4)*WROT(1)
+      ! &            + WVSRD_U(K,I,5)*WROT(2)
+      ! &            + WVSRD_U(K,I,6)*WROT(3)
+      !     DO J = 1, NVOR
+      !       WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
+      !       WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
+      !     ENDDO
+      ! C
+      !     DO N = 1, NUMAX
+      !       WC_U(K,I,N) = WCSRD_U(K,I,N)
+      !       WV_U(K,I,N) = WVSRD_U(K,I,N)
+      !       DO J = 1, NVOR
+      !         WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+      !         WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
+      !       ENDDO
+      !     ENDDO
+      ! C
+      !   ENDDO
+      ! ENDDO
       DO I = 1, NVOR
         DO K = 1, 3
           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
@@ -478,22 +532,41 @@ C
      &            + WVSRD_U(K,I,4)*WROT(1)
      &            + WVSRD_U(K,I,5)*WROT(2)
      &            + WVSRD_U(K,I,6)*WROT(3)
-          DO J = 1, NVOR
+        enddo 
+      enddo 
+      
+      
+      DO J = 1, NVOR
+        DO I = 1, NVOR
+          DO K = 1, 3
             WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
           ENDDO
-C
-          DO N = 1, NUMAX
+        ENDDO
+      ENDDO
+      
+      
+      DO N = 1, NUMAX
+        DO I = 1, NVOR
+          DO K = 1, 3
             WC_U(K,I,N) = WCSRD_U(K,I,N)
             WV_U(K,I,N) = WVSRD_U(K,I,N)
-            DO J = 1, NVOR
+          enddo
+        enddo
+      enddo
+      
+            
+      DO N = 1, NUMAX
+        DO J = 1, NVOR
+          DO I = 1, NVOR
+            DO K = 1, 3
               WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
             ENDDO
           ENDDO
+        enddo 
+      enddo
 C
-        ENDDO
-      ENDDO
 C
       RETURN
       END ! VELSUM

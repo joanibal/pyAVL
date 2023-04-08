@@ -39,11 +39,19 @@ from . import MExt
 
 
 class AVLSolver(object):
-    def __init__(self, geo_file=None, mass_file=None, debug=False):
+    def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
+        # TODO: fix MExt to work with pyavl.lib packages
         # This is important for creating multiple instances of the AVL solver that do not share memory
-        curDir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
-        time.sleep(0.1)  # this is necessary for some reason?!
-        self.avl = MExt.MExt("libavl", curDir, debug=debug)._module
+        # module_dir = os.path.dirname(os.path.realpath(__file__))
+        # module_name = os.path.basename(module_dir)
+        # avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
+        # # get just the file name
+        # avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        # self.avl = MExt.MExt("libavl", module_name, lib_so_file=avl_lib_so_file, debug=debug)._module
+
+        from . import libavl
+
+        self.avl = libavl
 
         if not (geo_file is None):
             try:
@@ -63,7 +71,10 @@ class AVLSolver(object):
 
             self.avl.avl()
             if debug:
-                self.avl.case_l.lverbose = True
+                self.set_avl_fort_var("CASE_L","LVERBOSE",True)
+
+            if timing:
+                self.set_avl_fort_var("CASE_L","LTIMING",True)
 
             self.avl.loadgeo(geo_file)
 
@@ -73,9 +84,9 @@ class AVLSolver(object):
         else:
             raise ValueError("neither a geometry file or aircraft object was given")
 
-        self.bref = self.avl.case_r.bref
-        self.cref = self.avl.case_r.cref
-        self.sref = self.avl.case_r.sref
+        self.bref = self.get_avl_fort_var("CASE_R","BREF")
+        self.cref = self.get_avl_fort_var("CASE_R","CREF")
+        self.sref = self.get_avl_fort_var("CASE_R","SREF")
 
         control_names = self.get_control_names()
         self.control_variables = {}
@@ -239,10 +250,10 @@ class AVLSolver(object):
 
         # get the corresponding common block object.
         # it must be lowercase becuase of f2py
-        common_block = getattr(self.avl, common_block.lower())
+        common_block = getattr(self.avl, common_block.upper())
 
         # get the value of the variable from the common block
-        val = getattr(common_block, variable.lower())
+        val = getattr(common_block, variable.upper())
 
         # convert from fortran ordering to c ordering
         val = val.ravel(order="F").reshape(val.shape[::-1], order="C")
@@ -256,10 +267,10 @@ class AVLSolver(object):
         # this had to be split up into two steps to work
         # get the corresponding common block object.
         # it must be lowercase becuase of f2py
-        common_block = getattr(self.avl, common_block.lower())
+        common_block = getattr(self.avl, common_block.upper())
 
         # get the value of the variable from the common block
-        setattr(common_block, variable.lower(), val)
+        setattr(common_block, variable.upper(), val)
 
         return val
 
@@ -394,7 +405,6 @@ class AVLSolver(object):
             "CM strip" : ["STRP_R", "CF_STRP"], # moments in 3 directions
         }    
         # fmt: on
-
         surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
@@ -403,12 +413,10 @@ class AVLSolver(object):
             strip_data[surf] = {}
 
         for key, avl_key in var_to_avl_var.items():
-
             vals = self.get_avl_fort_var(*avl_key)
 
             # add the values to corresponding surface dict
             for idx_surf, surf_name in enumerate(surf_names):
-
                 idx_srp_beg, idx_srp_end = self.get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
 
@@ -440,12 +448,14 @@ class AVLSolver(object):
             self.execute_run()
 
     def get_control_names(self) -> List[str]:
-        control_names = self._convertFortranStringArrayToList(self.avl.case_c.dname)
+        fort_names = self.get_avl_fort_var("CASE_C", "DNAME")
+        control_names = self._convertFortranStringArrayToList(fort_names)
         return control_names
 
     def get_surface_names(self) -> List[str]:
         """get the surface names from the geometry"""
-        surf_names = self._convertFortranStringArrayToList(self.avl.case_c.stitle)
+        fort_names = self.get_avl_fort_var("CASE_C", "STITLE")
+        surf_names = self._convertFortranStringArrayToList(fort_names)
         return surf_names
 
     def get_surface_params(self, geom_only: bool = False) -> Dict[str, Dict[str, Any]]:
@@ -608,15 +618,15 @@ class AVLSolver(object):
     # Utility functions
     def get_num_surfaces(self) -> int:
         """Get the number of surfaces in the geometry"""
-        return self.avl.case_i.nsurf
+        return self.get_avl_fort_var("CASE_I","NSURF")
 
     def get_num_strips(self) -> int:
         """Get the number of strips in the mesh"""
-        return self.avl.case_i.nstrip
+        return self.get_avl_fort_var("CASE_I","NSTRIP")
 
     def get_mesh_size(self) -> int:
         """Get the number of panels in the mesh"""
-        return self.avl.case_i.nvor
+        return self.get_avl_fort_var("CASE_I","NVOR")
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This

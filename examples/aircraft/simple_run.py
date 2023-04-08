@@ -28,7 +28,7 @@ avl_solver.CLSweep(0.6, 1.6)
 
 print("----------------- CL sweep ----------------")
 print("   Angle        Cl           Cd          Cdff          Cdv          Cm")
-for cl in np.arange(0.6,1.6,0.1):
+for cl in np.arange(0.6, 1.6, 0.1):
     avl_solver.add_trim_condition("CL", cl)
     avl_solver.execute_run()
     run_data = avl_solver.get_case_total_data()

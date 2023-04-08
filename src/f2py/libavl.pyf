@@ -2,18 +2,16 @@
 ! Note: the context of this file is case sensitive.
 
 python module libavl ! in 
+    interface
+        
+    end interface
     interface  ! in :libavl
+        block data 
+            include '../AVL.INC'
+        end block data 
         ! TODO: import from AVL.INC directly to avoid duplication
-        ! include 'AVL.INC'
-        subroutine avl ! in :libavl:avl.f
-            ! parameters from include 'AINDEX.INC'
-            parameter (ivtot=5)
-            parameter (ictot=10)
-            parameter (iptot=30)
-            parameter (jetot=12)
-            parameter (kptot=17)
-            parameter (kpvtot=7)
 
+<<<<<<< HEAD
             ! Parameters
             parameter (nvmax=6000)
             parameter (nsmax=400)
@@ -592,6 +590,10 @@ python module libavl ! in
             common /surf_r_d/ clsurfd, cysurfd, crsurfd, cnsurfd, cmsurfd, cls_ad, cls_ud, cys_ud, crs_ud, cns_ud, cms_ud, cls_dd, cys_dd, crs_dd, cns_dd, cms_dd
             common /case_r_d/ alfad, betad, cltotd, vinfd, vinf_ad, vinf_bd, xyzrefd, wrotd, cytotd, crtotd, cmtotd, cntotd, cltot_ad, cltot_ud, cytot_ud, crtot_ud, cmtot_ud, cntot_ud, cltot_dd, cytot_dd, crtot_dd, cmtot_dd, cntot_dd
 
+=======
+        subroutine avl ! in :libavl:avl.f
+            ! parameters from 
+>>>>>>> master
         end subroutine avl
         
         subroutine oper ! in :libavl:aoper.f

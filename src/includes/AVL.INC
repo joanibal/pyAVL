@@ -1,5 +1,6 @@
 C
       INCLUDE 'AINDEX.INC'
+      INCLUDE 'AVL_kinds.INC'
 C
 C...Parameter and Global variables for Athena 3-D vortex lattice code
 C
@@ -52,8 +53,6 @@ C---- unit values, names, and namelengths
       COMMON /UN_R/UNITL,UNITM,UNITT,UNITF,UNITS,UNITV,UNITA,UNITI,UNITD
       COMMON /UN_C/UNCHL,UNCHM,UNCHT,UNCHF,UNCHS,UNCHV,UNCHA,UNCHI,UNCHD
       COMMON /UN_I/NUL  ,NUM  ,NUT  ,NUF  ,NUS  ,NUV  ,NUA  ,NUI  ,NUD
-C
-      REAL MACH, MACH0
 C
       CHARACTER*80  FRNDEF, FPRDEF, FEVDEF
       CHARACTER*80 TITLE
@@ -116,7 +115,8 @@ C
      &        LBFORCE,
      &        LNASA_SA, LSA_RATES,
      &        LMWAIT,
-     &        LVERBOSE
+     &        LVERBOSE,
+     &        LTIMING
       LOGICAL LPPAR
       COMMON /CASE_L/
      & LGEO,   ! T if geometry exists
@@ -141,7 +141,62 @@ C
      & LSA_RATES,   ! T if stability-axis rates are to be used
      & LMWAIT,      ! T if mode display is to wait for real time
      & LPPAR(IPMAX),          ! T if parameter value is to be plotted
-     & LVERBOSE             ! debug flag to trigger writing out typical avl output
+     & LVERBOSE,             ! debug flag to trigger writing out typical avl output
+     & LTIMING             ! debug flag to trigger writing out timing info
+      
+      real(kind=avl_real) VERSION 
+      real(kind=avl_real) DTR,     PI
+      real(kind=avl_real) YSYM,    ZSYM
+      real(kind=avl_real) ALFA,   BETA  
+      real(kind=avl_real) VINF       
+      real(kind=avl_real) VINF_A     
+      real(kind=avl_real) VINF_B     
+      real(kind=avl_real) WROT       
+      real(kind=avl_real) DTIMED        
+      real(kind=avl_real) PARVAL  
+      real(kind=avl_real) CONVAL  
+      real(kind=avl_real) DELCON  
+      real(kind=avl_real) DELDES  
+      real(kind=avl_real) SREF,  CREF,  BREF
+      real(kind=avl_real) XYZREF      
+      real(kind=avl_real) XYZREF0      
+      real(kind=avl_real) MACH           
+      real(kind=avl_real) MACH0          
+      real(kind=avl_real) CDREF          
+      real(kind=avl_real) CDREF0         
+      real(kind=avl_real) VRCORE         
+      real(kind=avl_real) SRCORE         
+      real(kind=avl_real) CLFF, CYFF, CDFF     
+      real(kind=avl_real) CLFF_U,CYFF_U,CDFF_U
+      real(kind=avl_real) CLFF_D,CYFF_D,CDFF_D 
+      real(kind=avl_real) CLFF_G,CYFF_G,CDFF_G 
+      real(kind=avl_real) SPANEF     
+      real(kind=avl_real) SPANEF_A   
+      real(kind=avl_real) SPANEF_U
+      real(kind=avl_real) SPANEF_D  
+      real(kind=avl_real) SPANEF_G  
+      real(kind=avl_real) CDTOT, CLTOT    
+      real(kind=avl_real) CXTOT, CYTOT, CZTOT
+      real(kind=avl_real) CRTOT, CMTOT, CNTOT
+      real(kind=avl_real) CRSAX, CMSAX, CNSAX   
+      real(kind=avl_real) CDVTOT          
+      real(kind=avl_real) CDTOT_A, CLTOT_A      
+      real(kind=avl_real) CDTOT_U,CLTOT_U
+      real(kind=avl_real) CXTOT_U,CYTOT_U,CZTOT_U
+      real(kind=avl_real) CRTOT_U,CMTOT_U,CNTOT_U
+      real(kind=avl_real) CDTOT_D,CLTOT_D
+      real(kind=avl_real) CXTOT_D,CYTOT_D,CZTOT_D
+      real(kind=avl_real) CRTOT_D,CMTOT_D,CNTOT_D
+      real(kind=avl_real) CDTOT_G,CLTOT_G
+      real(kind=avl_real) CXTOT_G,CYTOT_G,CZTOT_G
+      real(kind=avl_real) CRTOT_G,CMTOT_G,CNTOT_G
+      real(kind=avl_real) CHINGE
+      real(kind=avl_real) CHINGE_U
+      real(kind=avl_real) CHINGE_D
+      real(kind=avl_real) CHINGE_G
+      real(kind=avl_real) DCL_A0, DCM_A0
+      real(kind=avl_real) DCL_U0, DCM_U0
+      real(kind=avl_real) XNP                
       COMMON /CASE_R/
      & VERSION,          ! AVL version number
      & DTR,     PI,      ! 3.14159/180 ,  3.14159
@@ -206,7 +261,13 @@ C
      &  ITLEV,           ! current time level
      &  NTLEV,           ! number of stored time levels
      &  NTSTEPS          ! default number of time steps to run
-
+      
+      REAL(kind=avl_real) DELTAT
+      REAL(kind=avl_real) TDER
+      REAL(kind=avl_real) TLEV
+      REAL(kind=avl_real) TPARS
+      REAL(kind=avl_real) TPARV
+      REAL(kind=avl_real) TPARD 
       COMMON /TIME_R/
      &  DELTAT,                 ! integration time step
      &  TDER(3),                ! time-derivative differencing coefficient
@@ -215,6 +276,12 @@ C
      &  TPARV(3,KPVTOT,NTMAX),  ! vector parameter time trace
      &  TPARD(NDMAX,NTMAX)      ! control parameter time traces
 
+      REAL(kind=avl_real) RHO0, GEE0
+      REAL(kind=avl_real) XYZMASS0
+      REAL(kind=avl_real) RMASS0     
+      REAL(kind=avl_real) RINER0
+      REAL(kind=avl_real) AMASS
+      REAL(kind=avl_real) AINER 
       COMMON /MASS_R/
      &   RHO0, GEE0,     ! density, gravity   | from .mass file
      &   XYZMASS0(3),    ! mass centroid      | from .mass file
@@ -238,6 +305,24 @@ C
      & IMAGS(NFMAX),    ! indicates whether surface is a YDUPlicated one
      & LSCOMP(NFMAX)    ! logical surface component index
 
+      REAL(kind=avl_real) CDSURF,CLSURF
+      REAL(kind=avl_real) CXSURF,CYSURF,CZSURF
+      REAL(kind=avl_real) CRSURF,CNSURF,CMSURF
+      REAL(kind=avl_real) CDVSURF
+      REAL(kind=avl_real) CDS_A, CLS_A
+      REAL(kind=avl_real) CDS_U, CLS_U
+      REAL(kind=avl_real) CXS_U, CYS_U, CZS_U
+      REAL(kind=avl_real) CRS_U, CNS_U, CMS_U
+      REAL(kind=avl_real) CDS_D, CLS_D
+      REAL(kind=avl_real) CXS_D, CYS_D, CZS_D
+      REAL(kind=avl_real) CRS_D, CNS_D, CMS_D
+      REAL(kind=avl_real) CDS_G, CLS_G
+      REAL(kind=avl_real) CXS_G, CYS_G, CZS_G
+      REAL(kind=avl_real) CRS_G, CNS_G, CMS_G
+      REAL(kind=avl_real) CF_SRF, CM_SRF
+      REAL(kind=avl_real) CL_SRF, CD_SRF, CMLE_SRF
+      REAL(kind=avl_real) SSURF, CAVESURF
+      REAL(kind=avl_real) VBODY
       COMMON /SURF_R/
      & CDSURF(NFMAX),CLSURF(NFMAX),                ! surface CD,CL
      & CXSURF(NFMAX),CYSURF(NFMAX),CZSURF(NFMAX),  ! surface Cx,Cy,Cz
@@ -267,6 +352,10 @@ c
       COMMON /BODY_GEOM_I/
      & NSEC_B(NBMAX)  ! number of sections in surface
 
+      REAL(kind=avl_real) XYZSCAL_B
+      REAL(kind=avl_real) XYZTRAN_B
+      REAL(kind=avl_real) YDUPL_B
+      REAL(kind=avl_real) XYZLES_B 
       COMMON /BODY_GEOM_R/
      & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
@@ -288,7 +377,26 @@ c
      & IDESTD(ICONX, NSMAX, NFMAX), ! design variable index
      & NSDES(NSMAX, NFMAX) ! number of design variables
 
-      
+      REAL(kind=avl_real) XYZSCAL
+      REAL(kind=avl_real) XYZTRAN
+      REAL(kind=avl_real) YDUPL
+      REAL(kind=avl_real) ADDINC
+      REAL(kind=avl_real) CSPACE
+      REAL(kind=avl_real) SSPACE
+      REAL(kind=avl_real) SSPACES
+      REAL(kind=avl_real) XYZLES
+      REAL(kind=avl_real) CHORDS
+      REAL(kind=avl_real) AINCS
+      REAL(kind=avl_real) XASEC
+      REAL(kind=avl_real) SASEC
+      REAL(kind=avl_real) TASEC
+      REAL(kind=avl_real) CLCDSEC
+      REAL(kind=avl_real) CLAF
+      REAL(kind=avl_real) XHINGED
+      REAL(kind=avl_real) VHINGED
+      REAL(kind=avl_real) GAIND
+      REAL(kind=avl_real) REFLD
+      REAL(kind=avl_real) GAING  
       COMMON /SURF_GEOM_R/
      & XYZSCAL(3, NFMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN(3, NFMAX), ! translation factors for XYZ coordinates
@@ -326,6 +434,40 @@ C      !!--- end added variables for python geometry minipulation ---
      & LJ1SECT(NSMAX),    ! T if station 1 is a section
      & LJ2SECT(NSMAX)     ! T if station 2 is a section
 
+      REAL(kind=avl_real) RLE,  CHORD
+      REAL(kind=avl_real) RLE1, CHORD1
+      REAL(kind=avl_real) RLE2, CHORD2
+      REAL(kind=avl_real) WSTRIP
+      REAL(kind=avl_real) TANLE,  TANTE
+      REAL(kind=avl_real) CLCD
+      REAL(kind=avl_real) SAXFR
+      REAL(kind=avl_real) ESS
+      REAL(kind=avl_real) ENSY, ENSZ
+      REAL(kind=avl_real) XSREF,YSREF,ZSREF
+      REAL(kind=avl_real) AINC
+      REAL(kind=avl_real) AINC_G
+      REAL(kind=avl_real) CDSTRP,   CLSTRP
+      REAL(kind=avl_real) CXSTRP,   CYSTRP,   CZSTRP
+      REAL(kind=avl_real) CRSTRP,   CNSTRP,   CMSTRP
+      REAL(kind=avl_real) CDST_A,   CLST_A
+      REAL(kind=avl_real) CDST_U, CLST_U
+      REAL(kind=avl_real) CXST_U, CYST_U, CZST_U
+      REAL(kind=avl_real) CRST_U, CNST_U, CMST_U
+      REAL(kind=avl_real) CDST_D, CLST_D
+      REAL(kind=avl_real) CXST_D, CYST_D, CZST_D
+      REAL(kind=avl_real) CRST_D, CNST_D, CMST_D
+      REAL(kind=avl_real) CDST_G, CLST_G
+      REAL(kind=avl_real) CXST_G, CYST_G, CZST_G
+      REAL(kind=avl_real) CRST_G, CNST_G, CMST_G
+      REAL(kind=avl_real) CF_STRP,   CM_STRP
+      REAL(kind=avl_real) CNRMSTRP,    CAXLSTRP
+      REAL(kind=avl_real) CD_LSTRP,  CL_LSTRP
+      REAL(kind=avl_real) CDV_LSTRP, CLTSTRP, CLASTRP
+      REAL(kind=avl_real) CMC4,        CMLE
+      REAL(kind=avl_real) CNC,         DWWAKE
+      REAL(kind=avl_real) CNC_U
+      REAL(kind=avl_real) CNC_D
+      REAL(kind=avl_real) CNC_G    
       COMMON /STRP_R/
      & RLE(3,NSMAX),  CHORD(NSMAX),    ! strip c.p. line LE point, chord
      & RLE1(3,NSMAX), CHORD1(NSMAX),   ! strip left  end LE point, chord
@@ -369,6 +511,44 @@ C
 
       COMMON /VRTX_I/
      & NSURFV(NVMAX)    ! index of surface which contains vortex element
+
+      REAL(kind=avl_real) RV1
+      REAL(kind=avl_real) RV2
+      REAL(kind=avl_real) RV
+      REAL(kind=avl_real) RC
+      REAL(kind=avl_real) RS
+      REAL(kind=avl_real) RL,RADL
+      REAL(kind=avl_real) DXV
+      REAL(kind=avl_real) CHORDV
+      REAL(kind=avl_real) SLOPEV
+      REAL(kind=avl_real) SLOPEC
+      REAL(kind=avl_real) DCONTROL
+      REAL(kind=avl_real) VHINGE
+      REAL(kind=avl_real) PHINGE
+      REAL(kind=avl_real) VREFL
+      REAL(kind=avl_real) ENC
+      REAL(kind=avl_real) ENV
+      REAL(kind=avl_real) ENC_D
+      REAL(kind=avl_real) ENC_G
+      REAL(kind=avl_real) ENV_D
+      REAL(kind=avl_real) ENV_G
+      REAL(kind=avl_real) DCP
+      REAL(kind=avl_real) DCP_U
+      REAL(kind=avl_real) DCP_D
+      REAL(kind=avl_real) DCP_G
+      REAL(kind=avl_real) GAM
+      REAL(kind=avl_real) GAM_U_0
+      REAL(kind=avl_real) GAM_U_D
+      REAL(kind=avl_real) GAM_U_G
+      REAL(kind=avl_real) GAM_U
+      REAL(kind=avl_real) GAM_D
+      REAL(kind=avl_real) GAM_G
+      REAL(kind=avl_real) SRC
+      REAL(kind=avl_real) DBL
+      REAL(kind=avl_real) SRC_U
+      REAL(kind=avl_real) DBL_U
+      REAL(kind=avl_real) WCSRD_U
+      REAL(kind=avl_real) WVSRD_U
       COMMON /VRTX_R/
      & RV1(3,NVMAX),    ! h.v. vortex left  points
      & RV2(3,NVMAX),    ! h.v. vortex right points
@@ -414,6 +594,13 @@ C
      & NL(NBMAX),       ! number of source-line nodes in body
      & LFRST(NBMAX)     ! index of first line node in body
 
+      REAL(kind=avl_real) ELBDY
+      REAL(kind=avl_real) SRFBDY
+      REAL(kind=avl_real) VOLBDY
+      REAL(kind=avl_real) DCPB
+      REAL(kind=avl_real) CDBDY,CLBDY
+      REAL(kind=avl_real) CXBDY,CYBDY,CZBDY
+      REAL(kind=avl_real) CRBDY,CNBDY,CMBDY   
       COMMON /BODY_R/
      & ELBDY(NBMAX),  ! body length
      & SRFBDY(NBMAX), ! body surface area
@@ -425,6 +612,19 @@ C
 C
       COMMON /SOLV_I/
      & IAPIV(NVMAX)           ! pivot indices for LU solver
+
+      REAL(kind=avl_real) AMACH
+      REAL(kind=avl_real) AICN
+      REAL(kind=avl_real) WC_GAM
+      REAL(kind=avl_real) WV_GAM
+      REAL(kind=avl_real) WC
+      REAL(kind=avl_real) WC_U
+      REAL(kind=avl_real) WC_D
+      REAL(kind=avl_real) WC_G
+      REAL(kind=avl_real) WV
+      REAL(kind=avl_real) WV_U
+      REAL(kind=avl_real) WV_D
+      REAL(kind=avl_real) WV_G
       COMMON /SOLV_R/
      & AMACH,                 ! Mach number at which AIC matrices were computed
      & AICN(NVMAX,NVMAX),     ! normalwash AIC matrix (and VL system matrix)
@@ -461,6 +661,13 @@ C
      & LPLTBODY(NBMAX),
      & LSVMOV
       COMMON /PLOT_I/ NTRI, IMARKSURF, NAXANN(3), IRCOLOR(NRMAX)
+
+      REAL(kind=avl_real)   TRI
+      REAL(kind=avl_real)   AXMIN,AXMAX,AXDEL,AXSPAN
+      REAL(kind=avl_real)   GMIN,GMAX,GMINP,GMAXP
+      REAL(kind=avl_real)   VMIN,VMAX,VMINP,VMAXP
+      REAL(kind=avl_real)   DTMOVIE,TMOVIE, SLOMOF
+      REAL(kind=avl_real)   EPHASE, EIGENF, TMOFAC
       COMMON /PLOT_R/ TRI(16,ITMAX),
      &                AXMIN(3),AXMAX(3),AXDEL(3),AXSPAN(3),
      &                GMIN(3),GMAX(3),GMINP(3),GMAXP(3),
