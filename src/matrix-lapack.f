@@ -30,3 +30,19 @@ C
 
 
 
+      SUBROUTINE BAKSUBTRANS(NSIZ,N,A,INDX,B)
+      DIMENSION A(NSIZ,NSIZ), B(NSIZ), INDX(NSIZ)
+C     *******************************************************
+C     *   BAKSUB does back-substitution with RHS using      *
+C     *   stored LU decomposition.                          *
+C     *   Uses LINPACK routines for linear algebra          *
+C     *******************************************************
+C
+      MRHS = 1
+      CALL SGETRS('T',N,MRHS,A,NSIZ,INDX,B,NSIZ,INFO)
+C
+      RETURN
+      END ! BAKSUB
+
+
+

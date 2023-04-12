@@ -231,8 +231,8 @@ C
       REAL y1
       REAL y2
       REAL abs0
-      REAL*(kind=avl_real) abs1
-      REAL*(kind=avl_real) abs2
+      REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs2
       REAL tmp
       REAL temp
       REAL temp_diff
@@ -712,37 +712,37 @@ C
       INTEGER iii
       INTEGER ii
       REAL rsgn
-      REAL*(kind=avl_real) tmp
-      REAL*(kind=avl_real) tmp0
-      REAL*(kind=avl_real) tmp1
-      REAL*(kind=avl_real) tmp2
-      REAL*(kind=avl_real) tmp3
-      REAL*(kind=avl_real) tmp4
-      REAL*(kind=avl_real) tmp5
-      REAL*(kind=avl_real) tmp6
-      REAL*(kind=avl_real) tmp7
-      REAL*(kind=avl_real) tmp_diff
-      REAL*(kind=avl_real) tmp8
-      REAL*(kind=avl_real) tmp_diff0
-      REAL*(kind=avl_real) tmp9
-      REAL*(kind=avl_real) tmp10
-      REAL*(kind=avl_real) tmp11
-      REAL*(kind=avl_real) tmp12
-      REAL*(kind=avl_real) tmp13
-      REAL*(kind=avl_real) tmp14
-      REAL*(kind=avl_real) tmp15
-      REAL*(kind=avl_real) tmp16
-      REAL*(kind=avl_real) tmp17
-      REAL*(kind=avl_real) tmp18
-      REAL*(kind=avl_real) tmp19
-      REAL*(kind=avl_real) tmp20
-      REAL*(kind=avl_real) tmp21
-      REAL*(kind=avl_real) tmp22
-      REAL*(kind=avl_real) tmp23
-      REAL*(kind=avl_real) tmp24
-      REAL*(kind=avl_real) tmp25
-      REAL*(kind=avl_real) tmp26
-      REAL*(kind=avl_real) tmp27
+      REAL(kind=avl_real) tmp
+      REAL(kind=avl_real) tmp0
+      REAL(kind=avl_real) tmp1
+      REAL(kind=avl_real) tmp2
+      REAL(kind=avl_real) tmp3
+      REAL(kind=avl_real) tmp4
+      REAL(kind=avl_real) tmp5
+      REAL(kind=avl_real) tmp6
+      REAL(kind=avl_real) tmp7
+      REAL(kind=avl_real) tmp_diff
+      REAL(kind=avl_real) tmp8
+      REAL(kind=avl_real) tmp_diff0
+      REAL(kind=avl_real) tmp9
+      REAL(kind=avl_real) tmp10
+      REAL(kind=avl_real) tmp11
+      REAL(kind=avl_real) tmp12
+      REAL(kind=avl_real) tmp13
+      REAL(kind=avl_real) tmp14
+      REAL(kind=avl_real) tmp15
+      REAL(kind=avl_real) tmp16
+      REAL(kind=avl_real) tmp17
+      REAL(kind=avl_real) tmp18
+      REAL(kind=avl_real) tmp19
+      REAL(kind=avl_real) tmp20
+      REAL(kind=avl_real) tmp21
+      REAL(kind=avl_real) tmp22
+      REAL(kind=avl_real) tmp23
+      REAL(kind=avl_real) tmp24
+      REAL(kind=avl_real) tmp25
+      REAL(kind=avl_real) tmp26
+      REAL(kind=avl_real) tmp27
       INTEGER ad_count
       INTEGER i
       INTEGER branch

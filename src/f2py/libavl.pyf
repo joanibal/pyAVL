@@ -18,6 +18,11 @@ python module libavl ! in
         subroutine aero ! in :libavl:aero.f
         end subroutine aero
         
+        subroutine aero_d ! in :libavl:aero_d.f
+        end subroutine aero_d
+        
+        subroutine aero_b ! in :libavl:aero_b.f
+        end subroutine aero_b
         
         subroutine loadgeo(fildef) ! in :libavl:avl.f
             character*80 :: fildef
@@ -57,12 +62,15 @@ python module libavl ! in
         
         subroutine get_res ! in :libavl:aoper.f
         end subroutine get_res
-
-        subroutine aero_d ! in :libavl:aero_d.f
-        end subroutine aero_d
         
-        subroutine aero_b ! in :libavl:aero_b.f
-        end subroutine aero_b
+        subroutine get_res_d ! in :libavl:aoper_d.f
+        end subroutine get_res_d
+        
+        subroutine get_res_b ! in :libavl:aoper_d.f
+        end subroutine get_res_b
+
+        subroutine solve_adjoint
+        end subroutine solve_adjoint
         
     end interface 
 end python module libavl

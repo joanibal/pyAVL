@@ -1987,9 +1987,6 @@ C---
       IF(.NOT.LAIC) THEN
             CALL build_AIC
       end if
-      ! IF(.NOT.LAIC) THEN
-      !       call factor_AIC
-      ! ENDIF
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
             
@@ -2005,3 +2002,19 @@ C---- add the RHS vector to the residual
       
       
       end !get_res
+
+      
+      
+      subroutine solve_adjoint()
+      include "AVL.INC"
+      include "AVL_ad_seeds.inc"
+      CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
+      RES_diff = GAM_diff
+      
+      CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
+      
+      end !subroutine solve_adjoint

@@ -183,8 +183,8 @@ C
       REAL y1
       REAL y2
       REAL abs0
-      REAL*(kind=avl_real) abs1
-      REAL*(kind=avl_real) abs2
+      REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs2
       REAL arg1
       REAL result1
       REAL temp

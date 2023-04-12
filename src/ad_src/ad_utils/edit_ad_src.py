@@ -61,11 +61,15 @@ for f in os.listdir(args.input_dir):
             # fid_org.seek(0)
 
             for line in fid_org:
-
                 if tapenade_include in line:
                     # Insert the hand-written include file
                     fid_mod.write(hand_made_include)
+                elif "REAL*(" in line:
+                    # This syntax is not supported by our compiler
+                    line = line.replace("REAL*(", "REAL(")
+                    fid_mod.write(line)
                 elif "IMPLICIT NONE" in line:
+                    # remove the statement
                     pass
                 else:
                     fid_mod.write(line)

@@ -28,9 +28,15 @@ f77Files =	aero.f\
 		ad_src/forward_ad_src/aero_d.f\
 		ad_src/forward_ad_src/aic_d.f\
 		ad_src/forward_ad_src/cdcl_d.f\
+		ad_src/forward_ad_src/amake_d.f\
+		ad_src/forward_ad_src/aoper_d.f\
+		ad_src/forward_ad_src/asetup_d.f\
 		ad_src/reverse_ad_src/aero_b.f\
 		ad_src/reverse_ad_src/aic_b.f\
 		ad_src/reverse_ad_src/cdcl_b.f\
+		ad_src/reverse_ad_src/amake_b.f\
+		ad_src/reverse_ad_src/aoper_b.f\
+		ad_src/reverse_ad_src/asetup_b.f\
 		ad_src/ADFirstAidKit/adBuffer.f\
 		ad_src/ADFirstAidKit/debugAD.f\
 

@@ -11,11 +11,10 @@ Csubroutine solve_rhs
       INCLUDE 'AVL_ad_seeds.inc'
       INTEGER i
       INTEGER ii1
-C---  
-      WRITE(*, *) 'LAIC', laic
 C IF(.NOT.LAIC) THEN
 C       call factor_AIC
 C ENDIF
+C---  
       IF (.NOT.laic) CALL BUILD_AIC()
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
