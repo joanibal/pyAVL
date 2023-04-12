@@ -549,6 +549,8 @@ C
       REAL(kind=avl_real) DBL_U
       REAL(kind=avl_real) WCSRD_U
       REAL(kind=avl_real) WVSRD_U
+      REAL(kind=avl_real) RHS
+      REAL(kind=avl_real) RES
       COMMON /VRTX_R/
      & RV1(3,NVMAX),    ! h.v. vortex left  points
      & RV2(3,NVMAX),    ! h.v. vortex right points

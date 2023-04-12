@@ -1984,7 +1984,6 @@ C---- copy RHS vector into GAM that will be used for soluiton
       subroutine get_res
       INCLUDE "AVL.INC"
 C---  
-      write(*,*) 'LAIC', LAIC
       IF(.NOT.LAIC) THEN
             CALL build_AIC
       end if

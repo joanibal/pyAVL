@@ -8,15 +8,17 @@ C SRDSET
 C
 C
 C
-      SUBROUTINE CROSS_D(u, ud, v, vd, w, wd)
-      IMPLICIT NONE
+      SUBROUTINE CROSS_D(u, u_diff, v, v_diff, w, w_diff)
       REAL u(3), v(3), w(3)
-      REAL ud(3), vd(3), wd(3)
-      wd(1) = v(3)*ud(2) + u(2)*vd(3) - v(2)*ud(3) - u(3)*vd(2)
+      REAL u_diff(3), v_diff(3), w_diff(3)
+      w_diff(1) = v(3)*u_diff(2) + u(2)*v_diff(3) - v(2)*u_diff(3) - u(3
+     +  )*v_diff(2)
       w(1) = u(2)*v(3) - u(3)*v(2)
-      wd(2) = v(1)*ud(3) + u(3)*vd(1) - v(3)*ud(1) - u(1)*vd(3)
+      w_diff(2) = v(1)*u_diff(3) + u(3)*v_diff(1) - v(3)*u_diff(1) - u(1
+     +  )*v_diff(3)
       w(2) = u(3)*v(1) - u(1)*v(3)
-      wd(3) = v(2)*ud(1) + u(1)*vd(2) - v(1)*ud(2) - u(2)*vd(1)
+      w_diff(3) = v(2)*u_diff(1) + u(1)*v_diff(2) - v(1)*u_diff(2) - u(2
+     +  )*v_diff(1)
       w(3) = u(1)*v(2) - u(2)*v(1)
       RETURN
       END
@@ -26,14 +28,13 @@ C   variations   of useful results: dot
 C   with respect to varying inputs: u v
 C
 C
-      FUNCTION DOT_D(u, ud, v, vd, dot)
-      IMPLICIT NONE
+      FUNCTION DOT_D(u, u_diff, v, v_diff, dot)
       REAL u(3), v(3)
-      REAL ud(3), vd(3)
+      REAL u_diff(3), v_diff(3)
       REAL dot
       REAL dot_d
-      dot_d = v(1)*ud(1) + u(1)*vd(1) + v(2)*ud(2) + u(2)*vd(2) + v(3)*
-     +  ud(3) + u(3)*vd(3)
+      dot_d = v(1)*u_diff(1) + u(1)*v_diff(1) + v(2)*u_diff(2) + u(2)*
+     +  v_diff(2) + v(3)*u_diff(3) + u(3)*v_diff(3)
       dot = u(1)*v(1) + u(2)*v(2) + u(3)*v(3)
       RETURN
       END

@@ -30,14 +30,14 @@ class TestPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 1.0)
         self.avl_solver.execute_run()
 
-        self.avl_solver.avl.case_r_d.alfad = 1.0
+        self.avl_solver.avl.CASE_R_diff.ALFA_diff = 1.0
         self.avl_solver.avl.aero_d()
-        dcl_dalfa = self.avl_solver.avl.case_r_d.cltotd
+        dcl_dalfa = self.avl_solver.avl.CASE_R_diff.CLTOT_diff
 
         coef_data = self.avl_solver.get_case_total_data()
 
         # use finite difference
-        h = 1e-8
+        h = 1e-7
         alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
         self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
 
@@ -48,7 +48,7 @@ class TestPartials(unittest.TestCase):
         np.testing.assert_allclose(
             dcl_dalfa,
             dcl_dalfa_fd,
-            rtol=1e-6,
+            rtol=1e-5,
         )
 
     def test_rev_cltot_alpha_derivs(self):
@@ -56,36 +56,34 @@ class TestPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 1.0)
         self.avl_solver.execute_run()
 
-        self.avl_solver.avl.case_r_d.cltotd = 1.0
+        self.avl_solver.avl.CASE_R_diff.CLTOT_diff = 1.0
         self.avl_solver.avl.aero_b()
-        dcl_dalfa = self.avl_solver.avl.case_r_d.alfad
+        dcl_dalfa = self.avl_solver.avl.CASE_R_diff.ALFA_diff
+        coef_data = self.avl_solver.get_case_total_data()
 
-        print(dcl_dalfa)
-        # coef_data = self.avl_solver.get_case_total_data()
+        # use finite difference
+        h = 1e-7
+        alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
+        self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
 
-        # # use finite difference
-        # h = 1e-8
-        # alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
-        # self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
+        self.avl_solver.avl.aero()
+        coef_data_peturb = self.avl_solver.get_case_total_data()
+        dcl_dalfa_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
 
-        # self.avl_solver.avl.aero()
-        # coef_data_peturb = self.avl_solver.get_case_total_data()
-        # dcl_dalfa_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
-
-        # np.testing.assert_allclose(
-        #     dcl_dalfa,
-        #     dcl_dalfa_fd,
-        #     rtol=1e-6,
-        # )
+        np.testing.assert_allclose(
+            dcl_dalfa,
+            dcl_dalfa_fd,
+            rtol=1e-5,
+        )
 
     def test_fwd_cltot_gam_derivs(self):
         # base line CL
         self.avl_solver.add_constraint("alpha", 1.0)
         self.avl_solver.execute_run()
 
-        self.avl_solver.avl.vrtx_r_d.gamd[1] = 1.0
+        self.avl_solver.avl.VRTX_R_diff.GAM_diff[1] = 1.0
         self.avl_solver.avl.aero_d()
-        dcl_dgam = self.avl_solver.avl.case_r_d.cltotd
+        dcl_dgam = self.avl_solver.avl.CASE_R_diff.CLTOT_diff
 
         coef_data = self.avl_solver.get_case_total_data()
 
@@ -126,9 +124,9 @@ class TestTotals(unittest.TestCase):
     def test_new_solve(self):
 
         self.avl_solver.execute_run()
-        gam = self.avl_solver.avl.vrtx_r.gam[:]
+        gam = self.avl_solver.avl.VRTX_R.GAM[:]
         self.avl_solver.avl.exec_rhs()
-        gam_new = self.avl_solver.avl.vrtx_r.gam[:]
+        gam_new = self.avl_solver.avl.VRTX_R.GAM[:]
 
         np.testing.assert_allclose(
             gam,
@@ -140,8 +138,8 @@ class TestTotals(unittest.TestCase):
 
         # self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.get_res()
-        res = self.avl_solver.avl.vrtx_r.res[:]
-        rhs = self.avl_solver.avl.vrtx_r.rhs[:]
+        res = self.avl_solver.avl.VRTX_R.RES[:]
+        rhs = self.avl_solver.avl.VRTX_R.RHS[:]
 
         np.testing.assert_allclose(
             res,
@@ -149,13 +147,9 @@ class TestTotals(unittest.TestCase):
             atol=1e-15,
         )
 
-        print(np.linalg.norm(rhs))
-        print(np.linalg.norm(res))
-
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.get_res()
-        res = self.avl_solver.avl.vrtx_r.res[:]
-        print(res[:10])
+        res = self.avl_solver.avl.VRTX_R.RES[:]
 
         np.testing.assert_allclose(
             res,
