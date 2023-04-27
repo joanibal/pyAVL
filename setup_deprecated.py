@@ -1,8 +1,9 @@
-from numpy.distutils.core import setup
+# from numpy.distutils.core import setup
+from setuptools import setup
 import re
 import os
 import subprocess
-from numpy.distutils.core import Extension
+# from numpy.distutils.core import Extension
 
 __version__ = re.findall(
     r"""__version__ = ["']+([0-9\.]*)["']+""",
@@ -34,58 +35,12 @@ def make_avl_lib():
         raise OSError("make", f"The compile command failed! Check the log at {compile_log} for more information.")
 
 
-# open src/build/fileList makefile and return list of f77Files
-
-
-ext_avl = Extension(
-    "libavl",
-    sources=[
-        "src/AINDEX.INC"
-        "src/AVL.INC"
-        "src/aero.f",
-        "src/aic.f",
-        "src/ainput.f",
-        "src/airutil.f",
-        "src/amake.f",
-        # "src/amass.f",
-        # "src/amode.f",
-        # "src/aoper.f",
-        # "src/aoutput.f",
-        # "src/asetup.f",
-        # "src/atpforc.f",
-        # "src/atrim.f",
-        # "src/autil.f",
-        # "src/avl.f",
-        # "src/cdcl.f",
-        # "src/getvm.f",
-        # "src/hidden.f",
-        # "src/matrix-lapackdp.f",
-        # "src/second.f",
-        # "src/second_g77.f",
-        # "src/second_ifc.f",
-        # "src/sgutil.f",
-        # "src/spline.f",
-        # "src/userio.f",
-        # "src/eispack.f",
-        "src/f2py/libavl.pyf",
-    ],
-    #    **lapack)
-    f2py_options=[],
-    extra_f90_compile_args=[
-        "-O2",
-        "-fdefault-real-8",
-        "-fPIC",
-        "-Wno-align-commons",
-        "-std=legacy",
-        "-lblas",
-        "-llapack",
-    ],
-)
 
 
 if __name__ == "__main__":
     # make_avl_lib()
     # cwd = os.getcwd()
+    # to install locally use `python setup_deprecated.py develop`
 
     setup(
         name="pyavl",
@@ -98,8 +53,7 @@ if __name__ == "__main__":
         packages=[
             "pyavl",
         ],
-        # package_data={"pyavl": ["*.so"]},
-        ext_modules=[ext_avl],
+        package_data={"pyavl": ["*.so"]},
         install_requires=["numpy"],
         extras_require={"plotting": ["matplotlib"], "testing": ["testflo>=1.4.5"]},
         classifiers=["Programming Language :: Python, Fortran"],
