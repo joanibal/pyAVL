@@ -443,6 +443,7 @@ c
 C-------- go over vortices in this strip
           DO 1505 IVC = 1, NVC(ISURF)
             NVOR = NVOR + 1
+            write(*,*) 'make surf nvor', nvor
 C
             RV1(1,NVOR) = RLE1(1,NSTRIP) + XVR(IVC)*CHORD1(NSTRIP)
             RV1(2,NVOR) = RLE1(2,NSTRIP)
@@ -987,7 +988,7 @@ C
           ENDDO
 C
 C...Define unit vector along bound leg
-          DXB = RV2(1,I)-RV1(1,I)
+          DXB = RV2(1,I)-RV1(1,I) ! right h.v. pt - left h.v. pt 
           DYB = RV2(2,I)-RV1(2,I)
           DZB = RV2(3,I)-RV1(3,I)
           EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
@@ -1011,6 +1012,7 @@ C
           EC(1) =  COSC
           EC(2) = -SINC*ES(2)
           EC(3) = -SINC*ES(3)
+      !     EC  = rotation of strip normal vector? or along chord?
           DO N = 1, NDESIGN
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)

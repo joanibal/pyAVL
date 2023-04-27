@@ -10,7 +10,8 @@ ALL_RES_FILES =	$(SRC)/aero.f\
 				$(SRC)/asetup.f\
 				$(SRC)/aic.f\
 				$(SRC)/amake.f\
-				$(SRC)/cdcl.f
+				$(SRC)/cdcl.f\
+				$(SRC)/sgutil.f\
 				
 
 # intermediate preprocessed files.
@@ -23,8 +24,8 @@ I_RES_FILES := $(ALL_RES_FILES)
 # ====================== Full List of Routines ==================
 fullRoutines = "\
 	AERO(GAM, RV1, RV2, RLE, XYZREF, CHORD, WSTRIP, ALFA, VINF, ENSZ, ENSY)>(CLTOT, CDTOT) \
-	update_surfaces(ADDINC)>(ENC,ENV, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
-	get_res(ALFA)>(RES)\
+	update_surfaces(ADDINC, AINCS, CHORDS, XYZSCAL, XYZTRAN, XYZLES)>(ENC,ENV, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
+	get_res(ALFA, ENC,ENV, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)>(RES)\
 "
 # update_surfaces(XYZSCAL, XYZTRAN, ADDINC, XYZLES, CHORDS, AINCS, XASEC, SASEC, TASEC, XHINGED, CLCDSEC, CLAF)>(ENC, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
 
@@ -44,7 +45,6 @@ ad_forward:
 
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
-	-html \
 	-I $(SRC)/includes \
 	-head $(fullRoutines) \
 	-tgtvarname %_diff \
@@ -70,7 +70,6 @@ ad_reverse:
 
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
-	-html \
 	-I $(SRC)/includes \
 	-head $(fullRoutines) \
 	-adjvarname %_diff \

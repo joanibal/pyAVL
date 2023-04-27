@@ -1419,6 +1419,7 @@ C            VINF_B(3)  dVINF()/dBETA
 C
       INCLUDE 'AVL.INC'
 C
+      
       SINA = SIN(ALFA)
       COSA = COS(ALFA)
       SINB = SIN(BETA)

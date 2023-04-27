@@ -259,7 +259,7 @@ C
       DATA  PI / 3.1415926535 /
 C
       PABS = ABS (PSPACE)
-      NABS = IFIX (PABS) + 1
+      NABS = INT (PABS) + 1
 C
       GO TO (10,20,30,30), NABS
 C
@@ -302,7 +302,7 @@ C
 C
 C---- set blending weights
       ACSP = ABS(CSPACE)
-      NCSP = IFIX(ACSP)
+      NCSP = INT(ACSP)
       IF    (NCSP.EQ.0) THEN
        F0 = 1.0 - ACSP
        F1 = ACSP

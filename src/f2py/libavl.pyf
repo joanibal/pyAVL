@@ -49,6 +49,12 @@ python module libavl ! in
         
         subroutine update_surfaces ! in :libavl:amake.f
         end subroutine update_surfaces
+
+        subroutine update_surfaces_d ! in :libavl:amake.f
+        end subroutine update_surfaces_d
+        
+        subroutine update_surfaces_b ! in :libavl:amake.f
+        end subroutine update_surfaces_b
         
         subroutine set_params(ir) ! in :libavl:amode.f
             integer :: ir

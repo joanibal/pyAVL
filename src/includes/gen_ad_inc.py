@@ -45,7 +45,7 @@ def process_fortran_include_file(input_filename, output_filename, ad_ext="_diff"
                     line = get_line(idx_line)
                     # remove & from the line
                     line = line.replace("& ", "")
-                    print(line)
+                    # print(line)
                     is_last = line[-1] != ","
                     
                     regex = r',(?![^(]*\))'  # Matches commas that are not within parentheses
@@ -83,6 +83,8 @@ def process_fortran_include_file(input_filename, output_filename, ad_ext="_diff"
 
                 else:
                     new_var = var + ad_ext
+                
+                print(new_var)
                 output_file.write(f"      real(kind=avl_real) {new_var}\n")
                 
                 

@@ -605,6 +605,35 @@ C
       RETURN
       END ! WSENS
       
+      subroutine set_par_and_cons(NITER, IR)
+      include 'AVL.INC'
+      integer NITER, IR
+      XYZREF(1) = PARVAL(IPXCG,IR)
+      XYZREF(2) = PARVAL(IPYCG,IR)
+      XYZREF(3) = PARVAL(IPZCG,IR)
+C
+      CDREF = PARVAL(IPCD0,IR)
+C
+      MACH = PARVAL(IPMACH,IR)
+C
+      IF(MACH.NE.AMACH) THEN
+C----- new Mach number invalidates close to everything that's stored
+       LAIC = .FALSE.
+       LSRD = .FALSE.
+       LSOL = .FALSE.
+       LSEN = .FALSE.
+      ENDIF
+      
+      IF(NITER.GT.0) THEN
+C----- might as well directly set operating variables if they are known
+       IF(ICON(IVALFA,IR).EQ.ICALFA) ALFA    = CONVAL(ICALFA,IR)*DTR
+       IF(ICON(IVBETA,IR).EQ.ICBETA) BETA    = CONVAL(ICBETA,IR)*DTR
+       IF(ICON(IVROTX,IR).EQ.ICROTX) WROT(1) = CONVAL(ICROTX,IR)*2./BREF
+       IF(ICON(IVROTY,IR).EQ.ICROTY) WROT(2) = CONVAL(ICROTY,IR)*2./CREF
+       IF(ICON(IVROTZ,IR).EQ.ICROTZ) WROT(3) = CONVAL(ICROTZ,IR)*2./BREF
+      ENDIF
+      end subroutine set_par_and_cons
+        
       subroutine set_vel_rhs
       include 'AVL.INC'
       real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)

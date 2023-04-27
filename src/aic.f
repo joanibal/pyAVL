@@ -65,7 +65,7 @@ C--------------------------------------------------------------------
      &     RV2(3,NV),
      &     CHORDV(NV)
       REAL RC(3,NC),
-     &     WC_GAM(3,NCDIM,*)
+     &     WC_GAM(3,NCDIM,NCDIM)
       INTEGER NSURFV(NV), NSURFC(NC)
       LOGICAL LVTEST
 C     

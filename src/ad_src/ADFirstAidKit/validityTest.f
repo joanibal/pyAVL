@@ -1,10 +1,10 @@
-c$Id: validityTest.f 1443 2006-10-24 11:21:23Z llh $
+c$Id$
       BLOCK DATA validityTestBD
 C Keeps the current bounds of the validity interval
 C Initial value is ]-infinity, +infinity[
       REAL gmin, gmax
       LOGICAL infmin, infmax
-      COMMON /validity_test_common/
+      COMMON /validity_test_common/ 
      +     gmin, gmax, infmin, infmax
       DATA infmin/.TRUE./
       DATA infmax/.TRUE./
@@ -18,7 +18,7 @@ C with the new constraint that t keeps its sign.
       real*8 t, td
       real gmin, gmax, temp
       logical infmin, infmax
-      COMMON /validity_test_common/
+      COMMON /validity_test_common/ 
      +     gmin, gmax, infmin, infmax
 
       if(td .ne. 0.0) then
@@ -47,7 +47,7 @@ C with the new constraint that t keeps its sign.
       real*4 t, td
       real gmin, gmax, temp
       logical infmin, infmax
-      COMMON /validity_test_common/
+      COMMON /validity_test_common/ 
      +     gmin, gmax, infmin, infmax
 
       if(td .ne. 0.0) then
