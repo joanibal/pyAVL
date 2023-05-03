@@ -14,15 +14,15 @@ Csubroutine solve_rhs
       INTEGER ii2
       INTEGER ii1
 C---  
-      IF (.NOT.laic) THEN
-        CALL BUILD_AIC_D()
-      ELSE
-        DO ii1=1,nvmax
-          DO ii2=1,nvmax
-            aicn_diff(ii2, ii1) = 0.D0
-          ENDDO
-        ENDDO
-      END IF
+      ! IF (.NOT.laic) THEN
+      CALL BUILD_AIC_D()
+      ! ELSE
+      !   DO ii1=1,nvmax
+      !     DO ii2=1,nvmax
+      !       aicn_diff(ii2, ii1) = 0.D0
+      !     ENDDO
+      !   ENDDO
+      ! END IF
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB_D()
       CALL SET_VEL_RHS_D()

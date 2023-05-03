@@ -443,7 +443,7 @@ C------ read surface angle change
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         READ (LINE,*,ERR=990) ADDINC(ISURF)
-        ADDINC(ISURF) = ADDINC(ISURF)*DTR
+        ! ADDINC(ISURF) = ADDINC(ISURF)*DTR
         
 C
 C===========================================================================

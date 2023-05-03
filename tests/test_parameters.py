@@ -77,12 +77,12 @@ class TestParameterAPI(unittest.TestCase):
         # other parameters only get updated in exec subroutine
         self.avl_solver.execute_run()
         
-        self.assertEqual(self.avl_solver.get_avl_fort_var("CASE_R", "MACH"), 
+        self.assertEqual(self.avl_solver.get_avl_fort_arr("CASE_R", "MACH"), 
                          self.params_baseline["Mach"] + 0.1)
-        self.assertEqual(self.avl_solver.get_avl_fort_var("CASE_R", "CDREF"), 
+        self.assertEqual(self.avl_solver.get_avl_fort_arr("CASE_R", "CDREF"), 
                          self.params_baseline["CD0"] + 0.1)
         
-        xyz_ref = self.avl_solver.get_avl_fort_var("CASE_R", "XYZREF")
+        xyz_ref = self.avl_solver.get_avl_fort_arr("CASE_R", "XYZREF")
         self.assertEqual(xyz_ref[0], self.params_baseline["X cg"] + 0.1)
         self.assertEqual(xyz_ref[1], self.params_baseline["Y cg"] + 0.1)
         self.assertEqual(xyz_ref[1], self.params_baseline["Z cg"] + 0.1)

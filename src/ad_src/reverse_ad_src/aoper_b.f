@@ -16,8 +16,8 @@ Csubroutine solve_rhs
       INTEGER branch
       INTEGER ii2
 C---  
-      CALL PUSHREAL8ARRAY(wc_gam, 3*nvmax**2)
       IF (.NOT.laic) THEN
+        CALL PUSHREAL8ARRAY(wc_gam, 3*nvmax**2)
         CALL BUILD_AIC()
         CALL PUSHCONTROL1B(0)
       ELSE
@@ -39,24 +39,23 @@ C
       CALL SET_VEL_RHS_B()
       CALL VINFAB_B()
       CALL POPCONTROL1B(branch)
-      
-      ! IF (branch .EQ. 0) THEN
-        CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
+      IF (.TRUE.) THEN
+        ! CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
         CALL BUILD_AIC_B()
-      ! ELSE
-      !   DO ii1=1,nvmax
-      !     DO ii2=1,3
-      !       rv1_diff(ii2, ii1) = 0.D0
-      !     ENDDO
-      !   ENDDO
-      !   DO ii1=1,nvmax
-      !     DO ii2=1,3
-      !       rv2_diff(ii2, ii1) = 0.D0
-      !     ENDDO
-      !   ENDDO
-      !   DO ii1=1,nvmax
-      !     chordv_diff(ii1) = 0.D0
-      !   ENDDO
-      ! END IF
+      ELSE
+        DO ii1=1,nvmax
+          DO ii2=1,3
+            rv1_diff(ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+        DO ii1=1,nvmax
+          DO ii2=1,3
+            rv2_diff(ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+        DO ii1=1,nvmax
+          chordv_diff(ii1) = 0.D0
+        ENDDO
+      END IF
       END
 

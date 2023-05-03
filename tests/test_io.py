@@ -31,7 +31,7 @@ class TestInput(unittest.TestCase):
 
     def test_read_geom_and_mass(self):
         avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
-        assert avl_solver.get_avl_fort_var("CASE_L", "LMASS")
+        assert avl_solver.get_avl_fort_arr("CASE_L", "LMASS")
 # TODO: add test for output (write out geom, mass, and stabilty)
 
 
@@ -42,15 +42,15 @@ class TestFortranLevelAPI(unittest.TestCase):
     def test_get_scalar(self):
         avl_version = 3.35
 
-        version = self.avl_solver.get_avl_fort_var("CASE_R", "VERSION")
+        version = self.avl_solver.get_avl_fort_arr("CASE_R", "VERSION")
         self.assertEqual(version, avl_version)
 
         # test that this works with lower case
-        version = self.avl_solver.get_avl_fort_var("case_r", "version")
+        version = self.avl_solver.get_avl_fort_arr("case_r", "version")
         self.assertEqual(version, avl_version)
 
     def test_get_array(self):
-        chords = self.avl_solver.get_avl_fort_var("SURF_GEOM_R", "CHORDS")
+        chords = self.avl_solver.get_avl_fort_arr("SURF_GEOM_R", "CHORDS")
 
         self.assertEqual(chords.shape, (30, 400))
         np.testing.assert_array_equal(chords[0, :5], np.array([0.5, 0.4, 0.3, 0.2, 0.1]))

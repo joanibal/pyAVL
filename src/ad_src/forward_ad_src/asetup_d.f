@@ -80,7 +80,6 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
 C  Differentiation of set_vel_rhs in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rhs
 C   with respect to varying inputs: vinf rc enc
-C WSENS
       SUBROUTINE SET_VEL_RHS_D()
 C
       INCLUDE 'AVL.INC'

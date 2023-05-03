@@ -2,13 +2,14 @@
 ! Note: the context of this file is case sensitive.
 python module libavl ! in 
     interface  ! in :libavl
-        block data 
-            include '../includes/AVL.INC'
-            include '../includes/AVL_ad_seeds.inc'
-        end block data 
-        ! TODO: import from AVL.INC directly to avoid duplication
+        ! block data 
+        ! end block data 
+        ! ! TODO: import from AVL.INC directly to avoid duplication
 
         subroutine avl ! in :libavl:avl.f
+            include '../includes/AVL.INC'
+            include '../includes/AVL_ad_seeds.inc'
+        
             ! parameters from 
         end subroutine avl
         

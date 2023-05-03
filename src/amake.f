@@ -45,6 +45,7 @@ C
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX)
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
+      integer idx_vor
 C
 C
       IF(NSEC(ISURF).LT.2) THEN
@@ -69,7 +70,17 @@ C--- Image flag set to indicate section definition direction
 C    IMAGS= 1  defines edge 1 located at surface root edge 
 C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
       IMAGS(ISURF) = 1
-      IFRST(ISURF) = NVOR   + 1 
+      
+      if (ISURF == 1) then
+            IFRST(ISURF) = 1
+      else
+            IFRST(ISURF) =  IFRST(ISURF-1) +  NK(ISURF-1)*NJ(ISURF-1)        
+      endif
+      ! write(*,*) 'IFRST(ISURF)', IFRST(ISURF)
+      ! IFRST(ISURF) = NVOR   + 1 
+      ! write(*,*) 'IFRST(ISURF) 2', IFRST(ISURF)
+      
+      
       JFRST(ISURF) = NSTRIP + 1
       NK(ISURF) = NVC(ISURF)
 C
@@ -244,8 +255,8 @@ C
         CLAFR = CLAF(ISEC+1,ISURF)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-        AINCL = AINCS(ISEC  , ISURF) + ADDINC(ISURF)
-        AINCR = AINCS(ISEC+1, ISURF) + ADDINC(ISURF)
+        AINCL = AINCS(ISEC  , ISURF) + ADDINC(ISURF)*DTR
+        AINCR = AINCS(ISEC+1, ISURF) + ADDINC(ISURF)*DTR
 cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -424,8 +435,16 @@ C--- If the min drag is zero flag the strip as no-viscous data
           LVISCSTRP(NSTRIP) = (CLCD(4,NSTRIP).NE.0.0)
 C
 C
-          IJFRST(NSTRIP) = NVOR + 1
+      !     IJFRST(NSTRIP) = NVOR + 1
+          if (NSTRIP ==1) then 
+            IJFRST(NSTRIP) = 1
+          ELSE
+            IJFRST(NSTRIP) = IJFRST(NSTRIP - 1) + NVSTRP(NSTRIP - 1)
+          endif
+          
           NVSTRP(NSTRIP) = NVC(ISURF)
+!           write(*,*) 'IJFRST(NSTRIP)', IJFRST(NSTRIP),
+!      &               'NVSTRP(NSTRIP)', IJFRST(NSTRIP - 1) + NVC(ISURF)
 C
           NSURFS(NSTRIP) = ISURF
 C
@@ -441,53 +460,54 @@ C-------- set chordwise spacing fraction arrays
           CALL CSPACER(NVC(ISURF),CSPACE(ISURF),CLAFC, XPT,XVR,XSR,XCP)
 c
 C-------- go over vortices in this strip
+          idx_vor = IJFRST(NSTRIP)
           DO 1505 IVC = 1, NVC(ISURF)
-            NVOR = NVOR + 1
-            write(*,*) 'make surf nvor', nvor
+            ! NVOR = NVOR + 1
+            ! write(*,*) 'make surf nvor', nvor, idx_vor
 C
-            RV1(1,NVOR) = RLE1(1,NSTRIP) + XVR(IVC)*CHORD1(NSTRIP)
-            RV1(2,NVOR) = RLE1(2,NSTRIP)
-            RV1(3,NVOR) = RLE1(3,NSTRIP)
+            RV1(1,idx_vor) = RLE1(1,NSTRIP) + XVR(IVC)*CHORD1(NSTRIP)
+            RV1(2,idx_vor) = RLE1(2,NSTRIP)
+            RV1(3,idx_vor) = RLE1(3,NSTRIP)
 C
-            RV2(1,NVOR) = RLE2(1,NSTRIP) + XVR(IVC)*CHORD2(NSTRIP)
-            RV2(2,NVOR) = RLE2(2,NSTRIP)
-            RV2(3,NVOR) = RLE2(3,NSTRIP)
+            RV2(1,idx_vor) = RLE2(1,NSTRIP) + XVR(IVC)*CHORD2(NSTRIP)
+            RV2(2,idx_vor) = RLE2(2,NSTRIP)
+            RV2(3,idx_vor) = RLE2(3,NSTRIP)
 C
-            RV(1,NVOR) = RLE(1,NSTRIP) + XVR(IVC)*CHORDC
-            RV(2,NVOR) = RLE(2,NSTRIP)
-            RV(3,NVOR) = RLE(3,NSTRIP)
+            RV(1,idx_vor) = RLE(1,NSTRIP) + XVR(IVC)*CHORDC
+            RV(2,idx_vor) = RLE(2,NSTRIP)
+            RV(3,idx_vor) = RLE(3,NSTRIP)
 C
-            RC(1,NVOR) = RLE(1,NSTRIP) + XCP(IVC)*CHORDC
-            RC(2,NVOR) = RLE(2,NSTRIP)
-            RC(3,NVOR) = RLE(3,NSTRIP)
+            RC(1,idx_vor) = RLE(1,NSTRIP) + XCP(IVC)*CHORDC
+            RC(2,idx_vor) = RLE(2,NSTRIP)
+            RC(3,idx_vor) = RLE(3,NSTRIP)
 C
-            RS(1,NVOR) = RLE(1,NSTRIP) + XSR(IVC)*CHORDC
-            RS(2,NVOR) = RLE(2,NSTRIP)
-            RS(3,NVOR) = RLE(3,NSTRIP)
+            RS(1,idx_vor) = RLE(1,NSTRIP) + XSR(IVC)*CHORDC
+            RS(2,idx_vor) = RLE(2,NSTRIP)
+            RS(3,idx_vor) = RLE(3,NSTRIP)
 C
             CALL AKIMA(XASEC(1,ISEC,  ISURF),SASEC(1,ISEC,  ISURF),NSL,
      &                 XCP(IVC),SLOPEL, DSDX)
             CALL AKIMA(XASEC(1,ISEC+1,ISURF),SASEC(1,ISEC+1,ISURF),NSR,
      &                 XCP(IVC),SLOPER, DSDX)
-            SLOPEC(NVOR) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
+            SLOPEC(idx_vor) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
      &                    +     FC *(CHORDR/CHORDC)*SLOPER
 C
             CALL AKIMA(XASEC(1,ISEC  ,ISURF),SASEC(1,ISEC  ,ISURF),NSL,
      &                 XVR(IVC),SLOPEL, DSDX)
             CALL AKIMA(XASEC(1,ISEC+1,ISURF),SASEC(1,ISEC+1,ISURF),NSR,
      &                 XVR(IVC),SLOPER, DSDX)
-            SLOPEV(NVOR) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
+            SLOPEV(idx_vor) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
      &                    +     FC *(CHORDR/CHORDC)*SLOPER
 C
             DXOC = XPT(IVC+1) - XPT(IVC)
-            DXV(NVOR) = DXOC*CHORDC
-            CHORDV(NVOR) = CHORDC
-            NSURFV(NVOR) = LSCOMP(ISURF)
+            DXV(idx_vor) = DXOC*CHORDC
+            CHORDV(idx_vor) = CHORDC
+            NSURFV(idx_vor) = LSCOMP(ISURF)
 
-            LVNC(NVOR) = .TRUE.
+            LVNC(idx_vor) = .TRUE.
 C
 C---------- element inherits alpha,beta flag from surface
-            LVALBE(NVOR) = LFALBE(ISURF)
+            LVALBE(idx_vor) = LFALBE(ISURF)
 C
             DO N = 1, NCONTROL
 C------------ scale control gain by factor 0..1, (fraction of element on control surface)
@@ -497,11 +517,12 @@ C
               FRACLE = MIN( 1.0 , MAX( 0.0 , FRACLE ) )
               FRACTE = MIN( 1.0 , MAX( 0.0 , FRACTE ) )
 C
-              DCONTROL(NVOR,N) = GAINDA(N)*(FRACTE-FRACLE)
+              DCONTROL(idx_vor,N) = GAINDA(N)*(FRACTE-FRACLE)
             ENDDO
 C
 C---------- TE control point used only if surface sheds a wake
-            LVNC(NVOR) = LFWAKE(ISURF)
+            LVNC(idx_vor) = LFWAKE(ISURF)
+            idx_vor = idx_vor + 1
 
  1505     CONTINUE
 C
@@ -525,6 +546,9 @@ C
       ELSE
        CAVESURF(ISURF) = SUM/WTOT
       ENDIF
+
+C     add number of of votrices
+      NVOR = NVOR + NK(ISURF)*NJ(ISURF) 
 C
       RETURN
       END ! MAKESURF
@@ -678,6 +702,7 @@ C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*(*) MSG
+      integer idx_vor
 C
       NNI = NSURF + 1
       IF(NNI.GT.NFMAX) THEN
@@ -704,7 +729,8 @@ C---- same various logical flags
       LFLOAD(NNI) = LFLOAD(NN)
 
 C---- accumulate stuff for new image surface 
-      IFRST(NNI) = NVOR   + 1
+      ! IFRST(NNI) = NVOR   + 1
+      IFRST(NNI) =  IFRST(ISURF-1) +  NK(ISURF-1)*NJ(ISURF-1)
       JFRST(NNI) = NSTRIP + 1
       NJ(NNI) = NJ(NN)
       NK(NNI) = NK(NN)
@@ -770,16 +796,21 @@ C
         ENDDO
 C
 C--- The defined section for image strip is flagged with (-)
-        IJFRST(JJI)  = NVOR + 1
+      !   IJFRST(JJI)  = NVOR + 1
+      !   IJFRST(JJI) = IJFRST(NSTRIP - 1) + NVC(NNI)
+        IJFRST(JJI) = IJFRST(JJI - 1) + NVSTRP(JJI - 1)
+
         NVSTRP(JJI)  = NVC(NNI)
         DO L = 1, 6
           CLCD(L,JJI) = CLCD(L,JJ) 
         END DO
         LVISCSTRP(JJI) = LVISCSTRP(JJ)
 C
+        idx_vor = IJFRST(NSTRIP)
+
         DO 80 IVC = 1, NVC(NNI)
-          NVOR = NVOR + 1
-          IF(NVOR.GT.NVMAX) THEN
+      !     NVOR = NVOR + 1
+          IF(idx_vor.GT.NVMAX) THEN
             WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX.'
             STOP
           ENDIF
@@ -811,6 +842,8 @@ ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
             RSGN = VREFL(JJ,N)
             DCONTROL(III,N) = -DCONTROL(II,N)*RSGN
           ENDDO
+          idx_vor = idx_vor + 1
+
 C
    80   CONTINUE
 C
@@ -818,6 +851,8 @@ C
 C
       
 C
+      NVOR = NVOR + NK(NNI)*NJ(NNI) 
+
       RETURN
       END ! SDUPL
 

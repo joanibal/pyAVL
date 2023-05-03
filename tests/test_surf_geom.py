@@ -41,11 +41,13 @@ class TestGeom(unittest.TestCase):
             },
         }
 
-        data = self.avl_solver.get_surface_params()
+        data = self.avl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
+        
+        from pprint import pprint
+        
 
         for surf in reference_data:
             for key in reference_data[surf]:
-                # print(key, data[surf][key], reference_data[surf][key])
                 np.testing.assert_allclose(
                     data[surf][key],
                     reference_data[surf][key],
@@ -74,6 +76,7 @@ class TestGeom(unittest.TestCase):
         )
 
         self.avl_solver.set_surface_params(data)
+        
 
         assert self.avl_solver.get_num_surfaces() == 5
         assert self.avl_solver.get_num_strips() == 90

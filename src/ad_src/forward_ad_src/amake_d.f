@@ -166,6 +166,7 @@ C
      +     ngmax), chcosr_g_diff(ngmax)
       INTEGER isconl(ndmax), isconr(ndmax)
       REAL xled(ndmax), xted(ndmax), gainda(ndmax)
+      INTEGER idx_vor
       INTEGER isec
       REAL dy
       REAL dy_diff
@@ -301,7 +302,14 @@ C--- Image flag set to indicate section definition direction
 C    IMAGS= 1  defines edge 1 located at surface root edge 
 C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
         imags(isurf) = 1
-        ifrst(isurf) = nvor + 1
+C write(*,*) 'IFRST(ISURF)', IFRST(ISURF)
+C IFRST(ISURF) = NVOR   + 1 
+C write(*,*) 'IFRST(ISURF) 2', IFRST(ISURF)
+        IF (isurf .EQ. 1) THEN
+          ifrst(isurf) = 1
+        ELSE
+          ifrst(isurf) = ifrst(isurf-1) + nk(isurf-1)*nj(isurf-1)
+        END IF
         jfrst(isurf) = nstrip + 1
         nk(isurf) = nvc(isurf)
 C
@@ -590,10 +598,12 @@ C
             clafr = claf(isec+1, isurf)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-            aincl_diff = aincs_diff(isec, isurf) + addinc_diff(isurf)
-            aincl = aincs(isec, isurf) + addinc(isurf)
-            aincr_diff = aincs_diff(isec+1, isurf) + addinc_diff(isurf)
-            aincr = aincs(isec+1, isurf) + addinc(isurf)
+            aincl_diff = aincs_diff(isec, isurf) + dtr*addinc_diff(isurf
+     +        )
+            aincl = aincs(isec, isurf) + addinc(isurf)*dtr
+            aincr_diff = aincs_diff(isec+1, isurf) + dtr*addinc_diff(
+     +        isurf)
+            aincr = aincs(isec+1, isurf) + addinc(isurf)*dtr
 Cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 Cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -855,11 +865,18 @@ C--- Interpolate CD-CL polar defining data from input sections to strips
      +            clcdsec(l, isec+1, isurf)
               ENDDO
 C--- If the min drag is zero flag the strip as no-viscous data
+C     IJFRST(NSTRIP) = NVOR + 1
               lviscstrp(nstrip) = clcd(4, nstrip) .NE. 0.0
 C
 C
-              ijfrst(nstrip) = nvor + 1
+              IF (nstrip .EQ. 1) THEN
+                ijfrst(nstrip) = 1
+              ELSE
+                ijfrst(nstrip) = ijfrst(nstrip-1) + nvstrp(nstrip-1)
+              END IF
               nvstrp(nstrip) = nvc(isurf)
+C           write(*,*) 'IJFRST(NSTRIP)', IJFRST(NSTRIP),
+C      &               'NVSTRP(NSTRIP)', IJFRST(NSTRIP - 1) + NVC(ISURF)
 C
               nsurfs(nstrip) = isurf
 C
@@ -881,48 +898,52 @@ C-------- set chordwise spacing fraction arrays
      +                       clafc_diff, xpt, xvr, xsr, xcp, xcp_diff)
 C
 C-------- go over vortices in this strip
+              idx_vor = ijfrst(nstrip)
+C NVOR = NVOR + 1
+C write(*,*) 'make surf nvor', nvor, idx_vor
               DO ivc=1,nvc(isurf)
-                nvor = nvor + 1
 C
-                rv1_diff(1, nvor) = rle1_diff(1, nstrip) + xvr(ivc)*
+                rv1_diff(1, idx_vor) = rle1_diff(1, nstrip) + xvr(ivc)*
      +            chord1_diff(nstrip)
-                rv1(1, nvor) = rle1(1, nstrip) + xvr(ivc)*chord1(nstrip)
-                rv1_diff(2, nvor) = rle1_diff(2, nstrip)
-                rv1(2, nvor) = rle1(2, nstrip)
-                rv1_diff(3, nvor) = rle1_diff(3, nstrip)
-                rv1(3, nvor) = rle1(3, nstrip)
+                rv1(1, idx_vor) = rle1(1, nstrip) + xvr(ivc)*chord1(
+     +            nstrip)
+                rv1_diff(2, idx_vor) = rle1_diff(2, nstrip)
+                rv1(2, idx_vor) = rle1(2, nstrip)
+                rv1_diff(3, idx_vor) = rle1_diff(3, nstrip)
+                rv1(3, idx_vor) = rle1(3, nstrip)
 C
-                rv2_diff(1, nvor) = rle2_diff(1, nstrip) + xvr(ivc)*
+                rv2_diff(1, idx_vor) = rle2_diff(1, nstrip) + xvr(ivc)*
      +            chord2_diff(nstrip)
-                rv2(1, nvor) = rle2(1, nstrip) + xvr(ivc)*chord2(nstrip)
-                rv2_diff(2, nvor) = rle2_diff(2, nstrip)
-                rv2(2, nvor) = rle2(2, nstrip)
-                rv2_diff(3, nvor) = rle2_diff(3, nstrip)
-                rv2(3, nvor) = rle2(3, nstrip)
+                rv2(1, idx_vor) = rle2(1, nstrip) + xvr(ivc)*chord2(
+     +            nstrip)
+                rv2_diff(2, idx_vor) = rle2_diff(2, nstrip)
+                rv2(2, idx_vor) = rle2(2, nstrip)
+                rv2_diff(3, idx_vor) = rle2_diff(3, nstrip)
+                rv2(3, idx_vor) = rle2(3, nstrip)
 C
-                rv_diff(1, nvor) = rle_diff(1, nstrip) + xvr(ivc)*
+                rv_diff(1, idx_vor) = rle_diff(1, nstrip) + xvr(ivc)*
      +            chordc_diff
-                rv(1, nvor) = rle(1, nstrip) + xvr(ivc)*chordc
-                rv_diff(2, nvor) = rle_diff(2, nstrip)
-                rv(2, nvor) = rle(2, nstrip)
-                rv_diff(3, nvor) = rle_diff(3, nstrip)
-                rv(3, nvor) = rle(3, nstrip)
+                rv(1, idx_vor) = rle(1, nstrip) + xvr(ivc)*chordc
+                rv_diff(2, idx_vor) = rle_diff(2, nstrip)
+                rv(2, idx_vor) = rle(2, nstrip)
+                rv_diff(3, idx_vor) = rle_diff(3, nstrip)
+                rv(3, idx_vor) = rle(3, nstrip)
 C
-                rc_diff(1, nvor) = rle_diff(1, nstrip) + chordc*xcp_diff
-     +            (ivc) + xcp(ivc)*chordc_diff
-                rc(1, nvor) = rle(1, nstrip) + xcp(ivc)*chordc
-                rc_diff(2, nvor) = rle_diff(2, nstrip)
-                rc(2, nvor) = rle(2, nstrip)
-                rc_diff(3, nvor) = rle_diff(3, nstrip)
-                rc(3, nvor) = rle(3, nstrip)
+                rc_diff(1, idx_vor) = rle_diff(1, nstrip) + chordc*
+     +            xcp_diff(ivc) + xcp(ivc)*chordc_diff
+                rc(1, idx_vor) = rle(1, nstrip) + xcp(ivc)*chordc
+                rc_diff(2, idx_vor) = rle_diff(2, nstrip)
+                rc(2, idx_vor) = rle(2, nstrip)
+                rc_diff(3, idx_vor) = rle_diff(3, nstrip)
+                rc(3, idx_vor) = rle(3, nstrip)
 C
-                rs_diff(1, nvor) = rle_diff(1, nstrip) + xsr(ivc)*
+                rs_diff(1, idx_vor) = rle_diff(1, nstrip) + xsr(ivc)*
      +            chordc_diff
-                rs(1, nvor) = rle(1, nstrip) + xsr(ivc)*chordc
-                rs_diff(2, nvor) = rle_diff(2, nstrip)
-                rs(2, nvor) = rle(2, nstrip)
-                rs_diff(3, nvor) = rle_diff(3, nstrip)
-                rs(3, nvor) = rle(3, nstrip)
+                rs(1, idx_vor) = rle(1, nstrip) + xsr(ivc)*chordc
+                rs_diff(2, idx_vor) = rle_diff(2, nstrip)
+                rs(2, idx_vor) = rle(2, nstrip)
+                rs_diff(3, idx_vor) = rle_diff(3, nstrip)
+                rs(3, idx_vor) = rle(3, nstrip)
 C
                 CALL AKIMA_D(xasec(1, isec, isurf), sasec(1, isec, isurf
      +                       ), nsl, xcp(ivc), xcp_diff(ivc), slopel, 
@@ -932,11 +953,11 @@ C
      +                       sloper, sloper_diff, dsdx)
                 temp0 = (-fc+1.)/chordc
                 temp = sloper/chordc
-                slopec_diff(nvor) = chordl*slopel*(-fc_diff-temp0*
+                slopec_diff(idx_vor) = chordl*slopel*(-fc_diff-temp0*
      +            chordc_diff)/chordc + temp0*(slopel*chordl_diff+chordl
      +            *slopel_diff) + temp*(chordr*fc_diff+fc*chordr_diff) +
      +            fc*chordr*(sloper_diff-temp*chordc_diff)/chordc
-                slopec(nvor) = temp0*(chordl*slopel) + fc*chordr*temp
+                slopec(idx_vor) = temp0*(chordl*slopel) + fc*chordr*temp
 C
                 CALL AKIMA(xasec(1, isec, isurf), sasec(1, isec, isurf)
      +                     , nsl, xvr(ivc), slopel, dsdx)
@@ -944,22 +965,22 @@ C
      +                     isurf), nsr, xvr(ivc), sloper, dsdx)
                 temp0 = chordl/chordc
                 temp = fc*chordr/chordc
-                slopev_diff(nvor) = slopel*((1.-fc)*(chordl_diff-temp0*
-     +            chordc_diff)/chordc-temp0*fc_diff) + sloper*(chordr*
-     +            fc_diff+fc*chordr_diff-temp*chordc_diff)/chordc
-                slopev(nvor) = slopel*((1.-fc)*temp0) + sloper*temp
+                slopev_diff(idx_vor) = slopel*((1.-fc)*(chordl_diff-
+     +            temp0*chordc_diff)/chordc-temp0*fc_diff) + sloper*(
+     +            chordr*fc_diff+fc*chordr_diff-temp*chordc_diff)/chordc
+                slopev(idx_vor) = slopel*((1.-fc)*temp0) + sloper*temp
 C
                 dxoc = xpt(ivc+1) - xpt(ivc)
-                dxv_diff(nvor) = dxoc*chordc_diff
-                dxv(nvor) = dxoc*chordc
-                chordv_diff(nvor) = chordc_diff
-                chordv(nvor) = chordc
-                nsurfv(nvor) = lscomp(isurf)
+                dxv_diff(idx_vor) = dxoc*chordc_diff
+                dxv(idx_vor) = dxoc*chordc
+                chordv_diff(idx_vor) = chordc_diff
+                chordv(idx_vor) = chordc
+                nsurfv(idx_vor) = lscomp(isurf)
 C
-                lvnc(nvor) = .true.
+                lvnc(idx_vor) = .true.
 C
 C---------- element inherits alpha,beta flag from surface
-                lvalbe(nvor) = lfalbe(isurf)
+                lvalbe(idx_vor) = lfalbe(isurf)
 C
                 DO n=1,ncontrol
 C------------ scale control gain by factor 0..1, (fraction of element on control surface)
@@ -986,11 +1007,12 @@ C------------ scale control gain by factor 0..1, (fraction of element on control
                     fracte = 1.0
                   END IF
 C
-                  dcontrol(nvor, n) = gainda(n)*(fracte-fracle)
+                  dcontrol(idx_vor, n) = gainda(n)*(fracte-fracle)
                 ENDDO
 C
 C---------- TE control point used only if surface sheds a wake
-                lvnc(nvor) = lfwake(isurf)
+                lvnc(idx_vor) = lfwake(isurf)
+                idx_vor = idx_vor + 1
               ENDDO
             ENDDO
           ENDDO
@@ -1014,6 +1036,9 @@ C
           ELSE
             cavesurf(isurf) = sum/wtot
           END IF
+C
+C     add number of of votrices
+          nvor = nvor + nk(isurf)*nj(isurf)
 C
           RETURN
         END IF
@@ -1041,10 +1066,12 @@ C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       CHARACTER*(*) msg
+      INTEGER idx_vor
       INTEGER nni
       INTEGER klen
       INTRINSIC LEN
       INTEGER k
+      INTEGER isurf
       REAL yoff
       INTEGER ivs
       INTEGER jji
@@ -1081,10 +1108,11 @@ C
 C---- same various logical flags
         lfwake(nni) = lfwake(nn)
         lfalbe(nni) = lfalbe(nn)
+C IFRST(NNI) = NVOR   + 1
         lfload(nni) = lfload(nn)
 C
 C---- accumulate stuff for new image surface 
-        ifrst(nni) = nvor + 1
+        ifrst(nni) = ifrst(isurf-1) + nk(isurf-1)*nj(isurf-1)
         jfrst(nni) = nstrip + 1
         nj(nni) = nj(nn)
         nk(nni) = nk(nn)
@@ -1161,18 +1189,23 @@ C
               phinge(2, jji, n) = -phinge(2, jj, n) + yoff
               phinge(3, jji, n) = phinge(3, jj, n)
             ENDDO
+C   IJFRST(JJI)  = NVOR + 1
+C   IJFRST(JJI) = IJFRST(NSTRIP - 1) + NVC(NNI)
 C
 C--- The defined section for image strip is flagged with (-)
-            ijfrst(jji) = nvor + 1
+            ijfrst(jji) = ijfrst(jji-1) + nvstrp(jji-1)
+C
             nvstrp(jji) = nvc(nni)
             DO l=1,6
               clcd(l, jji) = clcd(l, jj)
             ENDDO
             lviscstrp(jji) = lviscstrp(jj)
 C
+            idx_vor = ijfrst(nstrip)
+C
+C     NVOR = NVOR + 1
             DO ivc=1,nvc(nni)
-              nvor = nvor + 1
-              IF (nvor .GT. nvmax) THEN
+              IF (idx_vor .GT. nvmax) THEN
                 GOTO 120
               ELSE
 C
@@ -1219,6 +1252,7 @@ Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
                   rsgn = vrefl(jj, n)
                   dcontrol(iii, n) = -(dcontrol(ii, n)*rsgn)
                 ENDDO
+                idx_vor = idx_vor + 1
               END IF
             ENDDO
           END IF
@@ -1226,6 +1260,9 @@ Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
 C
 C
 C
+C
+C
+        nvor = nvor + nk(nni)*nj(nni)
 C
         RETURN
  110    WRITE(*, *) 'SDUPL: Strip array overflow. Increase NSMAX.'

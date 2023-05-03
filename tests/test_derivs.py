@@ -25,8 +25,12 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        # self.avl_solver = AVLSolver(geo_file='aircraft_L1.avl')
+        # print(self.avl_solver.avl.STRP_I.IJFRST[:20])
+        # print(self.avl_solver.avl.SURF_I.IFRST[:10])
         self.avl_solver.add_constraint("alpha", 1.0)
         self.avl_solver.execute_run()
+        
 
     def test_fwd_cltot_alpha_derivs(self):
         # base line CL
@@ -39,8 +43,8 @@ class TestFunctionPartials(unittest.TestCase):
 
         # use finite difference
         h = 1e-7
-        alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
-        self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
+        alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
+        self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
 
         self.avl_solver.avl.aero()
         coef_data_peturb = self.avl_solver.get_case_total_data()
@@ -62,8 +66,8 @@ class TestFunctionPartials(unittest.TestCase):
 
         # use finite difference
         h = 1e-7
-        alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
-        self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
+        alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
+        self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
 
         self.avl_solver.avl.aero()
         coef_data_peturb = self.avl_solver.get_case_total_data()
@@ -87,9 +91,9 @@ class TestFunctionPartials(unittest.TestCase):
         # use finite difference
         h = 1e-1
 
-        gam = self.avl_solver.get_avl_fort_var("VRTX_R", "GAM")
+        gam = self.avl_solver.get_avl_fort_arr("VRTX_R", "GAM")
         gam[1] = gam[1] + h
-        self.avl_solver.set_avl_fort_var("VRTX_R", "GAM", gam)
+        self.avl_solver.set_avl_fort_arr("VRTX_R", "GAM", gam)
 
         self.avl_solver.avl.aero()
         coef_data_peturb = self.avl_solver.get_case_total_data()
@@ -113,9 +117,9 @@ class TestFunctionPartials(unittest.TestCase):
         # use finite difference
         h = 1e-1
 
-        gam = self.avl_solver.get_avl_fort_var("VRTX_R", "GAM")
+        gam = self.avl_solver.get_avl_fort_arr("VRTX_R", "GAM")
         gam[1] = gam[1] + h
-        self.avl_solver.set_avl_fort_var("VRTX_R", "GAM", gam)
+        self.avl_solver.set_avl_fort_arr("VRTX_R", "GAM", gam)
 
         self.avl_solver.avl.aero()
         coef_data_peturb = self.avl_solver.get_case_total_data()
@@ -157,23 +161,32 @@ class TestFunctionPartials(unittest.TestCase):
         idx_surf = 0
         idx_res = 1
         num_sec = self.avl_solver.avl.SURF_GEOM_I.NSEC[idx_surf]
+        coef_data = self.avl_solver.get_case_total_data()
+        
+        # print('cl', coef_data["CL"])
+        gam = self.avl_solver.avl.VRTX_R.GAM[:]
+        # print('gam', np.linalg.norm(gam))
+
 
         self.avl_solver.avl.aero_b()
         self.avl_solver.avl.update_surfaces_b()
 
         dcl_daincs = self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf]
 
-        print("dcl_daincs", dcl_daincs)
+        # print("dcl_daincs", dcl_daincs)
 
         # # use finite difference
-        coef_data = self.avl_solver.get_case_total_data()
+        self.avl_solver.avl.update_surfaces()
+
+
         h = 1e-1
         self.avl_solver.avl.SURF_GEOM_R.AINCS[:num_sec, idx_surf] += h
         self.avl_solver.avl.update_surfaces()
         self.avl_solver.avl.aero()
         coef_data_peturb = self.avl_solver.get_case_total_data()
         dcl_daincs_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
-        print("dcl_daincs", dcl_daincs_fd)
+        # print(coef_data_peturb["CL"] , coef_data["CL"])
+        # print("dcl_daincs_fd", dcl_daincs_fd)
 
         np.testing.assert_allclose(
             np.sum(dcl_daincs),
@@ -192,8 +205,8 @@ class TestNewSubroutines(unittest.TestCase):
         self.avl_solver.avl.get_res()
         res = self.avl_solver.avl.VRTX_R.RES[:]
         rhs = self.avl_solver.avl.VRTX_R.RHS[:]
-        print("res", np.linalg.norm(res))
-        print("rhs", np.linalg.norm(rhs))
+        # print("res", np.linalg.norm(res))
+        # print("rhs", np.linalg.norm(rhs))
         np.testing.assert_allclose(
             res,
             -1 * rhs,
@@ -248,8 +261,8 @@ class TestResidualPartials(unittest.TestCase):
 
         # use finite difference
         h = 1e-7
-        alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
-        self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
+        alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
+        self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
         self.avl_solver.avl.get_res()
         res_1 = self.avl_solver.avl.VRTX_R.RES[:]
         dres_dalfa_fd = (res_1 - res_0) / h
@@ -271,8 +284,8 @@ class TestResidualPartials(unittest.TestCase):
 
         # use finite difference
         h = 1e-7
-        alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
-        self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
+        alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
+        self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
         self.avl_solver.avl.get_res()
         res_1 = self.avl_solver.avl.VRTX_R.RES[1]
         dres_dalfa_fd = (res_1 - res_0) / h
@@ -338,11 +351,11 @@ class TestResidualPartials(unittest.TestCase):
         dres_aincs_fd = (res_1 - res_0) / h
         denc_aincs_fd = (enc_1 - enc_0) / h
         
-        print('res ad', dres_aincs)
-        print('res fd', dres_aincs_fd)
+        # print('res ad', dres_aincs)
+        # print('res fd', dres_aincs_fd)
         
-        print('enc ad', denc_aincs)
-        print('enc fd', denc_aincs_fd)
+        # print('enc ad', denc_aincs)
+        # print('enc fd', denc_aincs_fd)
         
         
         np.testing.assert_allclose(
@@ -354,7 +367,8 @@ class TestResidualPartials(unittest.TestCase):
 
 class TestTotals(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file="rect.avl")
+        # self.avl_solver = AVLSolver(geo_file="rect.avl")
+        self.avl_solver = AVLSolver(geo_file="aircraft.avl")
         self.avl_solver.add_constraint("alpha", 5.0)
         # self.avl_solver.add_constraint("beta", 9.0)
         # self.avl_solver.add_constraint("roll rate", 1.2)
@@ -384,8 +398,8 @@ class TestTotals(unittest.TestCase):
         # use finite difference
         coef_data = self.avl_solver.get_case_total_data()
         h = 1e-6
-        alpha = self.avl_solver.get_avl_fort_var("CASE_R", "ALFA")
-        # self.avl_solver.set_avl_fort_var("CASE_R", "ALFA", alpha + h)
+        alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
+        # self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
         self.avl_solver.add_constraint("alpha", np.rad2deg(alpha) + h)
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.aero()
@@ -406,15 +420,18 @@ class TestTotals(unittest.TestCase):
         self.avl_solver.avl.CASE_R_diff.CLTOT_diff = 1
         self.avl_solver.avl.aero_b()
         self.avl_solver.avl.update_surfaces_b()
-        print('python nvor', self.avl_solver.avl.CASE_I.NVOR)
-        quit()
+        # print('python nvor', self.avl_solver.avl.CASE_I.NVOR)
+        # quit()
+        # dcl_geom = self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff
+        # print("dcl_geom", dcl_geom[:1], np.linalg.norm(dcl_geom))
+
 
         dcl_daincs = copy.deepcopy(self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf])
-
+        
+        rhs =   copy.deepcopy(self.avl_solver.avl.VRTX_R_diff.GAM_diff[:num_sec])
         # solve for the adjoint variable
         self.avl_solver.avl.solve_adjoint()
         dcl_dres = self.avl_solver.avl.VRTX_R_diff.RES_diff
-        print("dcl_dres", dcl_dres[:10], np.linalg.norm(dcl_dres))
 
         # combine adjoint with pr/px
         
@@ -425,7 +442,7 @@ class TestTotals(unittest.TestCase):
         # # use finite difference
         coef_data = self.avl_solver.get_case_total_data()
 
-        h = 1e-6
+        h = 1e-8
         self.avl_solver.avl.SURF_GEOM_R.AINCS[:num_sec, idx_surf] += h
         self.avl_solver.avl.update_surfaces()
         self.avl_solver.avl.exec_rhs()
@@ -434,11 +451,11 @@ class TestTotals(unittest.TestCase):
 
         dcl_daincs_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
         
-        print("dcl_daincs", dcl_daincs)
+        
         np.testing.assert_allclose(
             np.sum(dcl_daincs),
             dcl_daincs_fd,
-            rtol=1e-10,
+            rtol=1e-8,
         )
 
 

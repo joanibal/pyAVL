@@ -21,7 +21,6 @@ C MAKESURF
       INTEGER ii3
       nstrip = 0
       nvor = 0
-      write(*,*) 'UPDATE_SURFACES_B nvor 0', nvor
       DO 100 isurf=1,nsurf
         IF (lverbose) WRITE(*, *) 'Updating surface ', isurf
         IF (isurf .NE. 1) THEN
@@ -31,23 +30,26 @@ C MAKESURF
           ELSE
 C this surface has already been created
             CALL PUSHREAL8ARRAY(chord, nsmax)
+            CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
+            CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
             CALL PUSHINTEGER4ARRAY(nvs, nfmax)
             CALL PUSHINTEGER4ARRAY(nvc, nfmax)
             CALL PUSHINTEGER4(nstrip)
-            CALL PUSHINTEGER4(nvor)
             CALL MAKESURF(isurf)
             CALL PUSHCONTROL1B(0)
           END IF
         ELSE
           CALL PUSHREAL8ARRAY(chord, nsmax)
+          CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
+          CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
           CALL PUSHINTEGER4ARRAY(nvs, nfmax)
           CALL PUSHINTEGER4ARRAY(nvc, nfmax)
           CALL PUSHINTEGER4(nstrip)
-          CALL PUSHINTEGER4(nvor)
           CALL MAKESURF(isurf)
           CALL PUSHCONTROL1B(1)
         END IF
         IF (ldupl(isurf)) THEN
+          CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
           CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
           CALL PUSHINTEGER4ARRAY(nvs, nfmax)
           CALL PUSHINTEGER4ARRAY(nvc, nfmax)
@@ -55,7 +57,6 @@ C this surface has already been created
           CALL PUSHINTEGER4ARRAY(nk, nfmax)
           CALL PUSHINTEGER4ARRAY(nj, nfmax)
           CALL PUSHINTEGER4(nstrip)
-          CALL PUSHINTEGER4(nvor)
           DO ii1=1,nfmax
             CALL PUSHCHARACTERARRAY(stitle(ii1), 40)
           ENDDO
@@ -120,7 +121,6 @@ C this surface has already been created
       DO ii1=1,nsmax
         chord2_diff(ii1) = 0.D0
       ENDDO
-      write(*,*)'updatesurfaces_b nvor -3', nvor
       DO isurf=nsurf,1,-1
         CALL POPCONTROL2B(branch)
         IF (branch .NE. 0) THEN
@@ -128,7 +128,6 @@ C this surface has already been created
             DO ii1=nfmax,1,-1
               CALL POPCHARACTERARRAY(stitle(ii1), 40)
             ENDDO
-            CALL POPINTEGER4(nvor)
             CALL POPINTEGER4(nstrip)
             CALL POPINTEGER4ARRAY(nj, nfmax)
             CALL POPINTEGER4ARRAY(nk, nfmax)
@@ -136,28 +135,29 @@ C this surface has already been created
             CALL POPINTEGER4ARRAY(nvc, nfmax)
             CALL POPINTEGER4ARRAY(nvs, nfmax)
             CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+            CALL POPINTEGER4ARRAY(nvstrp, nsmax)
             CALL SDUPL_B(isurf, ydupl(isurf), 'ydup')
           END IF
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
-            CALL POPINTEGER4(nvor)
             CALL POPINTEGER4(nstrip)
             CALL POPINTEGER4ARRAY(nvc, nfmax)
             CALL POPINTEGER4ARRAY(nvs, nfmax)
+            CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+            CALL POPINTEGER4ARRAY(nvstrp, nsmax)
             CALL POPREAL8ARRAY(chord, nsmax)
             CALL MAKESURF_B(isurf)
           ELSE
-            CALL POPINTEGER4(nvor)
             CALL POPINTEGER4(nstrip)
             CALL POPINTEGER4ARRAY(nvc, nfmax)
             CALL POPINTEGER4ARRAY(nvs, nfmax)
+            CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+            CALL POPINTEGER4ARRAY(nvstrp, nsmax)
             CALL POPREAL8ARRAY(chord, nsmax)
             CALL MAKESURF_B(isurf)
           END IF
         END IF
-        write(*,*)'updatesurfaces_b nvor -2', nvor
       ENDDO
-      write(*,*)'updatesurfaces_b nvor -1', nvor
       END
 
 C  Differentiation of makesurf in reverse (adjoint) mode (with options i4 dr8 r8):
@@ -218,6 +218,7 @@ C
      +     ngmax), chcosr_g_diff(ngmax)
       INTEGER isconl(ndmax), isconr(ndmax)
       REAL xled(ndmax), xted(ndmax), gainda(ndmax)
+      INTEGER idx_vor
       INTEGER isec
       REAL dy
       REAL dy_diff
@@ -362,10 +363,6 @@ C
         IF (nvc(isurf) .GT. kcmax) nvc(isurf) = kcmax
 C
         IF (nvs(isurf) .GT. ksmax) nvs(isurf) = ksmax
-C
-C--- Image flag set to indicate section definition direction
-C    IMAGS= 1  defines edge 1 located at surface root edge 
-C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
 C
 C-----------------------------------------------------------------
 C---- section arc lengths of wing trace in y-z plane
@@ -592,8 +589,8 @@ C
             clafr = claf(isec+1, isurf)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-            aincl = aincs(isec, isurf) + addinc(isurf)
-            aincr = aincs(isec+1, isurf) + addinc(isurf)
+            aincl = aincs(isec, isurf) + addinc(isurf)*dtr
+            aincr = aincs(isec+1, isurf) + addinc(isurf)*dtr
 Cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 Cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -671,8 +668,17 @@ C
               CALL PUSHREAL8(chcos)
               chcos = chcosl + fc*(chcosr-chcosl)
 C--- If the min drag is zero flag the strip as no-viscous data
+C     IJFRST(NSTRIP) = NVOR + 1
 C
 C
+              IF (nstrip .EQ. 1) THEN
+                ijfrst(nstrip) = 1
+              ELSE
+                ijfrst(nstrip) = ijfrst(nstrip-1) + nvstrp(nstrip-1)
+              END IF
+              nvstrp(nstrip) = nvc(isurf)
+C           write(*,*) 'IJFRST(NSTRIP)', IJFRST(NSTRIP),
+C      &               'NVSTRP(NSTRIP)', IJFRST(NSTRIP - 1) + NVC(ISURF)
 C
 C
               nsl = nasec(isec, isurf)
@@ -692,10 +698,10 @@ C-------- set chordwise spacing fraction arrays
      +                     xsr, xcp)
 C
 C-------- go over vortices in this strip
+              idx_vor = ijfrst(nstrip)
+C NVOR = NVOR + 1
+C write(*,*) 'make surf nvor', nvor, idx_vor
               DO ivc=1,nvc(isurf)
-                CALL PUSHINTEGER4(nvor)
-                nvor = nvor + 1
-                write(*,*) 'makesurf nvor _b', nvor
 C
 C
 C
@@ -721,6 +727,10 @@ C
 C
 C
 C---------- element inherits alpha,beta flag from surface
+C
+C---------- TE control point used only if surface sheds a wake
+                CALL PUSHINTEGER4(idx_vor)
+                idx_vor = idx_vor + 1
               ENDDO
             ENDDO
             CALL PUSHINTEGER4(ispan - 1)
@@ -772,35 +782,36 @@ C---------- element inherits alpha,beta flag from surface
               fc_diff = 0.D0
               chordc_diff = 0.D0
               DO ivc=nvc(isurf),1,-1
+                CALL POPINTEGER4(idx_vor)
                 temp0 = (-fc+1.)/chordc
-                temp_diff = sloper*slopev_diff(nvor)/chordc
-                temp_diff0 = (1.-fc)*slopel*slopev_diff(nvor)/chordc
-                chordc_diff = chordc_diff + chordv_diff(nvor) + dxoc*
-     +            dxv_diff(nvor) - fc*chordr*temp_diff/chordc - chordl*
-     +            temp_diff0/chordc
-                chordv_diff(nvor) = 0.D0
-                dxv_diff(nvor) = 0.D0
+                temp_diff = sloper*slopev_diff(idx_vor)/chordc
+                temp_diff0 = (1.-fc)*slopel*slopev_diff(idx_vor)/chordc
+                chordc_diff = chordc_diff + chordv_diff(idx_vor) + dxoc*
+     +            dxv_diff(idx_vor) - fc*chordr*temp_diff/chordc - 
+     +            chordl*temp_diff0/chordc
+                chordv_diff(idx_vor) = 0.D0
+                dxv_diff(idx_vor) = 0.D0
                 CALL POPREAL8(dxoc)
-                fc_diff = fc_diff - chordl*slopel*slopev_diff(nvor)/
+                fc_diff = fc_diff - chordl*slopel*slopev_diff(idx_vor)/
      +            chordc
-                slopev_diff(nvor) = 0.D0
+                slopev_diff(idx_vor) = 0.D0
                 CALL POPREAL8(sloper)
                 CALL POPREAL8(slopel)
                 chordl_diff = chordl_diff + temp_diff0 + slopel*temp0*
-     +            slopec_diff(nvor)
+     +            slopec_diff(idx_vor)
                 temp = sloper/chordc
                 chordr_diff = chordr_diff + fc*temp_diff + fc*temp*
-     +            slopec_diff(nvor)
-                temp_diff0 = chordl*slopel*slopec_diff(nvor)/chordc
+     +            slopec_diff(idx_vor)
+                temp_diff0 = chordl*slopel*slopec_diff(idx_vor)/chordc
                 fc_diff = fc_diff + chordr*temp_diff + chordr*temp*
-     +            slopec_diff(nvor) - temp_diff0
-                slopel_diff = chordl*temp0*slopec_diff(nvor)
-                temp_diff = fc*chordr*slopec_diff(nvor)/chordc
-                slopec_diff(nvor) = 0.D0
+     +            slopec_diff(idx_vor) - temp_diff0
+                slopel_diff = chordl*temp0*slopec_diff(idx_vor)
+                temp_diff = fc*chordr*slopec_diff(idx_vor)/chordc
+                slopec_diff(idx_vor) = 0.D0
                 sloper_diff = temp_diff
-                chordc_diff = chordc_diff + xsr(ivc)*rs_diff(1, nvor) - 
-     +            temp*temp_diff - temp0*temp_diff0 + xcp(ivc)*rc_diff(1
-     +            , nvor) + xvr(ivc)*rv_diff(1, nvor)
+                chordc_diff = chordc_diff + xsr(ivc)*rs_diff(1, idx_vor)
+     +            - temp*temp_diff - temp0*temp_diff0 + xcp(ivc)*rc_diff
+     +            (1, idx_vor) + xvr(ivc)*rv_diff(1, idx_vor)
                 CALL POPREAL8(sloper)
                 CALL AKIMA_B(xasec(1, isec+1, isurf), sasec(1, isec+1, 
      +                       isurf), nsr, xcp(ivc), xcp_diff(ivc), 
@@ -810,44 +821,44 @@ C---------- element inherits alpha,beta flag from surface
      +                       ), nsl, xcp(ivc), xcp_diff(ivc), slopel, 
      +                       slopel_diff, dsdx)
                 rle_diff(3, nstrip) = rle_diff(3, nstrip) + rs_diff(3, 
-     +            nvor) + rc_diff(3, nvor) + rv_diff(3, nvor)
-                rs_diff(3, nvor) = 0.D0
+     +            idx_vor) + rc_diff(3, idx_vor) + rv_diff(3, idx_vor)
+                rs_diff(3, idx_vor) = 0.D0
                 rle_diff(2, nstrip) = rle_diff(2, nstrip) + rs_diff(2, 
-     +            nvor) + rc_diff(2, nvor) + rv_diff(2, nvor)
-                rs_diff(2, nvor) = 0.D0
+     +            idx_vor) + rc_diff(2, idx_vor) + rv_diff(2, idx_vor)
+                rs_diff(2, idx_vor) = 0.D0
                 rle_diff(1, nstrip) = rle_diff(1, nstrip) + rs_diff(1, 
-     +            nvor) + rc_diff(1, nvor) + rv_diff(1, nvor)
-                rs_diff(1, nvor) = 0.D0
-                rc_diff(3, nvor) = 0.D0
-                rc_diff(2, nvor) = 0.D0
-                xcp_diff(ivc) = xcp_diff(ivc) + chordc*rc_diff(1, nvor)
-                rc_diff(1, nvor) = 0.D0
-                rv_diff(3, nvor) = 0.D0
-                rv_diff(2, nvor) = 0.D0
-                rv_diff(1, nvor) = 0.D0
+     +            idx_vor) + rc_diff(1, idx_vor) + rv_diff(1, idx_vor)
+                rs_diff(1, idx_vor) = 0.D0
+                rc_diff(3, idx_vor) = 0.D0
+                rc_diff(2, idx_vor) = 0.D0
+                xcp_diff(ivc) = xcp_diff(ivc) + chordc*rc_diff(1, 
+     +            idx_vor)
+                rc_diff(1, idx_vor) = 0.D0
+                rv_diff(3, idx_vor) = 0.D0
+                rv_diff(2, idx_vor) = 0.D0
+                rv_diff(1, idx_vor) = 0.D0
                 rle2_diff(3, nstrip) = rle2_diff(3, nstrip) + rv2_diff(3
-     +            , nvor)
-                rv2_diff(3, nvor) = 0.D0
+     +            , idx_vor)
+                rv2_diff(3, idx_vor) = 0.D0
                 rle2_diff(2, nstrip) = rle2_diff(2, nstrip) + rv2_diff(2
-     +            , nvor)
-                rv2_diff(2, nvor) = 0.D0
+     +            , idx_vor)
+                rv2_diff(2, idx_vor) = 0.D0
                 rle2_diff(1, nstrip) = rle2_diff(1, nstrip) + rv2_diff(1
-     +            , nvor)
+     +            , idx_vor)
                 chord2_diff(nstrip) = chord2_diff(nstrip) + xvr(ivc)*
-     +            rv2_diff(1, nvor)
-                rv2_diff(1, nvor) = 0.D0
+     +            rv2_diff(1, idx_vor)
+                rv2_diff(1, idx_vor) = 0.D0
                 rle1_diff(3, nstrip) = rle1_diff(3, nstrip) + rv1_diff(3
-     +            , nvor)
-                rv1_diff(3, nvor) = 0.D0
+     +            , idx_vor)
+                rv1_diff(3, idx_vor) = 0.D0
                 rle1_diff(2, nstrip) = rle1_diff(2, nstrip) + rv1_diff(2
-     +            , nvor)
-                rv1_diff(2, nvor) = 0.D0
+     +            , idx_vor)
+                rv1_diff(2, idx_vor) = 0.D0
                 rle1_diff(1, nstrip) = rle1_diff(1, nstrip) + rv1_diff(1
-     +            , nvor)
+     +            , idx_vor)
                 chord1_diff(nstrip) = chord1_diff(nstrip) + xvr(ivc)*
-     +            rv1_diff(1, nvor)
-                rv1_diff(1, nvor) = 0.D0
-                CALL POPINTEGER4(nvor)
+     +            rv1_diff(1, idx_vor)
+                rv1_diff(1, idx_vor) = 0.D0
               ENDDO
               clafc = (1.-fc)*(chordl/chordc)*clafl + fc*(chordr/chordc)
      +          *clafr
@@ -1013,13 +1024,13 @@ C---------- element inherits alpha,beta flag from surface
               CALL POPREAL8(chsinl_g(n))
               chsinl_g_diff(n) = 0.D0
             ENDDO
-            aincr = aincs(isec+1, isurf) + addinc(isurf)
+            aincr = aincs(isec+1, isurf) + addinc(isurf)*dtr
             CALL POPREAL8(chcosr)
             chordr_diff = chordr_diff + COS(aincr)*chcosr_diff + SIN(
      +        aincr)*chsinr_diff
             aincr_diff = COS(aincr)*chordr*chsinr_diff - SIN(aincr)*
      +        chordr*chcosr_diff
-            aincl = aincs(isec, isurf) + addinc(isurf)
+            aincl = aincs(isec, isurf) + addinc(isurf)*dtr
             CALL POPREAL8(chcosl)
             chordl_diff = chordl_diff + COS(aincl)*chcosl_diff + SIN(
      +        aincl)*chsinl_diff
@@ -1029,8 +1040,8 @@ C---------- element inherits alpha,beta flag from surface
             CALL POPREAL8(chsinl)
             aincs_diff(isec+1, isurf) = aincs_diff(isec+1, isurf) + 
      +        aincr_diff
-            addinc_diff(isurf) = addinc_diff(isurf) + aincr_diff + 
-     +        aincl_diff
+            addinc_diff(isurf) = addinc_diff(isurf) + dtr*aincr_diff + 
+     +        dtr*aincl_diff
             aincs_diff(isec, isurf) = aincs_diff(isec, isurf) + 
      +        aincl_diff
             xyzscal_diff(1, isurf) = xyzscal_diff(1, isurf) + chords(
@@ -1590,10 +1601,12 @@ C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       CHARACTER*(*) msg
+      INTEGER idx_vor
       INTEGER nni
       INTEGER klen
       INTRINSIC LEN
       INTEGER k
+      INTEGER isurf
       REAL yoff
       INTEGER ivs
       INTEGER jji
@@ -1687,6 +1700,7 @@ C
 C---- duplicate surface is assumed to be the same logical component surface
 C
 C---- same various logical flags
+C IFRST(NNI) = NVOR   + 1
 C
 C---- accumulate stuff for new image surface 
  110    jfrst(nni) = nstrip + 1
@@ -1718,15 +1732,20 @@ C
 C
             n = ndesign + 1
             CALL PUSHINTEGER4(n - 1)
+C   IJFRST(JJI)  = NVOR + 1
+C   IJFRST(JJI) = IJFRST(NSTRIP - 1) + NVC(NNI)
 C
 C--- The defined section for image strip is flagged with (-)
-            ijfrst(jji) = nvor + 1
+            ijfrst(jji) = ijfrst(jji-1) + nvstrp(jji-1)
+C
+            nvstrp(jji) = nvc(nni)
+C
+            idx_vor = ijfrst(nstrip)
             ad_count0 = 1
 C
+C     NVOR = NVOR + 1
             DO ivc=1,nvc(nni)
-              nvor = nvor + 1
-              write(*,*) 'sdupl_b nvor', nvor
-              IF (nvor .GT. nvmax) THEN
+              IF (idx_vor .GT. nvmax) THEN
                 GOTO 140
               ELSE
 C
@@ -1734,6 +1753,7 @@ C
                 iii = ijfrst(jji) + ivc - 1
                 CALL PUSHINTEGER4(ii)
                 ii = ijfrst(jj) + ivc - 1
+                idx_vor = idx_vor + 1
                 ad_count0 = ad_count0 + 1
               END IF
             ENDDO

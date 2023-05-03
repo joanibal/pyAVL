@@ -112,7 +112,6 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
 C  Differentiation of set_vel_rhs in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: rhs
 C   with respect to varying inputs: vinf rc enc
-C WSENS
       SUBROUTINE SET_VEL_RHS_B()
 C
       INCLUDE 'AVL.INC'
@@ -125,9 +124,7 @@ C
       REAL result1
       REAL result1_diff
       INTEGER branch
-      write(*,*) 'set_vel_rhs_b 0'
       DO i=1,nvor
-        write(*,*) 'i, nvor', i, nvor
         IF (lvnc(i)) THEN
           CALL PUSHREAL8(vunit(1))
           vunit(1) = 0.
@@ -178,11 +175,8 @@ C
       vunit_diff = 0.D0
       vunit_w_term_diff = 0.D0
       rrot_diff = 0.D0
-      write(*,*) 'set_vel_rhs_b 1, nvor = ', nvor
       DO i=nvor,1,-1
         CALL POPCONTROL1B(branch)
-        write(*,*)'i, branch = ', i, branch
-        write(*,*)'rhs_diff(i) = ', rhs_diff(i)
         IF (branch .EQ. 0) THEN
           rhs_diff(i) = 0.D0
         ELSE

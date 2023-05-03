@@ -33,10 +33,10 @@ class TestImport(unittest.TestCase):
 
         assert avl_solver1.avl is not avl_solver2.avl
 
-        avl_solver1.set_avl_fort_var("CASE_R", "ALFA", 1.1)
-        avl_solver2.set_avl_fort_var("CASE_R", "ALFA", 2.0)
+        avl_solver1.set_avl_fort_arr("CASE_R", "ALFA", 1.1)
+        avl_solver2.set_avl_fort_arr("CASE_R", "ALFA", 2.0)
 
-        assert avl_solver1.get_avl_fort_var("CASE_R", "ALFA") != avl_solver2.get_avl_fort_var("CASE_R", "ALFA")
+        assert avl_solver1.get_avl_fort_arr("CASE_R", "ALFA") != avl_solver2.get_avl_fort_arr("CASE_R", "ALFA")
 
 
 if __name__ == "__main__":
