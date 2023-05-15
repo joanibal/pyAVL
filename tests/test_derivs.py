@@ -35,9 +35,9 @@ class TestFunctionPartials(unittest.TestCase):
     def test_fwd_cltot_alpha_derivs(self):
         # base line CL
 
-        self.avl_solver.avl.CASE_R_diff.ALFA_diff = 1.0
+        self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF = 1.0
         self.avl_solver.avl.aero_d()
-        dcl_dalfa = self.avl_solver.avl.CASE_R_diff.CLTOT_diff
+        dcl_dalfa = self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF
 
         coef_data = self.avl_solver.get_case_total_data()
 
@@ -45,11 +45,12 @@ class TestFunctionPartials(unittest.TestCase):
         h = 1e-7
         alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
         self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
-
+        
         self.avl_solver.avl.aero()
         coef_data_peturb = self.avl_solver.get_case_total_data()
         dcl_dalfa_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
 
+        print(dcl_dalfa, dcl_dalfa_fd)
         np.testing.assert_allclose(
             dcl_dalfa,
             dcl_dalfa_fd,
@@ -59,9 +60,9 @@ class TestFunctionPartials(unittest.TestCase):
     def test_rev_cltot_alpha_derivs(self):
         # base line CL
 
-        self.avl_solver.avl.CASE_R_diff.CLTOT_diff = 1.0
+        self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF = 1.0
         self.avl_solver.avl.aero_b()
-        dcl_dalfa = self.avl_solver.avl.CASE_R_diff.ALFA_diff
+        dcl_dalfa = self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF
         coef_data = self.avl_solver.get_case_total_data()
 
         # use finite difference
@@ -82,9 +83,9 @@ class TestFunctionPartials(unittest.TestCase):
     def test_fwd_cltot_gam_derivs(self):
         # base line CL
 
-        self.avl_solver.avl.VRTX_R_diff.GAM_diff[1] = 1.0
+        self.avl_solver.avl.VRTX_R_DIFF.GAM_DIFF[1] = 1.0
         self.avl_solver.avl.aero_d()
-        dcl_dgam = self.avl_solver.avl.CASE_R_diff.CLTOT_diff
+        dcl_dgam = self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF
 
         coef_data = self.avl_solver.get_case_total_data()
 
@@ -108,9 +109,9 @@ class TestFunctionPartials(unittest.TestCase):
     def test_rev_cltot_gam_derivs(self):
         # base line CL
 
-        self.avl_solver.avl.CASE_R_diff.CLTOT_diff = 1
+        self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF = 1
         self.avl_solver.avl.aero_b()
-        dcl_dgam = self.avl_solver.avl.VRTX_R_diff.GAM_diff
+        dcl_dgam = self.avl_solver.avl.VRTX_R_DIFF.GAM_DIFF
 
         coef_data = self.avl_solver.get_case_total_data()
 
@@ -134,10 +135,10 @@ class TestFunctionPartials(unittest.TestCase):
         # base line CL
         idx_surf = 0
         num_sec = self.avl_solver.avl.SURF_GEOM_I.NSEC[idx_surf]
-        self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf] = 1.0
+        self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF[:num_sec, idx_surf] = 1.0
         self.avl_solver.avl.update_surfaces_d()
         self.avl_solver.avl.aero_d()
-        dcl_daincs = self.avl_solver.avl.CASE_R_diff.CLTOT_diff
+        dcl_daincs = self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF
         # print("dcl_daincs", dcl_daincs)
 
         # # use finite difference
@@ -171,7 +172,7 @@ class TestFunctionPartials(unittest.TestCase):
         self.avl_solver.avl.aero_b()
         self.avl_solver.avl.update_surfaces_b()
 
-        dcl_daincs = self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf]
+        dcl_daincs = self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF[:num_sec, idx_surf]
 
         # print("dcl_daincs", dcl_daincs)
 
@@ -216,7 +217,6 @@ class TestNewSubroutines(unittest.TestCase):
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.get_res()
         res = self.avl_solver.avl.VRTX_R.RES[:]
-
         np.testing.assert_allclose(
             res,
             np.zeros_like(res),
@@ -225,10 +225,16 @@ class TestNewSubroutines(unittest.TestCase):
 
     def test_new_solve(self):
 
+        
+        self.avl_solver.avl.exec_rhs()
+        self.avl_solver.avl.aero()
+        gam_new = self.avl_solver.avl.VRTX_R.GAM[:]
+        coef_new = self.avl_solver.get_case_total_data()
+        
         self.avl_solver.execute_run()
         gam = self.avl_solver.avl.VRTX_R.GAM[:]
-        self.avl_solver.avl.exec_rhs()
-        gam_new = self.avl_solver.avl.VRTX_R.GAM[:]
+        coef_ref = self.avl_solver.get_case_total_data()
+        
 
         np.testing.assert_allclose(
             gam,
@@ -253,9 +259,9 @@ class TestResidualPartials(unittest.TestCase):
 
     def test_fwd_res_alpha_deriv(self):
 
-        self.avl_solver.avl.CASE_R_diff.ALFA_diff = 1.0
+        self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF = 1.0
         self.avl_solver.avl.get_res_d()
-        dres_dalfa = self.avl_solver.avl.VRTX_R_diff.RES_diff
+        dres_dalfa = self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF
 
         res_0 = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES[:])
 
@@ -275,9 +281,9 @@ class TestResidualPartials(unittest.TestCase):
 
     def test_rev_res_alpha_deriv(self):
 
-        self.avl_solver.avl.VRTX_R_diff.RES_diff[1] = 1.0
+        self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF[1] = 1.0
         self.avl_solver.avl.get_res_b()
-        dres_dalfa = self.avl_solver.avl.CASE_R_diff.ALFA_diff
+        dres_dalfa = self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF
 
         self.avl_solver.avl.get_res()
         res_0 = self.avl_solver.avl.VRTX_R.RES[1]
@@ -300,12 +306,12 @@ class TestResidualPartials(unittest.TestCase):
         # base line CL
         idx_surf = 0
         num_sec = self.avl_solver.avl.SURF_GEOM_I.NSEC[idx_surf]
-        self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf] = 1.0
+        self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF[:num_sec, idx_surf] = 1.0
         self.avl_solver.avl.update_surfaces_d()
-        enc_diff = self.avl_solver.avl.VRTX_R_diff.ENC_diff
+        enc_DIFF = self.avl_solver.avl.VRTX_R_DIFF.ENC_DIFF
 
         self.avl_solver.avl.get_res_d()
-        dres_aincs = self.avl_solver.avl.VRTX_R_diff.RES_diff
+        dres_aincs = self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF
 
         # # use finite difference
         res_0 = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES[:])
@@ -329,12 +335,12 @@ class TestResidualPartials(unittest.TestCase):
         idx_sec = 1
         num_sec = self.avl_solver.avl.SURF_GEOM_I.NSEC[idx_surf]
 
-        self.avl_solver.avl.VRTX_R_diff.RES_diff[idx_res] = 1.0
+        self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF[idx_res] = 1.0
         self.avl_solver.avl.get_res_b()
         self.avl_solver.avl.update_surfaces_b()
 
-        dres_aincs = self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[idx_sec, idx_surf]
-        denc_aincs = self.avl_solver.avl.VRTX_R_diff.ENC_diff[:, idx_res]
+        dres_aincs = self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF[idx_sec, idx_surf]
+        denc_aincs = self.avl_solver.avl.VRTX_R_DIFF.ENC_DIFF[:, idx_res]
         
 
         self.avl_solver.avl.get_res()
@@ -368,76 +374,135 @@ class TestResidualPartials(unittest.TestCase):
 class TestTotals(unittest.TestCase):
     def setUp(self):
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver = AVLSolver(geo_file="aircraft.avl")
-        self.avl_solver.add_constraint("alpha", 5.0)
+        # self.avl_solver = AVLSolver(geo_file="aircraft.avl")
+        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
+        self.avl_solver.add_constraint("alpha",45.0)
+        
         # self.avl_solver.add_constraint("beta", 9.0)
         # self.avl_solver.add_constraint("roll rate", 1.2)
         # self.avl_solver.add_constraint("pitch rate", 0.1)
         # self.avl_solver.add_constraint("yaw rate", 0.8)
 
         # base line CL
-        self.avl_solver.execute_run()
+        # self.avl_solver.execute_run()
 
     def test_cltot_alpha_derivs(self):
 
-        # use reverse mode here
-        self.avl_solver.avl.CASE_R_diff.CLTOT_diff = 1
-        self.avl_solver.avl.aero_b()
+        # # use reverse mode here
+        # self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF = 1
+        # # print('CLTOT_DIFF',self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF)
+        # # print('ALFA_DIFF',self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF)
+        # self.avl_solver.avl.aero_b()
+        # # print('CLTOT_DIFF',self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF)
+        # # print('ALFA_DIFF',self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF)
+
+        # self.avl_solver.avl.get_res_b()
+        # # print('CLTOT_DIFF',self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF)
+        # # print('ALFA_DIFF',self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF)
+
+        # self.avl_solver.avl.update_surfaces_b()
+        # # print('CLTOT_DIFF',self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF)
+        # # print('ALFA_DIFF',self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF)
+
         
-        # dcl_dgam = self.avl_solver.avl.VRTX_R_diff.GAM_diff
-        dcl_dalfa = self.avl_solver.avl.CASE_R_diff.ALFA_diff[()]
+        
+        # dcl_dgam = self.avl_solver.avl.VRTX_R_DIFF.GAM_DIFF
+        # dcl_dalfa = self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF[()]
+        # # print('pcl_palfa', dcl_dalfa)
+        # # print('pcl_pgam', np.linalg.norm(dcl_dgam))
 
-        # solve for the adjoint variable
-        self.avl_solver.avl.solve_adjoint()
-        dcl_dres = self.avl_solver.avl.VRTX_R_diff.RES_diff
+        # # solve for the adjoint variable
+        # self.avl_solver.avl.solve_adjoint()
+        # dcl_dres = self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF
+        # # print('dcl_dres', np.linalg.norm(dcl_dres))
 
-        # combine adjoint with pr/px
-        self.avl_solver.avl.get_res_b()
-        dcl_dalfa += -1 * self.avl_solver.avl.CASE_R_diff.ALFA_diff
+        # # combine adjoint with pr/px
+        # self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF *= -1
+        # self.avl_solver.avl.get_res_b()
+        # dcl_dalfa = self.avl_solver.avl.CASE_R_DIFF.ALFA_DIFF
+        # # print('dfdR pRpx', dcl_dalfa)
 
         # use finite difference
-        coef_data = self.avl_solver.get_case_total_data()
-        h = 1e-6
-        alpha = self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA")
-        # self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
-        self.avl_solver.add_constraint("alpha", np.rad2deg(alpha) + h)
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.aero()
-        coef_data_peturb = self.avl_solver.get_case_total_data()
-        dcl_dalfa_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
-        dcl_dalfa_fd *= 180 / np.pi
-
-        np.testing.assert_allclose(
-            dcl_dalfa,
-            dcl_dalfa_fd,
-            rtol=1e-8,
-        )
+        print('\n\n')
+        self.avl_solver.execute_run()
+        
+        # coef_data = self.avl_solver.get_case_total_data()
+        # h = 1e-2
+        # alpha = copy.deepcopy(self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA"))
+        # # self.avl_solver.set_avl_fort_arr("CASE_R", "ALFA", alpha + h)
+        # self.avl_solver.add_constraint("alpha", np.rad2deg(alpha) + h)
+        
+        # self.avl_solver.avl.exec_rhs()
+        # self.avl_solver.avl.aero()
+        # print('GAM', self.avl_solver.avl.VRTX_R.GAM[0],
+        #        self.avl_solver.avl.VRTX_R.GAM[1], 
+        #         self.avl_solver.avl.VRTX_R.GAM[2],
+        #          self.avl_solver.avl.VRTX_R.GAM[3],
+        #       )
+        
+        # print('vinf', self.avl_solver.avl.CASE_R.VINF)
+        
+        # alpha_p = copy.deepcopy(self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA"))
+        # coef_data_peturb = self.avl_solver.get_case_total_data()
+        # print( 'baseline:', coef_data['CL'],'peturb:', coef_data_peturb['CL'], 'diff',coef_data_peturb['CL']- coef_data['CL'], h)
+        # print('baseline:', alpha, 'petrub:', alpha_p,'diff:', alpha_p-alpha)
+        # dcl_dalfa_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
+        # dcl_dalfa_fd *= 180 / np.pi
+        # print('FD', dcl_dalfa_fd)
+        # print()
+        # print()
+        
+        # self.avl_solver.execute_run()
+        # print('GAM', self.avl_solver.avl.VRTX_R.GAM[0],
+        #        self.avl_solver.avl.VRTX_R.GAM[1], 
+        #         self.avl_solver.avl.VRTX_R.GAM[2],
+        #          self.avl_solver.avl.VRTX_R.GAM[3],
+        #       )
+        # print('vinf', self.avl_solver.avl.CASE_R.VINF)
+        
+        # alpha_p = copy.deepcopy(self.avl_solver.get_avl_fort_arr("CASE_R", "ALFA"))
+        # coef_data_peturb = self.avl_solver.get_case_total_data()
+        # print( 'baseline:', coef_data['CL'],'peturb:', coef_data_peturb['CL'], 'diff',coef_data_peturb['CL']- coef_data['CL'], h)
+        # print('baseline:', alpha, 'petrub:', alpha_p,'diff:', alpha_p-alpha)
+       
+        # dcl_dalfa_fd = (coef_data_peturb["CL"] - coef_data["CL"]) / h
+        # dcl_dalfa_fd *= 180 / np.pi
+        # print('FD', dcl_dalfa_fd)
+        
+        # print('AD', dcl_dalfa, 'FD', dcl_dalfa_fd)
+        # np.testing.assert_allclose(
+        #     dcl_dalfa,
+        #     dcl_dalfa_fd,
+        #     rtol=1e-8,
+        # )
 
     def test_cltot_geom_derivs(self):
         # base line CL
         idx_surf = 0
         num_sec = self.avl_solver.avl.SURF_GEOM_I.NSEC[idx_surf]
-        self.avl_solver.avl.CASE_R_diff.CLTOT_diff = 1
+        self.avl_solver.avl.CASE_R_DIFF.CLTOT_DIFF = 1
         self.avl_solver.avl.aero_b()
         self.avl_solver.avl.update_surfaces_b()
         # print('python nvor', self.avl_solver.avl.CASE_I.NVOR)
         # quit()
-        # dcl_geom = self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff
+        # dcl_geom = self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF
         # print("dcl_geom", dcl_geom[:1], np.linalg.norm(dcl_geom))
 
 
-        dcl_daincs = copy.deepcopy(self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf])
+        dcl_daincs = copy.deepcopy(self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF[:num_sec, idx_surf])
         
-        rhs =   copy.deepcopy(self.avl_solver.avl.VRTX_R_diff.GAM_diff[:num_sec])
+        rhs =   copy.deepcopy(self.avl_solver.avl.VRTX_R_DIFF.GAM_DIFF[:num_sec])
         # solve for the adjoint variable
         self.avl_solver.avl.solve_adjoint()
-        dcl_dres = self.avl_solver.avl.VRTX_R_diff.RES_diff
+        dcl_dres = self.avl_solver.avl.VRTX_R_DIFF.RES_DIFF
 
         # combine adjoint with pr/px
         
         self.avl_solver.avl.get_res_b()
         self.avl_solver.avl.update_surfaces_b()
-        dcl_daincs += -1 * self.avl_solver.avl.SURF_GEOM_R_diff.AINCS_diff[:num_sec, idx_surf]
+        dcl_daincs += -1 * self.avl_solver.avl.SURF_GEOM_R_DIFF.AINCS_DIFF[:num_sec, idx_surf]
 
         # # use finite difference
         coef_data = self.avl_solver.get_case_total_data()

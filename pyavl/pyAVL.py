@@ -26,6 +26,7 @@ from pprint import pprint
 from typing import Dict, List, Tuple, Union, Any
 import warnings
 import glob
+from typing import Optional
 
 # =============================================================================
 # External Python modules
@@ -77,7 +78,40 @@ class AVLSolver(object):
         "visc CM_a": 28,
         "visc CM_u": 29,
     }
+    # fmt: off
+    # This dict has the following structure:
+    # python key: [common block name, fortran varaiable name]
+    case_var_to_fort_var = {
+        # lift and drag from surface integration (wind frame)
+        "CL": ["CASE_R", "CLTOT"],
+        "CD": ["CASE_R", "CDTOT"],
+        "CDv": ["CASE_R", "CDVTOT"], # viscous drag
+        
+        # lift and drag calculated from farfield integration
+        "CLff": ["CASE_R", "CLFF"],
+        "CYff": ["CASE_R", "CYFF"],
+        "CDi": ["CASE_R", "CDFF"], # induced drag
+        
+        # non-dimensionalized forces 
+        "CX": ["CASE_R", "CXTOT"], 
+        "CY": ["CASE_R", "CYTOT"], 
+        "CZ": ["CASE_R", "CZTOT"],   
+        
+        # non-dimensionalized moments (body frame)
+        "CR BA": ["CASE_R", "CRTOT"],
+        "CM": ["CASE_R", "CMTOT"],
+        "CN BA": ["CASE_R", "CNTOT"],
 
+        # non-dimensionalized moments (stablity frame)
+        "CR SA": ["CASE_R", "CRSAX"],
+        # "CM SA": ["CASE_R", "CMSAX"], # This is the same in both frames
+        "CN SA": ["CASE_R", "CNSAX"],
+        
+        # spanwise efficiency
+        "e": ["CASE_R", "SPANEF"],
+    }
+    # fmt: on
+    
     # fmt: off
     # This dict has the following structure:
     # python key: [common block name, fortran varaiable name]
@@ -107,7 +141,7 @@ class AVLSolver(object):
     }
     # fmt: on
 
-    ad_suffix = "_diff"
+    ad_suffix = "_DIFF"
 
     def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
         # TODO: fix MExt to work with pyavl.lib packages
@@ -210,12 +244,12 @@ class AVLSolver(object):
                 "scale": ["SURF_GEOM_R", "XYZSCAL", slice_surf_all],
                 "translate": ["SURF_GEOM_R", "XYZTRAN", slice_surf_all],
                 "angle": ["SURF_GEOM_R", "ADDINC", slice_idx_surf],
-                "xyzles": ["SURF_GEOM_R", "xyzles", slice_surf_secs_all],
-                "chords": ["SURF_GEOM_R", "chords", slice_surf_secs],
-                "aincs": ["SURF_GEOM_R", "aincs", slice_surf_secs],
-                "xasec": ["SURF_GEOM_R", "xasec", slice_surf_secs_nasec],
-                "sasec": ["SURF_GEOM_R", "sasec", slice_surf_secs_nasec],
-                "tasec": ["SURF_GEOM_R", "tasec", slice_surf_secs_nasec],
+                "xyzles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_all],
+                "chords": ["SURF_GEOM_R", "CHORDS", slice_surf_secs],
+                "aincs": ["SURF_GEOM_R", "AINCS", slice_surf_secs],
+                "xasec": ["SURF_GEOM_R", "XASEC", slice_surf_secs_nasec],
+                "sasec": ["SURF_GEOM_R", "SASEC", slice_surf_secs_nasec],
+                "tasec": ["SURF_GEOM_R", "TASEC", slice_surf_secs_nasec],
                 "clcdsec": ["SURF_GEOM_R", "CLCDSEC", slice_surf_secs_all],
                 "claf": ["SURF_GEOM_R", "CLAF", slice_surf_secs],
             }
@@ -337,43 +371,9 @@ class AVLSolver(object):
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
     def get_case_total_data(self) -> Dict[str, float]:
-        # fmt: off
-        # This dict has the following structure:
-        # python key: [common block name, fortran varaiable name]
-        var_to_fort_var = {
-            # lift and drag from surface integration (wind frame)
-            "CL": ["CASE_R", "CLTOT"],
-            "CD": ["CASE_R", "CDTOT"],
-            "CDv": ["CASE_R", "CDVTOT"], # viscous drag
-            
-            # lift and drag calculated from farfield integration
-            "CLff": ["CASE_R", "CLFF"],
-            "CYff": ["CASE_R", "CDFF"],
-            "CDi": ["CASE_R", "CDFF"], # viscous drag
-            
-            # non-dimensionalized forces 
-            "CX": ["CASE_R", "CXTOT"], 
-            "CY": ["CASE_R", "CYTOT"], 
-            "CZ": ["CASE_R", "CZTOT"],   
-            
-            # non-dimensionalized moments (body frame)
-            "CR BA": ["CASE_R", "CRTOT"],
-            "CM": ["CASE_R", "CMTOT"],
-            "CN BA": ["CASE_R", "CNTOT"],
-
-            # non-dimensionalized moments (stablity frame)
-            "CR SA": ["CASE_R", "CRSAX"],
-            # "CM SA": ["CASE_R", "CMSAX"], # This is the same in both frames
-            "CN SA": ["CASE_R", "CNSAX"],
-            
-            # spanwise efficiency
-            "e": ["CASE_R", "SPANEF"],
-        }
-        # fmt: on
-
         total_data = {}
 
-        for key, avl_key in var_to_fort_var.items():
+        for key, avl_key in self.case_var_to_fort_var.items():
             val = self.get_avl_fort_arr(*avl_key)
             # [()] because all the data is stored as a ndarray.
             # for scalars this results in a 0-d array.
@@ -544,7 +544,7 @@ class AVLSolver(object):
         return strip_data
 
     def get_surface_strip_indices(self, idx_surf):
-        num_strips = np.trim_zeros(self.avl.surf_i.nj)
+        num_strips = np.trim_zeros(self.get_avl_fort_arr("SURF_I", "NJ"))
         idx_srp_beg = np.sum(num_strips[:idx_surf])
         idx_srp_end = np.sum(num_strips[: idx_surf + 1])
 
@@ -761,33 +761,109 @@ class AVLSolver(object):
         return strList
 
     # Derivative routines
-    # def get_deriv(self):
-    #     self.avl.case_r_d.alfad = 1.0
-
-    #     self.avl.sfforc_d()
-
-    #     print("cl_d", self.avl.case_r_d.cltotd)
-    def set_constraint_ad_seeds(con_seeds: Dict[str, float]) -> None:
-        for con in con_seeds:
+    def get_constraint_ad_seeds(self) -> Dict[str, float]:
+        con_seeds = {}
+        for con in self.con_var_to_fort_var:
             blk, var = self.con_var_to_fort_var[con]
             blk += self.ad_suffix
             var += self.ad_suffix
-            self.set_avl_fort_arr(blk, var, con_seeds[con])
 
-    def set_surface_ad_seeds(self, surf_name, param, val):
-        if param in self.surf_geom_to_fort_var[surf_name].keys():
-            fort_var = self.surf_geom_to_fort_var[surf_name][param]
-        else:
-            raise ValueError(
-                f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
-            )
-        fort_var[0] += self.ad_suffix
-        fort_var[1] += self.ad_suffix
+            con_seeds[con] = copy.deepcopy(self.get_avl_fort_arr(blk, var))
+        return con_seeds
 
-        self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+    def set_constraint_ad_seeds(self, con_seeds: Dict[str, Dict[str, float]], mode: str = "AD", scale=1.0) -> None:
+        for con in con_seeds:
+            blk, var = self.con_var_to_fort_var[con]
+            if mode == "AD":
+                blk += self.ad_suffix
+                var += self.ad_suffix
+                val = con_seeds[con] * scale
+            elif mode == "FD":
+                val = self.get_avl_fort_arr(blk, var)
+                val += con_seeds[con] * scale
+
+            self.set_avl_fort_arr(blk, var, val)
+
+    def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:
+        geom_seeds = {}
+        for surf_key in self.surf_geom_to_fort_var:
+            geom_seeds[surf_key] = {}
+            for geom_key in self.surf_geom_to_fort_var[surf_key]:
+                blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
+
+                blk += self.ad_suffix
+                var += self.ad_suffix
+
+                geom_seeds[surf_key][geom_key] = copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=slicer))
+
+        return geom_seeds
+
+    def set_geom_ad_seeds(self, geom_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
+        for surf_key in geom_seeds:
+            for geom_key in geom_seeds[surf_key]:
+                blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
+
+                if mode == "AD":
+                    blk += self.ad_suffix
+                    var += self.ad_suffix
+                    val = geom_seeds[surf_key][geom_key] * scale
+                elif mode == "FD":
+                    val = self.get_avl_fort_arr(blk, var, slicer=slicer)
+                    val += geom_seeds[surf_key][geom_key] * scale
+
+                # print(blk, var, val, slicer)
+                self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+
+    def get_gamma_ad_seeds(self) -> np.ndarray:
+        slicer = (slice(0, self.get_mesh_size()),)
+        blk = "VRTX_R_DIFF"
+        var = "GAM_DIFF"
+
+        gamma_seeds = copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=slicer))
+        return gamma_seeds
+
+    def set_gamma_ad_seeds(self, gamma_seeds: np.ndarray, mode: str = "AD", scale=1.0) -> None:
+        slicer = (slice(0, self.get_mesh_size()),)
+        if mode == "AD":
+            blk = "VRTX_R_DIFF"
+            var = "GAM_DIFF"
+            val = gamma_seeds * scale
+        elif mode == "FD":
+            blk = "VRTX_R"
+            var = "GAM"
+            val = self.get_avl_fort_arr(blk, var, slicer=slicer)
+            val += gamma_seeds * scale
+
+        self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
     def get_function_ad_seeds(self):
-        pass
+        func_seeds = {}
+        for _var in self.case_var_to_fort_var:
+            blk, var = self.case_var_to_fort_var[_var]
+            blk += self.ad_suffix
+            var += self.ad_suffix
+            val = self.get_avl_fort_arr(blk, var)
+            func_seeds[_var] = copy.deepcopy(val)
+
+        return func_seeds
+
+    def set_function_ad_seeds(self, func_seeds: Dict[str, float], scale=1.0):
+        for _var in func_seeds:
+            blk, var = self.case_var_to_fort_var[_var]
+            blk += self.ad_suffix
+            var += self.ad_suffix
+            val = func_seeds[_var] * scale
+            self.set_avl_fort_arr(blk, var, val)
+
+    def get_residual_ad_seeds(self) -> np.ndarray:
+        res_slice = (slice(0, self.get_mesh_size()),)
+        res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", slicer=res_slice))
+        return res_seeds
+
+    def set_residual_ad_seeds(self, res_seeds: np.ndarray, scale=1.0) -> None:
+        res_slice = (slice(0, self.get_mesh_size()),)
+        res_seeds = self.set_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", res_seeds * scale, slicer=res_slice)
+        return res_seeds
 
     def clear_ad_seeds(self):
         for att in dir(self.avl):
@@ -795,27 +871,152 @@ class AVLSolver(object):
                 # loop over the attributes of the common block
                 diff_blk = getattr(self.avl, att)
                 for _var in dir(diff_blk):
-                    val = getattr(diff_blk, _var)
-                    setattr(diff_blk, _var, val * 0.0)
+                    if not (_var.startswith("__") and _var.endswith("__")):
+                        val = getattr(diff_blk, _var)
+                        setattr(diff_blk, _var, val * 0.0)
+
+    def print_ad_seeds(self, print_non_zero: bool = False):
+        for att in dir(self.avl):
+            if att.endswith(self.ad_suffix):
+                # loop over the attributes of the common block
+                diff_blk = getattr(self.avl, att)
+                for _var in dir(diff_blk):
+                    if not (_var.startswith("__") and _var.endswith("__")):
+                        val = getattr(diff_blk, _var)
+                        norm = np.linalg.norm(val)
+                        if norm == 0.0 and print_non_zero:
+                            continue
+
+                        print(att, _var, norm)
 
     # def set_geom_ad_seeds(surf_seeds: Dict[str, Dict[str, any]]) -> None:
     #     pass
     #     # set the seeds as you would the surface data
 
-    def execute_jac_vec_prod_fwd(con_seeds: Dict[str, float], surf_seeds: Dict[str, Dict[str, any]]):
-        # set derivative seeds
-        self.clear_ad_seeds()
-        self.set_constraint_ad_seeds(con_seeds)
+    def execute_jac_vec_prod_fwd(
+        self,
+        con_seeds: Optional[Dict[str, float]] = None,
+        geom_seeds: Optional[Dict[str, Dict[str, any]]] = None,
+        gamma_seeds: Optional[np.ndarray] = None,
+        mode="AD",
+        step=1e-7,
+    ) -> Tuple[Dict[str, float], np.ndarray]:
+        # TODO: add error if data is not initailzed properly
+        #   The easiest fix is to run an analysis before hand
 
-        # propogate the seeds through without resolving
-        self.avl_solver.avl.update_surfaces_d()
-        self.avl_solver.avl.aero_d()
+        mesh_size = self.get_mesh_size()
+
+        if con_seeds is None:
+            con_seeds = {}
+
+        if geom_seeds is None:
+            geom_seeds = {}
+
+        if gamma_seeds is None:
+            gamma_seeds = np.zeros(mesh_size)
+
+        res_slice = (slice(0, mesh_size),)
+
+        if mode == "AD":
+            # set derivative seeds
+            # self.clear_ad_seeds()
+            self.set_constraint_ad_seeds(con_seeds)
+            self.set_geom_ad_seeds(geom_seeds)
+            self.set_gamma_ad_seeds(gamma_seeds)
+
+            # propogate the seeds through without resolving
+            # print('fwd 0', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
+            # print('fwd 0', self.avl.CASE_R_DIFF.CLTOT_DIFF)
+            self.avl.update_surfaces_d()
+            # print('fwd 1', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
+            # print('fwd 1', self.avl.CASE_R_DIFF.CLTOT_DIFF)
+            self.avl.get_res_d()
+            # print('fwd 2', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
+            # print('fwd 2', self.avl.CASE_R_DIFF.CLTOT_DIFF)
+            self.avl.velsum_d()
+            self.avl.aero_d()
+            # print('fwd 3', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
+            # print('fwd 3', self.avl.CASE_R_DIFF.CLTOT_DIFF)
+
+            # extract derivatives seeds and set the output dict of functions
+            func_seeds = self.get_function_ad_seeds()
+            res_seeds = self.get_residual_ad_seeds()
+
+            self.set_constraint_ad_seeds(con_seeds, scale=0.0)
+            self.set_geom_ad_seeds(geom_seeds, scale=0.0)
+            self.set_gamma_ad_seeds(gamma_seeds, scale=0.0)
+
+            self.set_avl_fort_arr("VRTX_R_DIFF", "GAM_DIFF", gamma_seeds * 0.0, slicer=res_slice)
+
+        if mode == "FD":
+            self.avl.update_surfaces()
+            self.avl.get_res()
+            self.avl.aero()
+            coef_data = self.get_case_total_data()
+            # strp_data = self.get_strip_data()
+            res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+
+            self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
+            self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
+            self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
+
+            # propogate the seeds through without resolving
+            self.avl.update_surfaces()
+            self.avl.get_res()
+            self.avl.velsum()
+            self.avl.aero()
+
+            self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
+            self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
+            self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
+
+            coef_data_peturb = self.get_case_total_data()
+            # strp_data_petrub = self.get_strip_data()
+            res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+
+            func_seeds = {}
+            for func_key in coef_data:
+                func_seeds[func_key] = (coef_data_peturb[func_key] - coef_data[func_key]) / step
+
+            res_seeds = (res_peturbed - res) / step
+
+        return func_seeds, res_seeds
+
+    def execute_jac_vec_prod_rev(
+        self,
+        func_seeds: Optional[Dict[str, float]] = None,
+        res_seeds: Optional[np.ndarray] = None,
+    ) -> Tuple[Dict[str, float], Dict[str, Dict[str, any]], np.ndarray]:
+        # extract derivatives seeds and set the output dict of functions
+        mesh_size = self.get_mesh_size()
+
+        if func_seeds is None:
+            func_seeds = {}
+
+        if res_seeds is None:
+            res_seeds = np.zeros(mesh_size)
+
+        res_slice = (slice(0, mesh_size),)
+
+        # set derivative seeds
+        # self.clear_ad_seeds()
+        self.set_function_ad_seeds(func_seeds)
+        self.set_residual_ad_seeds(res_seeds)
+        # propogate the seeds through without resolveing
+        self.avl.aero_b()
+        self.avl.velsum_b()
+        self.avl.get_res_b()
+        self.avl.update_surfaces_b()
 
         # extract derivatives seeds and set the output dict of functions
-        self.get_function_ad_seeds()
+        con_seeds = self.get_constraint_ad_seeds()
+        geom_seeds = self.get_geom_ad_seeds()
+        gamma_seeds = self.get_gamma_ad_seeds()
 
-    def execute_jac_vec_prod_rev():
-        pass
+        self.set_function_ad_seeds(func_seeds, scale=0.0)
+        self.set_residual_ad_seeds(res_seeds, scale=0.0)
+
+        return con_seeds, geom_seeds, gamma_seeds
 
     def execute_adjoint_solve():
         pass
@@ -823,11 +1024,32 @@ class AVLSolver(object):
     def execute_direct_solve():
         pass
 
-    def execute_run_sensitivies(funcs, con_var, geom_var):
+    def execute_run_sensitivies(
+        self,
+        funcs,
+    ):
         """
-        funcs: dictionary of functions that need derivatives
-        con_var: dictionary of contraints that need derivatives
-        geom_var: dictionary of geometric variables the need derivatives
+        only runs in adjoint mode
+        funcs: list of functions that need derivatives
+        """
+        sens = {}
+        # set up and solve the adjoint for each function
+        for func in funcs:
+            sens[func] = {}
+            # get the RHS of the adjiont equation (pFpU)
+            _, _, pfpU = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
 
-        """
-        pass
+            self.clear_ad_seeds()
+            # u solver adjoint equation with RHS
+            self.set_gamma_ad_seeds(-1 * pfpU)
+            self.avl.solve_adjoint()
+            # get the resulting adjoint vector (dfunc/dRes) from fortran
+            dfdR = self.get_residual_ad_seeds()
+
+            self.clear_ad_seeds()
+            con_seeds, geom_seeds, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0}, res_seeds=dfdR)
+
+            sens[func].update(con_seeds)
+            sens[func].update(geom_seeds)
+
+        return sens

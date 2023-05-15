@@ -7,6 +7,7 @@ TAPENADE_PRECISION = -i4 -dr8 -r8
 
 ALL_RES_FILES =	$(SRC)/aero.f\
 				$(SRC)/aoper.f\
+				$(SRC)/atpforc.f\
 				$(SRC)/asetup.f\
 				$(SRC)/aic.f\
 				$(SRC)/amake.f\
@@ -23,13 +24,17 @@ I_RES_FILES := $(ALL_RES_FILES)
 # you also need to add any new files to `src/build/fileList`
 # ====================== Full List of Routines ==================
 fullRoutines = "\
-	AERO(GAM, RV1, RV2, RLE, XYZREF, CHORD, WSTRIP, ALFA, VINF, ENSZ, ENSY)>(CLTOT, CDTOT) \
-	update_surfaces(ADDINC, AINCS, CHORDS, XYZSCAL, XYZTRAN, XYZLES)>(ENC,ENV, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
-	get_res(ALFA, ENC,ENV, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)>(RES)\
+	update_surfaces(XYZSCAL,XYZTRAN,ADDINC,XYZLES,CHORDS,AINCS,XASEC,SASEC,TASEC,CLCDSEC,CLAF)>(ENC,ENV, DXV, CHORDV,CHORD, CHORD1, CHORD2, RLE,RLE1,RLE2, WSTRIP, RV1,RV2,RV,RC,RS,RL)\
+	\
+	get_res(GAM, ALFA, BETA, MACH, YSYM, ZSYM, ENC, ENV, DXV, CHORDV, RV1, RV2, RV, RC, RS, RL,XYZREF)>(RES, GAM, VINF,  ALFA, BETA, MACH, XYZREF, RV1,RV2,RV, RC)\
+	\
+	VElSUM(GAM, VINF, WROT)>(WV,GAM, VINF, WROT) \
+	AERO(GAM, WV, RC, RV, RV1, RV2, RLE, XYZREF, CHORD, CHORD1, CHORD2, RLE1,RLE2, WSTRIP, ALFA, MACH, SREF, VINF, VROT, ENSZ, ENSY)>(CLTOT, CDTOT, CDVTOT, CLFF, CYFF, CDFF, CXTOT, CYTOT, CZTOT, CRTOT, CMTOT, CNTOT, CRSAX, CNSAX, SPANEF,CYSTRP) \
 "
-# update_surfaces(XYZSCAL, XYZTRAN, ADDINC, XYZLES, CHORDS, AINCS, XASEC, SASEC, TASEC, XHINGED, CLCDSEC, CLAF)>(ENC, DXV, CHORDV, RV1,RV2,RV,RC,RS,RL)\
+# get_res has more output dependencies than required so that those ad_seeds are not zeroed out upon entry to the routine.
+# TODO: figure out a better way to do this that does not add to the computation does done in the derivative routines.
 
-default: ad_forward 
+default: ad_forward ad_reverse
 
 ad_forward:
 # First delete the holding directory if it exists
@@ -47,7 +52,7 @@ ad_forward:
 	$(TAPENADE_HOME)/bin/tapenade \
 	-I $(SRC)/includes \
 	-head $(fullRoutines) \
-	-tgtvarname %_diff \
+	-tgtvarname %_DIFF \
 	-tgtfuncname %_d \
 	-forward \
 	$(TAPENADE_PRECISION) \
@@ -72,7 +77,7 @@ ad_reverse:
 	$(TAPENADE_HOME)/bin/tapenade \
 	-I $(SRC)/includes \
 	-head $(fullRoutines) \
-	-adjvarname %_diff \
+	-adjvarname %_DIFF \
 	-adjfuncname %_b \
 	-reverse \
 	$(TAPENADE_PRECISION) \

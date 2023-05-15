@@ -25,6 +25,9 @@ class TestInput(unittest.TestCase):
     # TODO: add test for expected input output errors
     def test_read_geom(self):
         avl_solver = AVLSolver(geo_file=geom_file)
+        print('JFRST', avl_solver.get_avl_fort_arr("SURF_I", "JFRST"))
+        print('NJ', avl_solver.get_avl_fort_arr("SURF_I", "NJ"))
+        print(avl_solver.get_num_strips())
         assert avl_solver.get_num_surfaces() == 5
         assert avl_solver.get_num_strips() == 90
         assert avl_solver.get_mesh_size() == 780

@@ -1,7 +1,7 @@
 import re
 
 
-def process_fortran_include_file(input_filename, output_filename, ad_ext="_diff"):
+def process_fortran_include_file(input_filename, output_filename, ad_ext="_DIFF"):
     variables = {}
     include_lines = []
 

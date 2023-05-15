@@ -228,7 +228,6 @@ C---- pick up here to try decoding for remaining commands
 C
 C       IF(COMAND .EQ. 'X   ') THEN
 C------ execute calculation
-C         ALFA = 2.5
 
 
 
@@ -1932,7 +1931,7 @@ C ============= Added to AVL ===============
 
       subroutine exec_rhs
       include "AVL.INC"
-      
+      ! CALL EXEC(10,1,1)
       call set_par_and_cons(NITMAX, IRUN)
       
       CALL SETUP
@@ -1946,7 +1945,7 @@ C ============= Added to AVL ===============
       
 C---- copy RHS vector into GAM that will be used for soluiton
       GAM = RHS
-      
+
       CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
 
       end !subroutine solve_rhs
@@ -1954,9 +1953,11 @@ C---- copy RHS vector into GAM that will be used for soluiton
       subroutine get_res
       INCLUDE "AVL.INC"
 C---  
-      IF(.NOT.LAIC) THEN
-            CALL build_AIC
-      end if
+      ! Do not use this routine in the sovler
+      ! IF(.NOT.LAIC) THEN
+      !      CALL build_AIC
+      ! end if
+      CALL build_AIC
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
             
@@ -1964,7 +1965,6 @@ C---- set VINF() vector from initial ALFA,BETA
 
       
       call mat_prod(AICN, GAM, NVOR, res)
-      
 C---- add the RHS vector to the residual
       do I = 1, NVOR
             res(I) = res(I) - RHS(I)

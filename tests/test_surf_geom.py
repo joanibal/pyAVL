@@ -58,6 +58,12 @@ class TestGeom(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
         self.avl_solver.execute_run()
+        
+        assert self.avl_solver.get_num_surfaces() == 5
+        assert self.avl_solver.get_num_strips() == 90
+        assert self.avl_solver.get_mesh_size() == 780
+        print('JFRST', self.avl_solver.get_avl_fort_arr("SURF_I", "JFRST"))
+        print('NJ', self.avl_solver.get_avl_fort_arr("SURF_I", "NJ"))
 
         np.testing.assert_allclose(
             self.avl_solver.get_case_parameter("alpha"),

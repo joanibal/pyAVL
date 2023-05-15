@@ -3,7 +3,7 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of akima in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: yy
-C   with respect to varying inputs: xx
+C   with respect to varying inputs: x y xx
 C***********************************************************************
 C    Module:  sgutil.f
 C 
@@ -26,10 +26,13 @@ C***********************************************************************
 C
 C
 C
-      SUBROUTINE AKIMA_D(x, y, n, xx, xx_diff, yy, yy_diff, slp)
+      SUBROUTINE AKIMA_D(x, x_diff, y, y_diff, n, xx, xx_diff, yy, 
+     +                   yy_diff, slp)
       INTEGER n
       REAL d
+      REAL d_diff
       REAL t
+      REAL t_diff
       REAL x
       REAL y
 C
@@ -86,6 +89,9 @@ C              Oct 30, 1979.
 C
 C
       DIMENSION x(n), y(n), d(5), t(2)
+      REAL x_diff
+      REAL y_diff
+      DIMENSION x_diff(n), y_diff(n), d_diff(5), t_diff(2)
       REAL xordr
       INTEGER ibot
       INTEGER itop
@@ -96,16 +102,24 @@ C
       INTEGER j
       INTEGER k
       REAL a
+      REAL a_diff
       INTRINSIC ABS
       REAL b
+      REAL b_diff
       REAL xint
+      REAL xint_diff
       REAL xdif
       REAL xdif_diff
       REAL p0
+      REAL p0_diff
       REAL p1
+      REAL p1_diff
       REAL p2
+      REAL p2_diff
       REAL p3
+      REAL p3_diff
       REAL temp
+      INTEGER ii1
       REAL xx
       REAL xx_diff
       REAL yy
@@ -138,6 +152,9 @@ C
         IF (xxo .GE. xo) ibot = i
         IF (xxo .LT. xo) itop = i
         IF (nstep .NE. 0) GOTO 20
+        DO ii1=1,5
+          d_diff(ii1) = 0.D0
+        ENDDO
 C
 C
 C...Calculate the straight line slopes between adjacent input points.
@@ -147,19 +164,45 @@ C...created by quadratic extrapolation (only at start and end of data).
 C
         DO j=1,5
           k = i + (j-2)
-          IF (k - 1 .GE. 1 .AND. k .LE. n) d(j) = (y(k)-y(k-1))/(x(k)-x(
-     +        k-1))
+          IF (k - 1 .GE. 1 .AND. k .LE. n) THEN
+            temp = (y(k)-y(k-1))/(x(k)-x(k-1))
+            d_diff(j) = (y_diff(k)-y_diff(k-1)-temp*(x_diff(k)-x_diff(k-
+     +        1)))/(x(k)-x(k-1))
+            d(j) = temp
+          END IF
         ENDDO
 C
 C...Synthesize upper and lower slopes if required. Check for
 C...single line segment input (N=2).
 C
-        IF (n .EQ. 2) d(2) = d(3)
+        IF (n .EQ. 2) THEN
+          d_diff(2) = d_diff(3)
+          d(2) = d(3)
+        END IF
 C
-        IF (i + 2 .GT. n) d(4) = 2.*d(3) - d(2)
-        IF (i + 3 .GT. n) d(5) = 2.*d(4) - d(3)
-        IF (i - 1 .LT. 1) d(2) = 2.*d(3) - d(4)
-        IF (i - 2 .LT. 1) d(1) = 2.*d(2) - d(3)
+        IF (i + 2 .GT. n) THEN
+          d_diff(4) = 2.*d_diff(3) - d_diff(2)
+          d(4) = 2.*d(3) - d(2)
+        END IF
+        IF (i + 3 .GT. n) THEN
+          d_diff(5) = 2.*d_diff(4) - d_diff(3)
+          d(5) = 2.*d(4) - d(3)
+        END IF
+        IF (i - 1 .LT. 1) THEN
+          d_diff(2) = 2.*d_diff(3) - d_diff(4)
+          d(2) = 2.*d(3) - d(4)
+        END IF
+        IF (i - 2 .LT. 1) THEN
+          d_diff(1) = 2.*d_diff(2) - d_diff(3)
+          d(1) = 2.*d(2) - d(3)
+          DO ii1=1,2
+            t_diff(ii1) = 0.D0
+          ENDDO
+        ELSE
+          DO ii1=1,2
+            t_diff(ii1) = 0.D0
+          ENDDO
+        END IF
 C
 C
 C...Calculate the slopes (T(1),T(2)) at the lower and upper
@@ -169,20 +212,29 @@ C...defined by the average of the adjacent segment slopes.
 C
         DO j=1,2
           IF (d(j+3) - d(j+2) .GE. 0.) THEN
+            a_diff = d_diff(j+3) - d_diff(j+2)
             a = d(j+3) - d(j+2)
           ELSE
+            a_diff = d_diff(j+2) - d_diff(j+3)
             a = -(d(j+3)-d(j+2))
           END IF
           IF (d(j+1) - d(j) .GE. 0.) THEN
+            b_diff = d_diff(j+1) - d_diff(j)
             b = d(j+1) - d(j)
           ELSE
+            b_diff = d_diff(j) - d_diff(j+1)
             b = -(d(j+1)-d(j))
           END IF
           IF (a + b .EQ. 0.) THEN
             a = 1.
             b = 1.
+            a_diff = 0.D0
+            b_diff = 0.D0
           END IF
-          t(j) = (a*d(j+1)+b*d(j+2))/(a+b)
+          temp = (a*d(j+1)+b*d(j+2))/(a+b)
+          t_diff(j) = (d(j+1)*a_diff+a*d_diff(j+1)+d(j+2)*b_diff+b*
+     +      d_diff(j+2)-temp*(a_diff+b_diff))/(a+b)
+          t(j) = temp
         ENDDO
 C
 C
@@ -193,29 +245,39 @@ C
 C
 C...Calculate the cubic coefficients.
 C
+          xint_diff = x_diff(i+1) - x_diff(i)
           xint = x(i+1) - x(i)
-          xdif_diff = xx_diff
+          xdif_diff = xx_diff - x_diff(i)
           xdif = xx - x(i)
+          p0_diff = y_diff(i)
           p0 = y(i)
+          p1_diff = t_diff(1)
           p1 = t(1)
-          p2 = (3.*d(3)-2.*t(1)-t(2))/xint
-          p3 = (t(1)+t(2)-2.*d(3))/(xint*xint)
+          temp = (3.*d(3)-2.*t(1)-t(2))/xint
+          p2_diff = (3.*d_diff(3)-2.*t_diff(1)-t_diff(2)-temp*xint_diff)
+     +      /xint
+          p2 = temp
+          temp = (t(1)+t(2)-2.*d(3))/(xint*xint)
+          p3_diff = (t_diff(1)+t_diff(2)-2.*d_diff(3)-temp*2*xint*
+     +      xint_diff)/xint**2
+          p3 = temp
 C
 C...Calculate the Y-value and the slope.
 C
-          temp = p1 + xdif*(p2+p3*xdif)
-          yy_diff = (temp+xdif*(p2+p3*xdif+xdif*p3))*xdif_diff
+          temp = p1 + xdif*(p2+xdif*p3)
+          yy_diff = p0_diff + temp*xdif_diff + xdif*(p1_diff+(p2+xdif*p3
+     +      )*xdif_diff+xdif*(p2_diff+p3*xdif_diff+xdif*p3_diff))
           yy = p0 + xdif*temp
           slp = p1 + xdif*(2.*p2+xdif*(3.*p3))
         ELSE
+          yy_diff = y_diff(i+1)
           yy = y(i+1)
           slp = t(2)
-          yy_diff = 0.D0
         END IF
       ELSE
+        yy_diff = y_diff(1)
         yy = y(1)
         slp = 0.
-        yy_diff = 0.D0
       END IF
 C
       RETURN

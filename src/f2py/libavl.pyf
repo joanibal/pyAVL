@@ -16,6 +16,16 @@ python module libavl ! in
         subroutine oper ! in :libavl:aoper.f
         end subroutine oper
         
+        subroutine velsum
+        end subroutine velsum
+        
+        subroutine velsum_d
+        end subroutine velsum_d
+        
+        subroutine velsum_b
+        end subroutine velsum_b
+        
+        
         subroutine aero ! in :libavl:aero.f
         end subroutine aero
         
