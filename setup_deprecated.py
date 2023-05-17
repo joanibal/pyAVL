@@ -5,10 +5,6 @@ import os
 import subprocess
 # from numpy.distutils.core import Extension
 
-__version__ = re.findall(
-    r"""__version__ = ["']+([0-9\.]*)["']+""",
-    open("pyavl/__init__.py").read(),
-)[0]
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
@@ -23,7 +19,7 @@ def make_avl_lib():
 
     build_dir = os.path.join(cwd, "src/build")
     subprocess.run(["cp", config_file, "config/config.mk"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    subprocess.run(["make", "clean"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # subprocess.run(["make", "clean"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     p2 = subprocess.run(["make"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     compile_log = os.path.join(build_dir, "compile.log")
@@ -43,8 +39,8 @@ if __name__ == "__main__":
     # to install locally use `python setup_deprecated.py develop`
 
     setup(
-        name="pyavl",
-        version=__version__,
+        name="pyavl-wrapper",
+        version="dev",
         description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code.",
         long_description=long_description,
         long_description_content_type="text/markdown",

@@ -346,7 +346,7 @@ class AVLSolver(object):
 
         # check that the type of val is correct
         if not isinstance(val, (int, float, np.floating, np.integer)):
-            raise TypeError(f"contraint `val` must be a int or float. Got {type(val)}")
+            raise TypeError(f"contraint value must be a int or float for contraint {var}. Got {type(val)}")
 
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
@@ -461,7 +461,7 @@ class AVLSolver(object):
             raise ValueError(
                 "alpha, beta, pb/2V, qc/2V, rb/2V, and CL are not allowed to be set,\n\
                              they are calculated during each run based on the contraints. to specify\n\
-                             one of these values use the set_contrain method."
+                             one of these values use the add_contraint method."
             )
 
         parvals = self.get_avl_fort_arr("CASE_R", "PARVAL")
@@ -494,13 +494,27 @@ class AVLSolver(object):
 
     #     return condition_data
 
+    def get_hinge_moments(self) -> Dict[str, float]:
+        """
+        get the hinge moments from the fortran layer and return them as a dictionary
+        """
+        hinge_moments = {}
+
+        control_surfaces = self.get_control_names()
+        mom_array = self.get_avl_fort_arr("CASE_R", "CHINGE")
+
+        for idx_con, con_surf in enumerate(control_surfaces):
+            hinge_moments[con_surf] = mom_array[idx_con]
+
+        return hinge_moments
+
     def get_strip_data(self) -> Dict[str, Dict[str, np.ndarray]]:
         # fmt: off
         var_to_fort_var = {
             # geometric quantities
             "chord": ["STRP_R", "CHORD"],
             "width": ["STRP_R", "WSTRIP"],
-            "XYZ LE": ["STRP_R", "RLE"], #control point leading edge coordinates
+            "XYZ LE": ["STRP_R", "RLE"],  # control point leading edge coordinates
             "twist": ["STRP_R", "AINC"],
             
             # strip contributions to total lift and drag from strip integration
@@ -645,7 +659,11 @@ class AVLSolver(object):
         self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
 
     def get_surface_params(
-        self, include_geom: bool = True, include_panneling: bool = False, include_con_surf: bool = False
+        self,
+        include_geom: bool = True,
+        include_panneling: bool = False,
+        include_con_surf: bool = False,
+        include_airfoils: bool = False,
     ) -> Dict[str, Dict[str, Any]]:
         """get the surface level parameters from the geometry
 
@@ -684,6 +702,16 @@ class AVLSolver(object):
 
                     surf_data[surf_name][var] = slice_data
 
+            if include_airfoils:
+                afiles = []
+                num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
+
+                for idx_sec in range(num_sec):
+                    afile = self.__decodeFortranString(self.avl.CASE_C.AFILES[idx_sec, idx_surf])
+                    afiles.append(afile)
+
+                surf_data[surf_name]["afiles"] = afiles
+
         return surf_data
 
     def set_surface_params(self, surf_data: Dict[str, Dict[str, any]]) -> None:
@@ -692,7 +720,11 @@ class AVLSolver(object):
         surf_names = self.get_surface_names()
         unique_surf_names = self.get_surface_names(remove_dublicated=True)
 
-        for surf_name in unique_surf_names:
+        for surf_name in surf_data:
+            
+            if surf_name not in unique_surf_names:
+                raise ValueError(f"surface name, {surf_name}, not found in the current avl object. Note duplicated surfaces can not be set directly")
+            
             for var in surf_data[surf_name]:
                 # do not set the data this way if it is a control surface
                 if var not in self.con_surf_to_fort_var[surf_name]:
@@ -706,13 +738,181 @@ class AVLSolver(object):
 
         self.avl.update_surfaces()
 
-    # def write_geom_file(self, filename):
-    #     """write the current avl geometry to a file"""
-    #     surf_geom = self.get_surface_params()
+    def write_geom_file(self, filename: str):
+        """write the current avl geometry to a file"""
+        with open(filename, "w") as fid:
+            # write the header
+            fid.write("# generated using pyAVL\n")
+            self.__write_header(fid)
 
-    # def __write_surface(self, fid, surf_name, surf_data):
-    #     """write a surface to a file"""
-    #     fid.write("SURFACE
+            surf_data = self.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True, include_airfoils=True)
+            for surf_name in surf_data:
+                print("writing surface: {}".format(surf_name))
+                self.__write_surface(fid, surf_name, surf_data[surf_name])
+
+    def __write_fort_vars(self, fid, common_block: str, fort_var: str, newline: bool = True) -> None:
+        var = self.get_avl_fort_arr(common_block, fort_var)
+
+        out_str = ""
+        # loop over the variables list and recursively convert the variables to a string and add to the output string
+        if isinstance(var, np.ndarray):
+            if var.size == 1:
+                out_str += str(var[()])
+            else:
+                out_str += " ".join([str(item) for item in var])
+        else:
+            out_str += str(var)
+        out_str += " "
+
+        if newline:
+            out_str += "\n"
+
+        print(out_str)
+        fid.write(out_str)
+
+    def __write_header(self, fid):
+        """write the header to a file"""
+        # write the name of the aircraft
+
+        self.__write_banner(fid, "Header")
+        title_array = self.get_avl_fort_arr("case_c", "title")
+        title = self._convertFortranStringArrayToList(title_array)
+        fid.write(f"{title}\n")
+
+        fid.write("#Mach\n")
+        self.__write_fort_vars(fid, "case_r", "mach0")
+
+        fid.write("#IYsym   IZsym   Zsym\n")
+        self.__write_fort_vars(fid, "case_i", "iysym", newline=False)
+        self.__write_fort_vars(fid, "case_i", "izsym", newline=False)
+        self.__write_fort_vars(fid, "case_r", "zsym")
+
+        fid.write("#Sref    Cref    Bref\n")
+        self.__write_fort_vars(fid, "case_r", "sref", newline=False)
+        self.__write_fort_vars(fid, "case_r", "cref", newline=False)
+        self.__write_fort_vars(fid, "case_r", "bref")
+
+        fid.write("#Xref    Yref    Zref\n")
+        self.__write_fort_vars(fid, "case_r", "XYZREF")
+
+        fid.write("#CD0\n")
+        self.__write_fort_vars(fid, "case_r", "CDREF0")
+
+        # fid.write(f" {self.get_avl_fort_arr('case_r', 'sref')}")
+
+    def __write_banner(self, fid, header, line_width: int = 80):
+        header = " " + header + " "  # pad with spaces
+
+        width = line_width - 1
+
+        banner = f"#{'='*(width)}\n" f"#{header.center(width,'-')}\n" f"#{'='*(width)}\n"
+        fid.write(banner)
+
+        # ======================================================
+        # ------------------- Geometry File --------------------
+        # ======================================================
+
+    def __write_surface(self, fid, surf_name, data):
+        """write a surface to a file"""
+        # TODO add NACA and CLAF keyword support
+
+        def __write_data(key_list, newline: bool = True):
+            out_str = ""
+            for key in key_list:
+                val = data[key]
+
+                if isinstance(val, np.ndarray):
+                    if val.size == 1:
+                        out_str += str(val[()])
+                    else:
+                        out_str += " ".join([str(item) for item in val])
+                else:
+                    out_str += str(val)
+                out_str += " "
+
+            if newline:
+                out_str += "\n"
+
+            print(out_str)
+            fid.write(out_str)
+
+        # start with the banner
+        self.__write_banner(fid, surf_name)
+        fid.write(f"SURFACE\n")
+        fid.write(f"{surf_name}\n")
+
+        fid.write(f"#Nchordwise  Cspace  [Nspanwise  Sspace]\n")
+        __write_data(["nchordwise", "cspace", "nspan", "sspace"])
+
+        if "yduplicate" in data:
+            fid.write("YDUPLICATE\n")
+            __write_data(["yduplicate"])
+
+        fid.write("SCALE\n")
+        __write_data(["scale"])
+
+        fid.write("TRANSLATE\n")
+        __write_data(["translate"])
+
+        fid.write("ANGLE\n")
+        __write_data(["angle"])
+
+        fid.write("#---------------------------------------\n")
+
+        num_sec = data["chords"].size
+        control_names = self.get_control_names()
+
+        for idx_sec in range(num_sec):
+            fid.write("SECTION\n")
+            fid.write("#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace\n")
+            fid.write(
+                f" {data['xyzles'][idx_sec, 0]:.6f} "
+                f"{data['xyzles'][idx_sec, 1]:.6f} "
+                f"{data['xyzles'][idx_sec, 2]:.6f}   "
+                f"{data['chords'][idx_sec]:.6f} "
+                f"{data['aincs'][idx_sec]:.6f} "
+                f"{data['nspans'][idx_sec]}      "
+                f"{data['sspaces'][idx_sec]}\n"
+            )
+
+            afile = data["afiles"][idx_sec]
+
+            if afile:
+                fid.write(" AFILE\n")
+                fid.write(f" {afile}\n")
+
+            # check for control surfaces
+
+            for idx_local_cont_surf, idx_cont_surf in enumerate(data["icontd"][idx_sec]):
+                fid.write(" CONTROL\n")
+                fid.write("#surface   gain xhinge       hvec       SgnDup\n")
+                fid.write(f" {control_names[idx_cont_surf-1]} ")
+                fid.write(f" {data['gaind'][idx_sec][idx_local_cont_surf]}")
+                fid.write(f" {data['xhinged'][idx_sec][idx_local_cont_surf]}")
+                vhinge = data["vhinged"][idx_sec][idx_local_cont_surf]
+                fid.write(f" {vhinge[0]:.6f} {vhinge[1]:.6f} {vhinge[2]:.6f}")
+                fid.write(f" {data['refld'][idx_sec][idx_local_cont_surf]}\n")
+
+    def __decodeFortranString(self, fort_string) -> str:
+        # TODO: need a more general solution for |S<variable> type
+
+        if fort_string.dtype == np.dtype("|S0"):
+            # there are no characters in the sting to add
+            return ""
+        if fort_string.dtype == np.dtype("|S1"):
+            py_string = b"".join(fort_string).decode().strip()
+        elif fort_string.dtype == np.dtype("<U1"):
+            py_string = "".join(fort_string).strip()
+        elif fort_string.dtype == np.dtype("|S16"):
+            py_string = fort_string.decode().strip()
+        elif fort_string.dtype == np.dtype("|S40"):
+            py_string = fort_string.decode().strip()
+        elif fort_string.dtype == np.dtype("|S80"):
+            py_string = fort_string.decode().strip()
+        else:
+            raise TypeError(f"Unable to convert {fort_string} of type {fort_string.dtype} to string")
+
+        return py_string
 
     # Utility functions
     def get_num_surfaces(self) -> int:
@@ -742,21 +942,15 @@ class AVLSolver(object):
     def _convertFortranStringArrayToList(self, fortArray):
         """Undoes the _createFotranStringArray"""
         strList = []
-        for ii in range(len(fortArray)):
-            if fortArray[ii].dtype == np.dtype("|S0"):
-                # there is characters in the sting to add
-                continue
-            if fortArray[ii].dtype == np.dtype("|S1"):
-                strList.append(b"".join(fortArray[ii]).decode().strip())
-            elif fortArray[ii].dtype == np.dtype("<U1"):
-                strList.append("".join(fortArray[ii]).strip())
-            # TODO: need a more general solution for |S<variable> type
-            elif fortArray[ii].dtype == np.dtype("|S16"):
-                strList.append(fortArray[ii].decode().strip())
-            elif fortArray[ii].dtype == np.dtype("|S40"):
-                strList.append(fortArray[ii].decode().strip())
-            else:
-                raise TypeError(f"Unable to convert {fortArray[ii]} of type {fortArray[ii].dtype} to string")
+
+        if fortArray.size == 1:
+            # we must handle the 0-d array case sperately
+            return self.__decodeFortranString(fortArray[()])
+
+        for ii in range(fortArray.size):
+            py_string = self.__decodeFortranString(fortArray[ii])
+            if py_string != "":
+                strList.append(py_string)
 
         return strList
 
@@ -1017,6 +1211,12 @@ class AVLSolver(object):
         self.set_residual_ad_seeds(res_seeds, scale=0.0)
 
         return con_seeds, geom_seeds, gamma_seeds
+
+    def scipy_solve():
+        """
+        use scipy's linear solves to solve the system of equations.
+        """
+        pass
 
     def execute_adjoint_solve():
         pass
