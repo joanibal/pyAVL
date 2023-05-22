@@ -3,18 +3,19 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of aero in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: clff cyff cdff spanef cdtot
-C                cltot cxtot cytot cztot crtot cmtot cntot cdvtot
-C                cystrp
+C                cltot cxtot cytot cztot crtot cmtot cntot crsax
+C                cnsax cdvtot cystrp
 C   with respect to varying inputs: alfa vinf sref xyzref mach
 C                rle chord rle1 chord1 rle2 chord2 wstrip ensy
-C                ensz rv1 rv2 rv rc gam wv
+C                ensz xsref ysref zsref rv1 rv2 rv rc gam wv
 C   RW status of diff variables: alfa:in vinf:in sref:in xyzref:in
 C                mach:in clff:out cyff:out cdff:out spanef:out
 C                cdtot:out cltot:out cxtot:out cytot:out cztot:out
-C                crtot:out cmtot:out cntot:out cdvtot:out rle:in
-C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
-C                ensy:in ensz:in cystrp:out rv1:in rv2:in rv:in
-C                rc:in gam:in wv:in
+C                crtot:out cmtot:out cntot:out crsax:out cnsax:out
+C                cdvtot:out rle:in chord:in rle1:in chord1:in rle2:in
+C                chord2:in wstrip:in ensy:in ensz:in xsref:in ysref:in
+C                zsref:in cystrp:out rv1:in rv2:in rv:in rc:in
+C                gam:in wv:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -38,8 +39,17 @@ C
       SUBROUTINE AERO_D()
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      CHARACTER*50 satype
       INTEGER l
       INTEGER n
+      REAL sina
+      REAL sina_diff
+      INTRINSIC SIN
+      REAL cosa
+      REAL cosa_diff
+      INTRINSIC COS
+      REAL dir
+      EXTERNAL GETSA
       REAL vsq
       REAL vsq_diff
       REAL vmag
@@ -112,10 +122,20 @@ C
       CALL BDFORC_D()
       CALL TPFORC_D()
 C
+      sina_diff = COS(alfa)*alfa_diff
+      sina = SIN(alfa)
+      cosa_diff = -(SIN(alfa)*alfa_diff)
+      cosa = COS(alfa)
+C     calculate stability axis based values
+      CALL GETSA(lnasa_sa, satype, dir)
+      crsax_diff = dir*(cosa*crtot_diff+crtot*cosa_diff+sina*cntot_diff+
+     +  cntot*sina_diff)
+      crsax = dir*(crtot*cosa+cntot*sina)
+      cnsax_diff = dir*(cosa*cntot_diff+cntot*cosa_diff-sina*crtot_diff-
+     +  crtot*sina_diff)
+      cnsax = dir*(cntot*cosa-crtot*sina)
 C---------------------------------------------------------
 C---- add baseline reference CD
-C      SINA = SIN(ALFA)
-C      COSA = COS(ALFA)
 C
       vsq_diff = 2*vinf(1)*vinf_diff(1) + 2*vinf(2)*vinf_diff(2) + 2*
      +  vinf(3)*vinf_diff(3)
@@ -160,8 +180,8 @@ C  Differentiation of sfforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cltot cxtot cytot cztot
 C                crtot cmtot cntot cdvtot cystrp
 C   with respect to varying inputs: alfa vinf sref xyzref rle chord
-C                rle1 chord1 rle2 chord2 wstrip ensy ensz rv1 rv2
-C                rv gam wv
+C                rle1 chord1 rle2 chord2 wstrip ensy ensz xsref
+C                ysref zsref rv1 rv2 rv gam wv
 C AERO
 C
 C
@@ -518,6 +538,7 @@ C-------- set total effective velocity = freestream + rotation + induced
           veff(1) = vinf(1) + vrot(1) + wv(1, i)
           veff_diff(2) = vinf_diff(2) + vrot_diff(2) + wv_diff(2, i)
           veff(2) = vinf(2) + vrot(2) + wv(2, i)
+C$AD II-LOOP
           veff_diff(3) = vinf_diff(3) + vrot_diff(3) + wv_diff(3, i)
           veff(3) = vinf(3) + vrot(3) + wv(3, i)
 C
@@ -555,6 +576,7 @@ C
           fgam(1) = 2.0*gam(i)*f(1)
           fgam_diff(2) = 2.0*(f(2)*gam_diff(i)+gam(i)*f_diff(2))
           fgam(2) = 2.0*gam(i)*f(2)
+C$AD II-LOOP
           fgam_diff(3) = 2.0*(f(3)*gam_diff(i)+gam(i)*f_diff(3))
           fgam(3) = 2.0*gam(i)*f(3)
           DO n=1,numax
@@ -576,6 +598,7 @@ C
 C
 C-------- Delta Cp (loading across lifting surface) from vortex 
           fnv = DOT(env(1, i), fgam)
+C$AD II-LOOP
           dcp(i) = fnv/(dxv(i)*wstrip(j))
 C
           DO n=1,numax
@@ -631,6 +654,7 @@ C-------- moments referred to strip c/4 pt., normalized by strip chord and area
           cmz = cmz + temp
 C
 C-------- accumulate strip spanloading = c*CN
+C$AD II-LOOP
           cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
 C
 C-------- freestream and rotation derivatives
@@ -787,6 +811,7 @@ C---------- set total effective velocity = freestream + rotation
               veff(1) = vinf(1) + vrot(1)
               veff_diff(2) = vinf_diff(2) + vrot_diff(2)
               veff(2) = vinf(2) + vrot(2)
+C$AD II-LOOP
               veff_diff(3) = vinf_diff(3) + vrot_diff(3)
               veff(3) = vinf(3) + vrot(3)
 C
@@ -819,6 +844,7 @@ C
               fgam(1) = 2.0*gam(i)*f(1)
               fgam_diff(2) = 2.0*(f(2)*gam_diff(i)+gam(i)*f_diff(2))
               fgam(2) = 2.0*gam(i)*f(2)
+C$AD II-LOOP
               fgam_diff(3) = 2.0*(f(3)*gam_diff(i)+gam(i)*f_diff(3))
               fgam(3) = 2.0*gam(i)*f(3)
               DO n=1,numax
@@ -1087,6 +1113,7 @@ C         CMX = CMX + (DCVFZ*R(2) - DCVFY*R(3))/CR
 C         CMY = CMY + (DCVFX*R(3) - DCVFZ*R(1))/CR
 C         CMZ = CMZ + (DCVFY*R(1) - DCVFX*R(2))/CR
 C
+C$AD II-LOOP
           cdv_lstrp_diff(j) = dcvfx*udrag_diff(1) + udrag(1)*dcvfx_diff 
      +      + dcvfy*udrag_diff(2) + udrag(2)*dcvfy_diff + dcvfz*
      +      udrag_diff(3) + udrag(3)*dcvfz_diff
@@ -1252,11 +1279,11 @@ C    in plane normal to (possibly dihedralled) strip
         cmc4(j) = ensz(j)*cmy - ensy(j)*cmz
 C
 C------ vector at chord reference point from rotation axes
-        rrot_diff(1) = -xyzref_diff(1)
+        rrot_diff(1) = xsref_diff(j) - xyzref_diff(1)
         rrot(1) = xsref(j) - xyzref(1)
-        rrot_diff(2) = -xyzref_diff(2)
+        rrot_diff(2) = ysref_diff(j) - xyzref_diff(2)
         rrot(2) = ysref(j) - xyzref(2)
-        rrot_diff(3) = -xyzref_diff(3)
+        rrot_diff(3) = zsref_diff(j) - xyzref_diff(3)
         rrot(3) = zsref(j) - xyzref(3)
 C
 C------ set total effective velocity = freestream + rotation

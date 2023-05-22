@@ -3,18 +3,20 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of update_surfaces in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: rle chord rle1 chord1 rle2
-C                chord2 wstrip rv1 rv2 rv rc rs dxv chordv enc
-C                env
+C                chord2 wstrip ess ensy ensz xsref ysref zsref
+C                rv1 rv2 rv rc rs dxv chordv enc env
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf rle chord rle1 chord1
-C                rle2 chord2 wstrip rv1 rv2 rv rc rs dxv chordv
-C                enc env
+C                rle2 chord2 wstrip ess ensy ensz xsref ysref zsref
+C                rv1 rv2 rv rc rs dxv chordv enc env
 C   RW status of diff variables: xyzscal:out xyztran:out addinc:out
 C                xyzles:out chords:out aincs:out xasec:out sasec:out
 C                claf:out rle:in-out chord:in-out rle1:in-out chord1:in-out
-C                rle2:in-out chord2:in-out wstrip:in-out rv1:in-out
-C                rv2:in-out rv:in-out rc:in-out rs:in-out dxv:in-out
-C                chordv:in-out enc:in-out env:in-out
+C                rle2:in-out chord2:in-out wstrip:in-out ess:in-out
+C                ensy:in-out ensz:in-out xsref:in-out ysref:in-out
+C                zsref:in-out rv1:in-out rv2:in-out rv:in-out rc:in-out
+C                rs:in-out dxv:in-out chordv:in-out enc:in-out
+C                env:in-out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_B()
       INCLUDE 'AVL.INC'
@@ -606,8 +608,8 @@ C
             clafr = claf(isec+1, isurf)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-            aincl = aincs(isec, isurf) + addinc(isurf)*dtr
-            aincr = aincs(isec+1, isurf) + addinc(isurf)*dtr
+            aincl = aincs(isec, isurf)*dtr + addinc(isurf)*dtr
+            aincr = aincs(isec+1, isurf)*dtr + addinc(isurf)*dtr
 Cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 Cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -732,7 +734,6 @@ C
 C-------- go over vortices in this strip
               idx_vor = ijfrst(idx_strip)
 C NVOR = NVOR + 1
-C write(*,*) 'make surf nvor', nvor, idx_vor
               DO ivc=1,nvc(isurf)
 C
 C
@@ -1107,13 +1108,13 @@ C
               CALL POPREAL8(chsinl_g(n))
               chsinl_g_diff(n) = 0.D0
             ENDDO
-            aincr = aincs(isec+1, isurf) + addinc(isurf)*dtr
+            aincr = aincs(isec+1, isurf)*dtr + addinc(isurf)*dtr
             CALL POPREAL8(chcosr)
             chordr_diff = chordr_diff + COS(aincr)*chcosr_diff + SIN(
      +        aincr)*chsinr_diff
             aincr_diff = COS(aincr)*chordr*chsinr_diff - SIN(aincr)*
      +        chordr*chcosr_diff
-            aincl = aincs(isec, isurf) + addinc(isurf)*dtr
+            aincl = aincs(isec, isurf)*dtr + addinc(isurf)*dtr
             CALL POPREAL8(chcosl)
             chordl_diff = chordl_diff + COS(aincl)*chcosl_diff + SIN(
      +        aincl)*chsinl_diff
@@ -1121,11 +1122,11 @@ C
      +        chordl*chcosl_diff
             CALL POPREAL8(chsinr)
             CALL POPREAL8(chsinl)
-            aincs_diff(isec+1, isurf) = aincs_diff(isec+1, isurf) + 
+            aincs_diff(isec+1, isurf) = aincs_diff(isec+1, isurf) + dtr*
      +        aincr_diff
             addinc_diff(isurf) = addinc_diff(isurf) + dtr*aincr_diff + 
      +        dtr*aincl_diff
-            aincs_diff(isec, isurf) = aincs_diff(isec, isurf) + 
+            aincs_diff(isec, isurf) = aincs_diff(isec, isurf) + dtr*
      +        aincl_diff
             claf_diff(isec+1, isurf) = claf_diff(isec+1, isurf) + 
      +        clafr_diff
@@ -2114,9 +2115,10 @@ C
       END
 
 C  Differentiation of encalc in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: rv1 rv2 enc env
-C   with respect to varying inputs: ainc ainc_g rv1 rv2 slopev
-C                slopec enc env
+C   gradient     of useful results: ess ensy ensz xsref ysref zsref
+C                rv1 rv2 rv enc env
+C   with respect to varying inputs: ess ensy ensz xsref ysref zsref
+C                ainc ainc_g rv1 rv2 rv slopev slopec enc env
 C BDUPL
 C
 C
@@ -2132,22 +2134,31 @@ C
       INTEGER j
       INTEGER i
       REAL dxle
+      REAL dxle_diff
       REAL dyle
       REAL dyle_diff
       REAL dzle
       REAL dzle_diff
       REAL axle
+      REAL axle_diff
       REAL ayle
+      REAL ayle_diff
       REAL azle
+      REAL azle_diff
       REAL dxte
+      REAL dxte_diff
       REAL dyte
       REAL dyte_diff
       REAL dzte
       REAL dzte_diff
       REAL axte
+      REAL axte_diff
       REAL ayte
+      REAL ayte_diff
       REAL azte
+      REAL azte_diff
       REAL dxt
+      REAL dxt_diff
       REAL dyt
       REAL dyt_diff
       REAL dzt
@@ -2195,6 +2206,7 @@ C
 C...Calculate normal vector for the strip (normal to X axis)
         CALL PUSHINTEGER4(i)
         i = ijfrst(j)
+        dxle = rv2(1, i) - rv1(1, i)
         dyle = rv2(2, i) - rv1(2, i)
         dzle = rv2(3, i) - rv1(3, i)
 C       AXLE = (RV2(1,I)+RV1(1,I))*0.5
@@ -2202,12 +2214,15 @@ C       AYLE = (RV2(2,I)+RV1(2,I))*0.5
 C       AZLE = (RV2(3,I)+RV1(3,I))*0.5
 C
         i = ijfrst(j) + (nvstrp(j)-1)
+        dxte = rv2(1, i) - rv1(1, i)
         dyte = rv2(2, i) - rv1(2, i)
         dzte = rv2(3, i) - rv1(3, i)
 C       AXTE = (RV2(1,I)+RV1(1,I))*0.5
 C       AYTE = (RV2(2,I)+RV1(2,I))*0.5
 C       AZTE = (RV2(3,I)+RV1(3,I))*0.5
 C
+        CALL PUSHREAL8(dxt)
+        dxt = (1.0-saxfr)*dxle + saxfr*dxte
         CALL PUSHREAL8(dyt)
         dyt = (1.0-saxfr)*dyle + saxfr*dyte
         CALL PUSHREAL8(dzt)
@@ -2316,12 +2331,6 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
           END IF
         ENDDO
         CALL PUSHINTEGER4(ii - 1)
-      ENDDO
-      DO ii1=1,nsmax
-        ensy_diff(ii1) = 0.D0
-      ENDDO
-      DO ii1=1,nsmax
-        ensz_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nsmax
         ainc_diff(ii1) = 0.D0
@@ -2488,41 +2497,94 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
         es_diff(2) = 0.D0
         CALL POPREAL8(es(1))
         es_diff(1) = 0.D0
+        azle_diff = (1.0-saxfr)*zsref_diff(j)
+        azte_diff = saxfr*zsref_diff(j)
+        zsref_diff(j) = 0.D0
+        ayle_diff = (1.0-saxfr)*ysref_diff(j)
+        ayte_diff = saxfr*ysref_diff(j)
+        ysref_diff(j) = 0.D0
+        axle_diff = (1.0-saxfr)*xsref_diff(j)
+        axte_diff = saxfr*xsref_diff(j)
+        xsref_diff(j) = 0.D0
         temp0 = dyt*dyt + dzt*dzt
         temp = SQRT(temp0)
-        dyt_diff = ensz_diff(j)/temp
         IF (temp0 .EQ. 0.D0) THEN
           temp_diff0 = 0.D0
         ELSE
           temp_diff0 = -(dyt*ensz_diff(j)/(2.0*temp**3))
         END IF
+        dyt_diff = ensz_diff(j)/temp + 2*dyt*temp_diff0
         ensz_diff(j) = 0.D0
-        temp = dyt*dyt + dzt*dzt
+        dzt_diff = 2*dzt*temp_diff0
+        temp0 = dyt*dyt + dzt*dzt
+        temp = SQRT(temp0)
+        IF (temp0 .EQ. 0.D0) THEN
+          temp_diff0 = 0.D0
+        ELSE
+          temp_diff0 = dzt*ensy_diff(j)/(2.0*temp**3)
+        END IF
+        dzt_diff = dzt_diff + 2*dzt*temp_diff0 - ensy_diff(j)/temp
+        ensy_diff(j) = 0.D0
+        dyt_diff = dyt_diff + 2*dyt*temp_diff0
+        temp0 = dxt*dxt + dyt*dyt + dzt*dzt
+        temp = SQRT(temp0)
+        IF (temp0 .EQ. 0.D0) THEN
+          temp_diff0 = 0.D0
+        ELSE
+          temp_diff0 = -(dzt*ess_diff(3, j)/(2.0*temp**3))
+        END IF
+        dzt_diff = dzt_diff + ess_diff(3, j)/temp + 2*dzt*temp_diff0
+        ess_diff(3, j) = 0.D0
+        dxt_diff = 2*dxt*temp_diff0
+        temp0 = dxt*dxt + dyt*dyt + dzt*dzt
+        temp = SQRT(temp0)
+        dyt_diff = dyt_diff + 2*dyt*temp_diff0 + ess_diff(2, j)/temp
+        IF (temp0 .EQ. 0.D0) THEN
+          temp_diff0 = 0.D0
+        ELSE
+          temp_diff0 = -(dyt*ess_diff(2, j)/(2.0*temp**3))
+        END IF
+        ess_diff(2, j) = 0.D0
+        temp = dxt*dxt + dyt*dyt + dzt*dzt
         temp0 = SQRT(temp)
         IF (temp .EQ. 0.D0) THEN
           temp_diff = 0.D0
         ELSE
-          temp_diff = dzt*ensy_diff(j)/(2.0*temp0**3)
+          temp_diff = -(dxt*ess_diff(1, j)/(2.0*temp0**3))
         END IF
+        dxt_diff = dxt_diff + 2*dxt*temp_diff0 + ess_diff(1, j)/temp0 + 
+     +    2*dxt*temp_diff
         dyt_diff = dyt_diff + 2*dyt*temp_diff0 + 2*dyt*temp_diff
-        dzt_diff = 2*dzt*temp_diff0 + 2*dzt*temp_diff - ensy_diff(j)/
-     +    temp0
-        ensy_diff(j) = 0.D0
+        dzt_diff = dzt_diff + 2*dzt*temp_diff0 + 2*dzt*temp_diff
+        ess_diff(1, j) = 0.D0
         CALL POPREAL8(dzt)
         dzle_diff = (1.0-saxfr)*dzt_diff
         dzte_diff = saxfr*dzt_diff
         CALL POPREAL8(dyt)
         dyle_diff = (1.0-saxfr)*dyt_diff
         dyte_diff = saxfr*dyt_diff
+        CALL POPREAL8(dxt)
+        dxle_diff = (1.0-saxfr)*dxt_diff
+        dxte_diff = saxfr*dxt_diff
+        rv_diff(3, i) = rv_diff(3, i) + azte_diff
+        rv_diff(2, i) = rv_diff(2, i) + ayte_diff
+        rv_diff(1, i) = rv_diff(1, i) + axte_diff
         rv2_diff(3, i) = rv2_diff(3, i) + dzte_diff
         rv1_diff(3, i) = rv1_diff(3, i) - dzte_diff
         rv2_diff(2, i) = rv2_diff(2, i) + dyte_diff
         rv1_diff(2, i) = rv1_diff(2, i) - dyte_diff
+        rv2_diff(1, i) = rv2_diff(1, i) + dxte_diff
+        rv1_diff(1, i) = rv1_diff(1, i) - dxte_diff
         i = ijfrst(j)
+        rv_diff(3, i) = rv_diff(3, i) + azle_diff
+        rv_diff(2, i) = rv_diff(2, i) + ayle_diff
+        rv_diff(1, i) = rv_diff(1, i) + axle_diff
         rv2_diff(3, i) = rv2_diff(3, i) + dzle_diff
         rv1_diff(3, i) = rv1_diff(3, i) - dzle_diff
         rv2_diff(2, i) = rv2_diff(2, i) + dyle_diff
         rv1_diff(2, i) = rv1_diff(2, i) - dyle_diff
+        rv2_diff(1, i) = rv2_diff(1, i) + dxle_diff
+        rv1_diff(1, i) = rv1_diff(1, i) - dxle_diff
         CALL POPINTEGER4(i)
       ENDDO
       END

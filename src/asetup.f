@@ -50,18 +50,19 @@ C
       if (ltiming) then 
         call cpu_time(t0)
       end if
-      IF(.NOT.LAIC) THEN
-        CALL build_AIC
-        if (ltiming) then 
-          call cpu_time(t2)
-          write(*,*) '  nowake time: ', t2 - t1
-        end if 
+      CALL build_AIC
+!       IF(.NOT.LAIC) THEN
+!         CALL build_AIC
+!         if (ltiming) then 
+!           call cpu_time(t2)
+!           write(*,*) '  nowake time: ', t2 - t1
+!         end if 
 
 CC...Holdover from HPV hydro project for forces near free surface
 CC...Eliminates excluded vortices from eqns which are below z=Zsym 
 C      CALL MUNGEA
 C
-      ENDIF
+!       ENDIF
       if (ltiming) then 
         call cpu_time(t3)
         write(*,*) '  LUDCMP time: ', t3 - t2
@@ -135,8 +136,10 @@ C
      &           NVOR,RV1,RV2,NSURFV,CHORDV,
      &           NVOR,RC ,    NSURFV,.FALSE.,
      &           WC_GAM,NVMAX)
-       DO I = 1, NVOR
-         DO J = 1, NVOR
+      !$AD II-LOOP
+      DO J = 1, NVOR
+        !$AD II-LOOP
+        DO I = 1, NVOR
            AICN(I,J) = WC_GAM(1,I,J)*ENC(1,I)
      &               + WC_GAM(2,I,J)*ENC(2,I)
      &               + WC_GAM(3,I,J)*ENC(3,I)
@@ -145,24 +148,29 @@ C
        ENDDO
 
 C----- process each surface which does not shed a wake
+C$AD II-LOOP
        DO 10 N = 1, NSURF
          IF(LFWAKE(N)) GO TO 10
 
 C------- go over TE control points on this surface
          J1 = JFRST(N)
          JN = JFRST(N) + NJ(N)-1
-C
+C 
+         !$AD II-LOOP
+C$AD II-LOOP
          DO J = J1, JN
            I1 = IJFRST(J)
            IV = IJFRST(J) + NVSTRP(J) - 1
 
 C--------- clear system row for TE control point
+C$AD II-LOOP
            DO JV = 1, NVOR
              AICN(IV,JV) = 0.
            ENDDO
            LVNC(IV) = .FALSE.
 
 C--------- set  sum_strip(Gamma) = 0  for this strip
+           !$AD II-LOOP
            DO JV = I1, IV
              AICN(IV,JV) = 1.0
            ENDDO
@@ -631,6 +639,14 @@ C----- might as well directly set operating variables if they are known
        IF(ICON(IVROTX,IR).EQ.ICROTX) WROT(1) = CONVAL(ICROTX,IR)*2./BREF
        IF(ICON(IVROTY,IR).EQ.ICROTY) WROT(2) = CONVAL(ICROTY,IR)*2./CREF
        IF(ICON(IVROTZ,IR).EQ.ICROTZ) WROT(3) = CONVAL(ICROTZ,IR)*2./BREF
+      
+       !$AD-II-loop
+       DO N = 1, NDMAX
+        IV = IVTOT + N
+        IC = ICTOT + N
+        IF(ICON(IV,IR) .eq. IC) DELCON(N) = CONVAL(IC,IR)
+      ENDDO
+      
       ENDIF
       end subroutine set_par_and_cons
         
@@ -680,8 +696,9 @@ C----- might as well directly set operating variables if they are known
         real mat(NVMAX,NVMAX), vec(NVMAX), out_vec(NVMAX)
         
         out_vec = 0.
-        
+        !$AD II-LOOP
         DO J = 1, n
+          !$AD II-LOOP
           DO I = 1, n
             out_vec(I) = out_vec(I) +  mat(I,J)*vec(J)
           enddo 

@@ -1952,12 +1952,19 @@ C---- copy RHS vector into GAM that will be used for soluiton
       
       subroutine get_res
       INCLUDE "AVL.INC"
+      call set_par_and_cons(NITMAX, IRUN)
 C---  
       ! Do not use this routine in the sovler
       ! IF(.NOT.LAIC) THEN
       !      CALL build_AIC
       ! end if
       CALL build_AIC
+      AMACH = MACH
+      BETM = SQRT(1.0 - AMACH**2)
+      CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
+     &           NVOR,RV1,RV2,NSURFV,CHORDV,
+     &           NVOR,RV ,    NSURFV,.TRUE.,
+     &           WV_GAM,NVMAX)
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
             
@@ -1966,6 +1973,7 @@ C---- set VINF() vector from initial ALFA,BETA
       
       call mat_prod(AICN, GAM, NVOR, res)
 C---- add the RHS vector to the residual
+      !$AD II-LOOP
       do I = 1, NVOR
             res(I) = res(I) - RHS(I)
       enddo      

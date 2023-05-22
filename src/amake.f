@@ -262,8 +262,8 @@ C
         CLAFR = CLAF(ISEC+1,ISURF)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-        AINCL = AINCS(ISEC  , ISURF) + ADDINC(ISURF)*DTR
-        AINCR = AINCS(ISEC+1, ISURF) + ADDINC(ISURF)*DTR
+        AINCL = AINCS(ISEC  , ISURF)*DTR + ADDINC(ISURF)*DTR
+        AINCR = AINCS(ISEC+1, ISURF)*DTR + ADDINC(ISURF)*DTR
 cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -473,7 +473,6 @@ C-------- go over vortices in this strip
           idx_vor = IJFRST(idx_strip)
           DO 1505 IVC = 1, NVC(ISURF)
             ! NVOR = NVOR + 1
-            ! write(*,*) 'make surf nvor', nvor, idx_vor
 C
             RV1(1,idx_vor) = RLE1(1,idx_strip)
      &                        + XVR(IVC)*CHORD1(idx_strip)

@@ -35,7 +35,7 @@ class TestGeom(unittest.TestCase):
                 "angle": 1.23,
                 "nspans": np.array([5, 4, 3, 2, 1]),
                 "sspaces": np.array([-1.0, 0.0, 1.0, 2.0, 3.0]),
-                "aincs": np.deg2rad(np.array([0.5, 0.4, 0.3, 0.2, 0.1])),
+                "aincs": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
                 "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
                 "xyzles": np.array([[0, 0, 0], [0.1, 1.0, 0.01], [0.2, 2.0, 0.02], [0.3, 3.0, 0.03], [0.4, 4.0, 0.04]]),
             },

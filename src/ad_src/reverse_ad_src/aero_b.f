@@ -3,20 +3,21 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of aero in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: clff cyff cdff spanef cdtot
-C                cltot cxtot cytot cztot crtot cmtot cntot cdvtot
-C                cystrp
+C                cltot cxtot cytot cztot crtot cmtot cntot crsax
+C                cnsax cdvtot cystrp
 C   with respect to varying inputs: alfa vinf sref xyzref mach
 C                clff cyff cdff spanef cdtot cltot cxtot cytot
-C                cztot crtot cmtot cntot cdvtot rle chord rle1
-C                chord1 rle2 chord2 wstrip ensy ensz cystrp rv1
-C                rv2 rv rc gam wv
+C                cztot crtot cmtot cntot crsax cnsax cdvtot rle
+C                chord rle1 chord1 rle2 chord2 wstrip ensy ensz
+C                xsref ysref zsref cystrp rv1 rv2 rv rc gam wv
 C   RW status of diff variables: alfa:out vinf:out sref:out xyzref:out
 C                mach:out clff:in-zero cyff:in-zero cdff:in-zero
 C                spanef:in-zero cdtot:in-zero cltot:in-zero cxtot:in-zero
 C                cytot:in-zero cztot:in-zero crtot:in-zero cmtot:in-zero
-C                cntot:in-zero cdvtot:in-zero rle:out chord:out
-C                rle1:out chord1:out rle2:out chord2:out wstrip:out
-C                ensy:out ensz:out cystrp:in-out rv1:out rv2:out
+C                cntot:in-zero crsax:in-zero cnsax:in-zero cdvtot:in-zero
+C                rle:out chord:out rle1:out chord1:out rle2:out
+C                chord2:out wstrip:out ensy:out ensz:out xsref:out
+C                ysref:out zsref:out cystrp:in-out rv1:out rv2:out
 C                rv:out rc:out gam:out wv:out
 C***********************************************************************
 C    Module:  aero.f
@@ -41,14 +42,24 @@ C
       SUBROUTINE AERO_B()
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      CHARACTER*50 satype
       INTEGER l
       INTEGER n
+      REAL sina
+      REAL sina_diff
+      INTRINSIC SIN
+      REAL cosa
+      REAL cosa_diff
+      INTRINSIC COS
+      REAL dir
+      EXTERNAL GETSA
       REAL vsq
       REAL vsq_diff
       REAL vmag
       REAL vmag_diff
       INTRINSIC SQRT
       INTEGER iu
+      REAL(kind=8) temp_diff
       INTEGER ii1
 C
       cdtot = 0.
@@ -121,11 +132,14 @@ C
       CALL PUSHREAL8ARRAY(clstrp, nsmax)
       CALL PUSHREAL8ARRAY(cdstrp, nsmax)
       CALL SFFORC()
+      CALL BDFORC()
 C
+      sina = SIN(alfa)
+      cosa = COS(alfa)
+C     calculate stability axis based values
+      CALL GETSA(lnasa_sa, satype, dir)
 C---------------------------------------------------------
 C---- add baseline reference CD
-C      SINA = SIN(ALFA)
-C      COSA = COS(ALFA)
 C
       vsq = vinf(1)**2 + vinf(2)**2 + vinf(3)**2
       vmag = SQRT(vsq)
@@ -149,6 +163,17 @@ C
      +  vsq_diff
       vinf_diff(1) = vinf_diff(1) + vmag*cdref*cxtot_diff + 2*vinf(1)*
      +  vsq_diff
+      temp_diff = dir*cnsax_diff
+      cntot_diff = cntot_diff + cosa*temp_diff
+      cosa_diff = cntot*temp_diff
+      crtot_diff = crtot_diff - sina*temp_diff
+      sina_diff = -(crtot*temp_diff)
+      temp_diff = dir*crsax_diff
+      crtot_diff = crtot_diff + cosa*temp_diff
+      cosa_diff = cosa_diff + crtot*temp_diff
+      cntot_diff = cntot_diff + sina*temp_diff
+      sina_diff = sina_diff + cntot*temp_diff
+      alfa_diff = COS(alfa)*sina_diff - SIN(alfa)*cosa_diff
       CALL TPFORC_B()
       CALL BDFORC_B()
       CALL POPREAL8ARRAY(cdstrp, nsmax)
@@ -173,6 +198,8 @@ C
       crtot_diff = 0.D0
       cmtot_diff = 0.D0
       cntot_diff = 0.D0
+      crsax_diff = 0.D0
+      cnsax_diff = 0.D0
       cdvtot_diff = 0.D0
       END
 
@@ -181,8 +208,8 @@ C   gradient     of useful results: alfa vinf sref xyzref cdtot
 C                cltot cxtot cytot cztot crtot cmtot cntot cdvtot
 C                cystrp rv1 rv2 gam
 C   with respect to varying inputs: alfa vinf sref xyzref rle chord
-C                rle1 chord1 rle2 chord2 wstrip ensy ensz cystrp
-C                rv1 rv2 rv gam wv
+C                rle1 chord1 rle2 chord2 wstrip ensy ensz xsref
+C                ysref zsref cystrp rv1 rv2 rv gam wv
 C AERO
 C
 C
@@ -317,18 +344,27 @@ C
       REAL result1
       REAL result1_diff
       REAL result2
+      REAL(kind=8) temp_diff
       INTEGER ii1
-      REAL temp_diff
-      REAL(kind=8) temp_diff0
-      INTEGER ad_to
+      REAL temp_diff0
       INTEGER branch
-      INTEGER ad_to0
-      INTEGER ad_to1
+      INTEGER ad_to
       INTEGER ii2
 C
 C
       sina = SIN(alfa)
       cosa = COS(alfa)
+      CALL PUSHREAL8ARRAY(f, 3)
+      CALL PUSHREAL8ARRAY(g, 3)
+      CALL PUSHREAL8ARRAY(r, 3)
+      CALL PUSHREAL8ARRAY(udrag, 3)
+      CALL PUSHREAL8ARRAY(vrot, 3)
+      CALL PUSHREAL8ARRAY(veff, 3)
+      CALL PUSHREAL8ARRAY(ulift, 3)
+      CALL PUSHREAL8ARRAY(fgam, 3)
+      CALL PUSHREAL8ARRAY(rrot, 3)
+      CALL PUSHREAL8ARRAY(spn, 3)
+C$FWD-OF II-LOOP 
 C
 C***********************************************************************
 C...Integrate the forces strip-wise, surface-wise and total-wise
@@ -341,9 +377,7 @@ C
         i1 = ijfrst(j)
         nvc_strp = nvstrp(j)
 C
-        CALL PUSHREAL8(cr)
         cr = chord(j)
-        CALL PUSHREAL8(sr)
         sr = chord(j)*wstrip(j)
 C
         xte1 = rle1(1, j) + chord1(j)
@@ -351,38 +385,23 @@ C
 C
 C--- Define local strip lift and drag directions
 C--- The "spanwise" vector is cross product of strip normal with X chordline 
-        CALL PUSHREAL8(spn(1))
         spn(1) = 0.0
-        CALL PUSHREAL8(spn(2))
         spn(2) = ensz(j)
-        CALL PUSHREAL8(spn(3))
         spn(3) = -ensy(j)
 C--- Stability axes stream vector defines drag direction
-        CALL PUSHREAL8(udrag(1))
         udrag(1) = cosa
-        CALL PUSHREAL8(udrag(2))
         udrag(2) = 0.0
-        CALL PUSHREAL8(udrag(3))
         udrag(3) = sina
 C--- Lift direction is vector product of "stream" and spanwise vector
-        CALL PUSHREAL8ARRAY(ulift, 3)
         CALL CROSS(udrag, spn, ulift)
-        CALL PUSHREAL8(result1)
         result1 = DOT(ulift, ulift)
-        CALL PUSHREAL8(ulmag)
         ulmag = SQRT(result1)
         IF (ulmag .EQ. 0.) THEN
-          CALL PUSHREAL8(ulift(3))
           ulift(3) = 1.0
-          CALL PUSHCONTROL1B(0)
         ELSE
-          CALL PUSHREAL8(ulift(1))
           ulift(1) = ulift(1)/ulmag
-          CALL PUSHREAL8(ulift(2))
           ulift(2) = ulift(2)/ulmag
-          CALL PUSHREAL8(ulift(3))
           ulift(3) = ulift(3)/ulmag
-          CALL PUSHCONTROL1B(1)
         END IF
 C
 C...Use the strip 1/4 chord location for strip moments
@@ -390,69 +409,143 @@ C...Use the strip 1/4 chord location for strip moments
         yr = rle(2, j)
         zr = rle(3, j)
 C
-        CALL PUSHREAL8(cfx)
         cfx = 0.
-        CALL PUSHREAL8(cfy)
         cfy = 0.
-        CALL PUSHREAL8(cfz)
         cfz = 0.
         cmx = 0.
         cmy = 0.
         cmz = 0.
+        cnc(j) = 0.
+C
+        DO n=1,numax
+          cfx_u(n) = 0.
+          cfy_u(n) = 0.
+          cfz_u(n) = 0.
+          cmx_u(n) = 0.
+          cmy_u(n) = 0.
+          cmz_u(n) = 0.
+          cnc_u(j, n) = 0.
+        ENDDO
+C
+        DO n=1,ncontrol
+          cfx_d(n) = 0.
+          cfy_d(n) = 0.
+          cfz_d(n) = 0.
+          cmx_d(n) = 0.
+          cmy_d(n) = 0.
+          cmz_d(n) = 0.
+          cnc_d(j, n) = 0.
+        ENDDO
+C
+        DO n=1,ndesign
+          cfx_g(n) = 0.
+          cfy_g(n) = 0.
+          cfz_g(n) = 0.
+          cmx_g(n) = 0.
+          cmy_g(n) = 0.
+          cmz_g(n) = 0.
+          cnc_g(j, n) = 0.
+        ENDDO
 C
 C...Sum the forces in the strip as generated by velocity
 C    (freestream + rotation + induced) acting on bound vortex 
         DO ii=1,nvc_strp
-          CALL PUSHINTEGER4(i)
           i = i1 + (ii-1)
 C
 C------- local moment reference vector from vortex midpoint to strip c/4 pt.
 C          R(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XR
 C          R(2) = 0.5*(RV1(2,I) + RV2(2,I)) - YR
 C          R(3) = 0.5*(RV1(3,I) + RV2(3,I)) - ZR
-          CALL PUSHREAL8(r(1))
           r(1) = rv(1, i) - xr
-          CALL PUSHREAL8(r(2))
           r(2) = rv(2, i) - yr
-          CALL PUSHREAL8(r(3))
           r(3) = rv(3, i) - zr
 C
 C------- vector from rotation axes
 C          RROT(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XYZREF(1)
 C          RROT(2) = 0.5*(RV1(2,I) + RV2(2,I)) - XYZREF(2)
 C          RROT(3) = 0.5*(RV1(3,I) + RV2(3,I)) - XYZREF(3)
-          CALL PUSHREAL8(rrot(1))
           rrot(1) = rv(1, i) - xyzref(1)
-          CALL PUSHREAL8(rrot(2))
           rrot(2) = rv(2, i) - xyzref(2)
-          CALL PUSHREAL8(rrot(3))
           rrot(3) = rv(3, i) - xyzref(3)
 C
 C-------- set total effective velocity = freestream + rotation + induced
           CALL CROSS(rrot, wrot, vrot)
-          CALL PUSHREAL8(veff(1))
           veff(1) = vinf(1) + vrot(1) + wv(1, i)
-          CALL PUSHREAL8(veff(2))
           veff(2) = vinf(2) + vrot(2) + wv(2, i)
-          CALL PUSHREAL8(veff(3))
+C$AD II-LOOP
           veff(3) = vinf(3) + vrot(3) + wv(3, i)
 C
-C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
-          CALL PUSHREAL8(g(1))
-          g(1) = rv2(1, i) - rv1(1, i)
-          CALL PUSHREAL8(g(2))
-          g(2) = rv2(2, i) - rv1(2, i)
-          CALL PUSHREAL8(g(3))
-          g(3) = rv2(3, i) - rv1(3, i)
-          CALL PUSHREAL8ARRAY(f, 3)
-          CALL CROSS(veff, g, f)
+C-------- set VEFF sensitivities to freestream,rotation components
+          DO k=1,3
+            veff_u(1, k) = wv_u(1, i, k)
+            veff_u(2, k) = wv_u(2, i, k)
+            veff_u(3, k) = wv_u(3, i, k)
+            veff_u(k, k) = 1.0 + veff_u(k, k)
+          ENDDO
+          DO k=4,6
+            wrot_u(1) = 0.
+            wrot_u(2) = 0.
+            wrot_u(3) = 0.
+            wrot_u(k-3) = 1.0
+            CALL CROSS(rrot, wrot_u, vrot_u)
+            veff_u(1, k) = vrot_u(1) + wv_u(1, i, k)
+            veff_u(2, k) = vrot_u(2) + wv_u(2, i, k)
+            veff_u(3, k) = vrot_u(3) + wv_u(3, i, k)
+          ENDDO
 C
-          CALL PUSHREAL8(fgam(1))
+C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
+          g(1) = rv2(1, i) - rv1(1, i)
+          g(2) = rv2(2, i) - rv1(2, i)
+          g(3) = rv2(3, i) - rv1(3, i)
+          CALL CROSS(veff, g, f)
+          DO n=1,numax
+            CALL CROSS(veff_u(1, n), g, f_u(1, n))
+          ENDDO
+C
           fgam(1) = 2.0*gam(i)*f(1)
-          CALL PUSHREAL8(fgam(2))
           fgam(2) = 2.0*gam(i)*f(2)
-          CALL PUSHREAL8(fgam(3))
+C$AD II-LOOP
           fgam(3) = 2.0*gam(i)*f(3)
+          DO n=1,numax
+            fgam_u(1, n) = 2.0*gam_u(i, n)*f(1) + 2.0*gam(i)*f_u(1, n)
+            fgam_u(2, n) = 2.0*gam_u(i, n)*f(2) + 2.0*gam(i)*f_u(2, n)
+            fgam_u(3, n) = 2.0*gam_u(i, n)*f(3) + 2.0*gam(i)*f_u(3, n)
+          ENDDO
+          DO n=1,ncontrol
+            fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+            fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+            fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
+          ENDDO
+          DO n=1,ndesign
+            fgam_g(1, n) = 2.0*gam_g(i, n)*f(1)
+            fgam_g(2, n) = 2.0*gam_g(i, n)*f(2)
+            fgam_g(3, n) = 2.0*gam_g(i, n)*f(3)
+          ENDDO
+C
+C
+C-------- Delta Cp (loading across lifting surface) from vortex 
+          fnv = DOT(env(1, i), fgam)
+C$AD II-LOOP
+          dcp(i) = fnv/(dxv(i)*wstrip(j))
+C
+          DO n=1,numax
+            fnv_u = DOT(env(1, i), fgam_u(1, n))
+            dcp_u(i, n) = fnv_u/(dxv(i)*wstrip(j))
+          ENDDO
+C
+          DO n=1,ncontrol
+            result1 = DOT(env(1, i), fgam_d(1, n))
+            result2 = DOT(env_d(1, i, n), fgam)
+            fnv_d = result1 + result2
+            dcp_d(i, n) = fnv_d/(dxv(i)*wstrip(j))
+          ENDDO
+C
+          DO n=1,ndesign
+            result1 = DOT(env(1, i), fgam_g(1, n))
+            result2 = DOT(env_g(1, i, n), fgam)
+            fnv_g = result1 + result2
+            dcp_g(i, n) = fnv_g/(dxv(i)*wstrip(j))
+          ENDDO
 C
 C-------- vortex contribution to strip forces
           dcfx = fgam(1)/sr
@@ -470,94 +563,187 @@ C-------- moments referred to strip c/4 pt., normalized by strip chord and area
           cmz = cmz + (dcfy*r(1)-dcfx*r(2))/cr
 C
 C-------- accumulate strip spanloading = c*CN
+C$AD II-LOOP
+          cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
+C
+C-------- freestream and rotation derivatives
+          DO n=1,numax
+            dcfx_u = fgam_u(1, n)/sr
+            dcfy_u = fgam_u(2, n)/sr
+            dcfz_u = fgam_u(3, n)/sr
+C
+            cfx_u(n) = cfx_u(n) + dcfx_u
+            cfy_u(n) = cfy_u(n) + dcfy_u
+            cfz_u(n) = cfz_u(n) + dcfz_u
+            cmx_u(n) = cmx_u(n) + (dcfz_u*r(2)-dcfy_u*r(3))/cr
+            cmy_u(n) = cmy_u(n) + (dcfx_u*r(3)-dcfz_u*r(1))/cr
+            cmz_u(n) = cmz_u(n) + (dcfy_u*r(1)-dcfx_u*r(2))/cr
+C
+            cnc_u(j, n) = cnc_u(j, n) + cr*(ensy(j)*dcfy_u+ensz(j)*
+     +        dcfz_u)
+          ENDDO
+C
+C-------- control derivatives
+          DO n=1,ncontrol
+            dcfx_d = fgam_d(1, n)/sr
+            dcfy_d = fgam_d(2, n)/sr
+            dcfz_d = fgam_d(3, n)/sr
+C
+            cfx_d(n) = cfx_d(n) + dcfx_d
+            cfy_d(n) = cfy_d(n) + dcfy_d
+            cfz_d(n) = cfz_d(n) + dcfz_d
+            cmx_d(n) = cmx_d(n) + (dcfz_d*r(2)-dcfy_d*r(3))/cr
+            cmy_d(n) = cmy_d(n) + (dcfx_d*r(3)-dcfz_d*r(1))/cr
+            cmz_d(n) = cmz_d(n) + (dcfy_d*r(1)-dcfx_d*r(2))/cr
+C
+            cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcfy_d+ensz(j)*
+     +        dcfz_d)
+          ENDDO
+C
+C-------- design derivatives
+          DO n=1,ndesign
+            dcfx_g = fgam_g(1, n)/sr
+            dcfy_g = fgam_g(2, n)/sr
+            dcfz_g = fgam_g(3, n)/sr
+C
+            cfx_g(n) = cfx_g(n) + dcfx_g
+            cfy_g(n) = cfy_g(n) + dcfy_g
+            cfz_g(n) = cfz_g(n) + dcfz_g
+            cmx_g(n) = cmx_g(n) + (dcfz_g*r(2)-dcfy_g*r(3))/cr
+            cmy_g(n) = cmy_g(n) + (dcfx_g*r(3)-dcfz_g*r(1))/cr
+            cmz_g(n) = cmz_g(n) + (dcfy_g*r(1)-dcfx_g*r(2))/cr
+C
+            cnc_g(j, n) = cnc_g(j, n) + cr*(ensy(j)*dcfy_g+ensz(j)*
+     +        dcfz_g)
+          ENDDO
+C
+C-------- hinge moments
+          DO l=1,ncontrol
+            rh(1) = rv(1, i) - phinge(1, j, l)
+            rh(2) = rv(2, i) - phinge(2, j, l)
+            rh(3) = rv(3, i) - phinge(3, j, l)
+C
+            dfac = dcontrol(i, l)/(sref*cref)
+C
+            CALL CROSS(rh, fgam, mh)
+            result1 = DOT(mh, vhinge(1, j, l))
+            chinge(l) = chinge(l) + result1*dfac
+C
+            DO n=1,numax
+              CALL CROSS(rh, fgam_u(1, n), mh)
+              result1 = DOT(mh, vhinge(1, j, l))
+              chinge_u(l, n) = chinge_u(l, n) + result1*dfac
+            ENDDO
+            DO n=1,ncontrol
+              CALL CROSS(rh, fgam_d(1, n), mh)
+              result1 = DOT(mh, vhinge(1, j, l))
+              chinge_d(l, n) = chinge_d(l, n) + result1*dfac
+            ENDDO
+            DO n=1,ndesign
+              CALL CROSS(rh, fgam_g(1, n), mh)
+              result1 = DOT(mh, vhinge(1, j, l))
+              chinge_g(l, n) = chinge_g(l, n) + result1*dfac
+            ENDDO
+          ENDDO
         ENDDO
-        CALL PUSHINTEGER4(ii - 1)
 C
 C
 C
-        IF (.NOT.ltrforce) THEN
-          CALL PUSHCONTROL1B(0)
-        ELSE
+        IF (ltrforce) THEN
 C
 C...Sum forces in the strip as generated by velocity (freestream + rotation)
 C     the parts of trailing legs which lie on the surface
           DO ii=1,nvc_strp
-            CALL PUSHINTEGER4(i)
             i = i1 + (ii-1)
 C
             DO ileg=1,2
               IF (ileg .EQ. 1) THEN
 C----------- local moment reference vector from vortex midpoint to strip c/4 pt
-                CALL PUSHREAL8(r(1))
                 r(1) = 0.5*(rv1(1, i)+xte1) - xr
-                CALL PUSHREAL8(r(2))
                 r(2) = rv1(2, i) - yr
-                CALL PUSHREAL8(r(3))
                 r(3) = rv1(3, i) - zr
 C 
 C----------- vector from rotation axes
-                CALL PUSHREAL8(rrot(1))
                 rrot(1) = 0.5*(rv1(1, i)+xte1) - xyzref(1)
-                CALL PUSHREAL8(rrot(2))
                 rrot(2) = rv1(2, i) - xyzref(2)
-                CALL PUSHREAL8(rrot(3))
                 rrot(3) = rv1(3, i) - xyzref(3)
 C
 C----------- part of trailing leg lying on surface
-                CALL PUSHREAL8(g(1))
                 g(1) = rv1(1, i) - xte1
-                CALL PUSHREAL8(g(2))
                 g(2) = 0.
-                CALL PUSHREAL8(g(3))
                 g(3) = 0.
 C
-                CALL PUSHCONTROL1B(0)
               ELSE
 C----------- local moment reference vector from vortex midpoint to strip c/4 pt
-                CALL PUSHREAL8(r(1))
                 r(1) = 0.5*(rv2(1, i)+xte2) - xr
-                CALL PUSHREAL8(r(2))
                 r(2) = rv2(2, i) - yr
-                CALL PUSHREAL8(r(3))
                 r(3) = rv2(3, i) - zr
 C
 C----------- vector from rotation axes
-                CALL PUSHREAL8(rrot(1))
                 rrot(1) = 0.5*(rv2(1, i)+xte2) - xyzref(1)
-                CALL PUSHREAL8(rrot(2))
                 rrot(2) = rv2(2, i) - xyzref(2)
-                CALL PUSHREAL8(rrot(3))
                 rrot(3) = rv2(3, i) - xyzref(3)
 C
 C----------- part of trailing leg lying on surface
-                CALL PUSHREAL8(g(1))
                 g(1) = xte2 - rv2(1, i)
-                CALL PUSHREAL8(g(2))
                 g(2) = 0.
-                CALL PUSHREAL8(g(3))
                 g(3) = 0.
-                CALL PUSHCONTROL1B(1)
               END IF
 C
 C---------- set total effective velocity = freestream + rotation
               CALL CROSS(rrot, wrot, vrot)
-              CALL PUSHREAL8(veff(1))
               veff(1) = vinf(1) + vrot(1)
-              CALL PUSHREAL8(veff(2))
               veff(2) = vinf(2) + vrot(2)
-              CALL PUSHREAL8(veff(3))
+C$AD II-LOOP
               veff(3) = vinf(3) + vrot(3)
 C
+C---------- set VEFF sensitivities to freestream,rotation components
+              DO k=1,3
+                veff_u(1, k) = 0.
+                veff_u(2, k) = 0.
+                veff_u(3, k) = 0.
+                veff_u(k, k) = 1.0
+              ENDDO
+              DO k=4,6
+                wrot_u(1) = 0.
+                wrot_u(2) = 0.
+                wrot_u(3) = 0.
+                wrot_u(k-3) = 1.0
+                CALL CROSS(rrot, wrot_u, vrot_u)
+                veff_u(1, k) = vrot_u(1)
+                veff_u(2, k) = vrot_u(2)
+                veff_u(3, k) = vrot_u(3)
+              ENDDO
+C
 C---------- Force coefficient on vortex segment is 2(Veff x Gamma)
-              CALL PUSHREAL8ARRAY(f, 3)
               CALL CROSS(veff, g, f)
 C
-              CALL PUSHREAL8(fgam(1))
+              DO n=1,numax
+                CALL CROSS(veff_u(1, n), g, f_u(1, n))
+              ENDDO
+C
               fgam(1) = 2.0*gam(i)*f(1)
-              CALL PUSHREAL8(fgam(2))
               fgam(2) = 2.0*gam(i)*f(2)
-              CALL PUSHREAL8(fgam(3))
+C$AD II-LOOP
               fgam(3) = 2.0*gam(i)*f(3)
+              DO n=1,numax
+                fgam_u(1, n) = 2.0*gam_u(i, n)*f(1) + 2.0*gam(i)*f_u(1, 
+     +            n)
+                fgam_u(2, n) = 2.0*gam_u(i, n)*f(2) + 2.0*gam(i)*f_u(2, 
+     +            n)
+                fgam_u(3, n) = 2.0*gam_u(i, n)*f(3) + 2.0*gam(i)*f_u(3, 
+     +            n)
+              ENDDO
+              DO n=1,ncontrol
+                fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+                fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+                fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
+              ENDDO
+              DO n=1,ndesign
+                fgam_g(1, n) = 2.0*gam_g(i, n)*f(1)
+                fgam_g(2, n) = 2.0*gam_g(i, n)*f(2)
+                fgam_g(3, n) = 2.0*gam_g(i, n)*f(3)
+              ENDDO
 C
 CC---------- Delta Cp (loading across lifting surface) due to vortex 
 C            FNV = DOT(ENV(1,I),FGAM)
@@ -595,10 +781,60 @@ C---------- moments referred to strip c/4 pt., normalized by strip chord and are
               cmz = cmz + (dcfy*r(1)-dcfx*r(2))/cr
 C
 C---------- accumulate strip spanloading = c*CN
+              cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
+C
+C---------- freestream and rotation derivatives
+              DO n=1,numax
+                dcfx_u = fgam_u(1, n)/sr
+                dcfy_u = fgam_u(2, n)/sr
+                dcfz_u = fgam_u(3, n)/sr
+C
+                cfx_u(n) = cfx_u(n) + dcfx_u
+                cfy_u(n) = cfy_u(n) + dcfy_u
+                cfz_u(n) = cfz_u(n) + dcfz_u
+                cmx_u(n) = cmx_u(n) + (dcfz_u*r(2)-dcfy_u*r(3))/cr
+                cmy_u(n) = cmy_u(n) + (dcfx_u*r(3)-dcfz_u*r(1))/cr
+                cmz_u(n) = cmz_u(n) + (dcfy_u*r(1)-dcfx_u*r(2))/cr
+C
+                cnc_u(j, n) = cnc_u(j, n) + cr*(ensy(j)*dcfy_u+ensz(j)*
+     +            dcfz_u)
+              ENDDO
+C
+C---------- control derivatives
+              DO n=1,ncontrol
+                dcfx_d = fgam_d(1, n)/sr
+                dcfy_d = fgam_d(2, n)/sr
+                dcfz_d = fgam_d(3, n)/sr
+C  
+                cfx_d(n) = cfx_d(n) + dcfx_d
+                cfy_d(n) = cfy_d(n) + dcfy_d
+                cfz_d(n) = cfz_d(n) + dcfz_d
+                cmx_d(n) = cmx_d(n) + (dcfz_d*r(2)-dcfy_d*r(3))/cr
+                cmy_d(n) = cmy_d(n) + (dcfx_d*r(3)-dcfz_d*r(1))/cr
+                cmz_d(n) = cmz_d(n) + (dcfy_d*r(1)-dcfx_d*r(2))/cr
+C  
+                cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcfy_d+ensz(j)*
+     +            dcfz_d)
+              ENDDO
+C
+C---------- design derivatives
+              DO n=1,ndesign
+                dcfx_g = fgam_g(1, n)/sr
+                dcfy_g = fgam_g(2, n)/sr
+                dcfz_g = fgam_g(3, n)/sr
+C
+                cfx_g(n) = cfx_g(n) + dcfx_g
+                cfy_g(n) = cfy_g(n) + dcfy_g
+                cfz_g(n) = cfz_g(n) + dcfz_g
+                cmx_g(n) = cmx_g(n) + (dcfz_g*r(2)-dcfy_g*r(3))/cr
+                cmy_g(n) = cmy_g(n) + (dcfx_g*r(3)-dcfz_g*r(1))/cr
+                cmz_g(n) = cmz_g(n) + (dcfy_g*r(1)-dcfx_g*r(2))/cr
+C
+                cnc_g(j, n) = cnc_g(j, n) + cr*(ensy(j)*dcfy_g+ensz(j)*
+     +            dcfz_g)
+              ENDDO
             ENDDO
           ENDDO
-          CALL PUSHINTEGER4(ii - 1)
-          CALL PUSHCONTROL1B(1)
         END IF
 C
 CC---------- hinge moments
@@ -643,27 +879,53 @@ C         R(1) = XR - XR
 C         R(2) = YR - YR
 C         R(3) = ZR - ZR
 C--- Get rotational velocity at strip 1/4 chord reference point 
-          CALL PUSHREAL8(rrot(1))
           rrot(1) = xr - xyzref(1)
-          CALL PUSHREAL8(rrot(2))
           rrot(2) = yr - xyzref(2)
-          CALL PUSHREAL8(rrot(3))
           rrot(3) = zr - xyzref(3)
 C--- Onset velocity at strip c/4 = freestream + rotation
           CALL CROSS(rrot, wrot, vrot)
-          CALL PUSHREAL8(veff(1))
           veff(1) = vinf(1) + vrot(1)
-          CALL PUSHREAL8(veff(2))
           veff(2) = vinf(2) + vrot(2)
-          CALL PUSHREAL8(veff(3))
           veff(3) = vinf(3) + vrot(3)
-          CALL PUSHREAL8(veffmag)
           veffmag = SQRT(veff(1)**2 + veff(2)**2 + veff(3)**2)
+C
+C------- set sensitivities to freestream,rotation components
+          DO k=1,3
+            veff_u(1, k) = 0.
+            veff_u(2, k) = 0.
+            veff_u(3, k) = 0.
+          ENDDO
+          veff_u(1, 1) = 1.0
+          veff_u(2, 2) = 1.0
+          veff_u(3, 3) = 1.0
+          DO k=4,6
+            wrot_u(1) = 0.
+            wrot_u(2) = 0.
+            wrot_u(3) = 0.
+            wrot_u(k-3) = 1.0
+            CALL CROSS(rrot, wrot_u, vrot_u)
+            veff_u(1, k) = vrot_u(1)
+            veff_u(2, k) = vrot_u(2)
+            veff_u(3, k) = vrot_u(3)
+          ENDDO
 C
 C--- Generate CD from stored function using strip CL as parameter
           clv = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
+          DO n=1,numax
+            clv_u(n) = ensy(j)*cfy_u(n) + ensz(j)*(cfz_u(n)*cosa-cfx_u(n
+     +        )*sina)
+          ENDDO
 C
-          CALL PUSHREAL8(cdv)
+          DO n=1,ncontrol
+            clv_d(n) = ensy(j)*cfy_d(n) + ensz(j)*(cfz_d(n)*cosa-cfx_d(n
+     +        )*sina)
+          ENDDO
+C
+          DO n=1,ndesign
+            clv_g(n) = ensy(j)*cfy_g(n) + ensz(j)*(cfz_g(n)*cosa-cfx_g(n
+     +        )*sina)
+          ENDDO
+C
           CALL CDCL(j, clv, cdv, cdv_clv)
 C
 C--- Strip viscous force contribution (per unit strip area)
@@ -672,22 +934,72 @@ C--- Strip viscous force contribution (per unit strip area)
           dcvfz = veff(3)*veffmag*cdv
 C
 C--- Add viscous terms to strip forces and moments
-          CALL PUSHREAL8(cfx)
           cfx = cfx + dcvfx
-          CALL PUSHREAL8(cfy)
           cfy = cfy + dcvfy
-          CALL PUSHREAL8(cfz)
           cfz = cfz + dcvfz
 C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
 C         CMX = CMX + (DCVFZ*R(2) - DCVFY*R(3))/CR
 C         CMY = CMY + (DCVFX*R(3) - DCVFZ*R(1))/CR
 C         CMZ = CMZ + (DCVFY*R(1) - DCVFX*R(2))/CR
 C
+C$AD II-LOOP
           cdv_lstrp(j) = udrag(1)*dcvfx + udrag(2)*dcvfy + udrag(3)*
      +      dcvfz
-          CALL PUSHCONTROL1B(0)
-        ELSE
-          CALL PUSHCONTROL1B(1)
+C
+C--- Add the sensitivity of viscous forces to the flow conditions
+          DO n=1,numax
+            dcvfx_u = veff_u(1, n)*(veffmag+veff(1)**2/veffmag)*cdv + 
+     +        veff(1)*veffmag*cdv_clv*clv_u(n)
+            dcvfy_u = veff_u(2, n)*(veffmag+veff(2)**2/veffmag)*cdv + 
+     +        veff(2)*veffmag*cdv_clv*clv_u(n)
+            dcvfz_u = veff_u(3, n)*(veffmag+veff(3)**2/veffmag)*cdv + 
+     +        veff(3)*veffmag*cdv_clv*clv_u(n)
+C
+            cfx_u(n) = cfx_u(n) + dcvfx_u
+            cfy_u(n) = cfy_u(n) + dcvfy_u
+            cfz_u(n) = cfz_u(n) + dcvfz_u
+C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
+C           CMX_U(N) = CMX_U(N) + (DCVFZ_U*R(2) - DCVFY_U*R(3))/CR
+C           CMY_U(N) = CMY_U(N) + (DCVFX_U*R(3) - DCVFZ_U*R(1))/CR
+C           CMZ_U(N) = CMZ_U(N) + (DCVFY_U*R(1) - DCVFX_U*R(2))/CR
+C
+            cnc_u(j, n) = cnc_u(j, n) + cr*(ensy(j)*dcvfy_u+ensz(j)*
+     +        dcvfz_u)
+          ENDDO
+C
+          DO n=1,ncontrol
+            dcvfx_d = veff(1)*veffmag*cdv_clv*clv_d(n)
+            dcvfy_d = veff(2)*veffmag*cdv_clv*clv_d(n)
+            dcvfz_d = veff(3)*veffmag*cdv_clv*clv_d(n)
+C
+            cfx_d(n) = cfx_d(n) + dcvfx_d
+            cfy_d(n) = cfy_d(n) + dcvfy_d
+            cfz_d(n) = cfz_d(n) + dcvfz_d
+C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
+C           CMX_D(N) = CMX_D(N) + (DCVFZ_D*R(2) - DCVFY_D*R(3))/CR
+C           CMY_D(N) = CMY_D(N) + (DCVFX_D*R(3) - DCVFZ_D*R(1))/CR
+C           CMZ_D(N) = CMZ_D(N) + (DCVFY_D*R(1) - DCVFX_D*R(2))/CR
+C
+            cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcvfy_d+ensz(j)*
+     +        dcvfz_d)
+          ENDDO
+C
+          DO n=1,ndesign
+            dcvfx_g = veff(1)*veffmag*cdv_clv*clv_g(n)
+            dcvfy_g = veff(2)*veffmag*cdv_clv*clv_g(n)
+            dcvfz_g = veff(3)*veffmag*cdv_clv*clv_g(n)
+C
+            cfx_g(n) = cfx_g(n) + dcvfx_g
+            cfy_g(n) = cfy_g(n) + dcvfy_g
+            cfz_g(n) = cfz_g(n) + dcvfz_g
+C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
+C           CMX_G(N) = CMX_G(N) + (DCVFZ_G*R(2) - DCVFY_G*R(3))/CR
+C           CMY_G(N) = CMY_G(N) + (DCVFX_G*R(3) - DCVFZ_G*R(1))/CR
+C           CMZ_G(N) = CMZ_G(N) + (DCVFY_G*R(1) - DCVFX_G*R(2))/CR
+C
+            cnc_g(j, n) = cnc_g(j, n) + cr*(ensy(j)*dcvfy_g+ensz(j)*
+     +        dcvfz_g)
+          ENDDO
         END IF
 C
 C
@@ -696,6 +1008,12 @@ C
 C...Store strip X,Y,Z body axes forces 
 C   (these are normalized by strip area and moments are referred to
 C    c/4 point and are normalized by strip chord and area)
+        cf_strp(1, j) = cfx
+        cf_strp(2, j) = cfy
+        cf_strp(3, j) = cfz
+        cm_strp(1, j) = cmx
+        cm_strp(2, j) = cmy
+        cm_strp(3, j) = cmz
 C
 C...Transform strip body axes forces into stability axes
         cdstrp(j) = cfx*cosa + cfz*sina
@@ -704,50 +1022,122 @@ C...Transform strip body axes forces into stability axes
         cystrp(j) = cfy
         czstrp(j) = cfz
 C
+        cdst_a(j) = -(cfx*sina) + cfz*cosa
+        clst_a(j) = -(cfx*cosa) - cfz*sina
+C
+        DO n=1,numax
+          cdst_u(j, n) = cfx_u(n)*cosa + cfz_u(n)*sina
+          clst_u(j, n) = -(cfx_u(n)*sina) + cfz_u(n)*cosa
+          cxst_u(j, n) = cfx_u(n)
+          cyst_u(j, n) = cfy_u(n)
+          czst_u(j, n) = cfz_u(n)
+        ENDDO
+C
+        DO n=1,ncontrol
+          cdst_d(j, n) = cfx_d(n)*cosa + cfz_d(n)*sina
+          clst_d(j, n) = -(cfx_d(n)*sina) + cfz_d(n)*cosa
+          cxst_d(j, n) = cfx_d(n)
+          cyst_d(j, n) = cfy_d(n)
+          czst_d(j, n) = cfz_d(n)
+        ENDDO
+C
+        DO n=1,ndesign
+          cdst_g(j, n) = cfx_g(n)*cosa + cfz_g(n)*sina
+          clst_g(j, n) = -(cfx_g(n)*sina) + cfz_g(n)*cosa
+          cxst_g(j, n) = cfx_g(n)
+          cyst_g(j, n) = cfy_g(n)
+          czst_g(j, n) = cfz_g(n)
+        ENDDO
 C
 C... Set strip moments about the overall moment reference point XYZREF 
 C     (still normalized by strip area and chord)
-        CALL PUSHREAL8(r(1))
         r(1) = xr - xyzref(1)
-        CALL PUSHREAL8(r(2))
         r(2) = yr - xyzref(2)
-        CALL PUSHREAL8(r(3))
         r(3) = zr - xyzref(3)
         crstrp(j) = cmx + (cfz*r(2)-cfy*r(3))/cr
         cmstrp(j) = cmy + (cfx*r(3)-cfz*r(1))/cr
         cnstrp(j) = cmz + (cfy*r(1)-cfx*r(2))/cr
 C
+        DO n=1,numax
+          crst_u(j, n) = cmx_u(n) + (cfz_u(n)*r(2)-cfy_u(n)*r(3))/cr
+          cmst_u(j, n) = cmy_u(n) + (cfx_u(n)*r(3)-cfz_u(n)*r(1))/cr
+          cnst_u(j, n) = cmz_u(n) + (cfy_u(n)*r(1)-cfx_u(n)*r(2))/cr
+        ENDDO
+C
+        DO n=1,ncontrol
+          crst_d(j, n) = cmx_d(n) + (cfz_d(n)*r(2)-cfy_d(n)*r(3))/cr
+          cmst_d(j, n) = cmy_d(n) + (cfx_d(n)*r(3)-cfz_d(n)*r(1))/cr
+          cnst_d(j, n) = cmz_d(n) + (cfy_d(n)*r(1)-cfx_d(n)*r(2))/cr
+        ENDDO
+C
+        DO n=1,ndesign
+          crst_g(j, n) = cmx_g(n) + (cfz_g(n)*r(2)-cfy_g(n)*r(3))/cr
+          cmst_g(j, n) = cmy_g(n) + (cfx_g(n)*r(3)-cfz_g(n)*r(1))/cr
+          cnst_g(j, n) = cmz_g(n) + (cfy_g(n)*r(1)-cfx_g(n)*r(2))/cr
+        ENDDO
+C
 C...Take components of X,Y,Z forces in local strip axes 
 C   (axial/normal and lift/drag)
 C    in plane normal to (possibly dihedralled) strip
+        cl_lstrp(j) = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
+        cd_lstrp(j) = udrag(1)*cfx + udrag(2)*cfy + udrag(3)*cfz
+        caxlstrp(j) = cfx
+        cnrmstrp(j) = ensy(j)*cfy + ensz(j)*cfz
+        cmc4(j) = ensz(j)*cmy - ensy(j)*cmz
 C
 C------ vector at chord reference point from rotation axes
-        CALL PUSHREAL8(rrot(1))
         rrot(1) = xsref(j) - xyzref(1)
-        CALL PUSHREAL8(rrot(2))
         rrot(2) = ysref(j) - xyzref(2)
-        CALL PUSHREAL8(rrot(3))
         rrot(3) = zsref(j) - xyzref(3)
 C
 C------ set total effective velocity = freestream + rotation
         CALL CROSS(rrot, wrot, vrot)
-        CALL PUSHREAL8(veff(1))
         veff(1) = vinf(1) + vrot(1)
-        CALL PUSHREAL8(veff(2))
         veff(2) = vinf(2) + vrot(2)
-        CALL PUSHREAL8(veff(3))
         veff(3) = vinf(3) + vrot(3)
 C
+        vsq = veff(1)**2 + veff(2)**2 + veff(3)**2
+        IF (vsq .EQ. 0.0) THEN
+          vsqi = 1.0
+        ELSE
+          vsqi = 1.0/vsq
+        END IF
+C
+C------ spanwise and perpendicular velocity components
+        vspan = veff(1)*ess(1, j) + veff(2)*ess(2, j) + veff(3)*ess(3, j
+     +    )
+        vperp(1) = veff(1) - ess(1, j)*vspan
+        vperp(2) = veff(2) - ess(2, j)*vspan
+        vperp(3) = veff(3) - ess(3, j)*vspan
+C
+        vpsq = vperp(1)**2 + vperp(2)**2 + vperp(3)**2
+        IF (vpsq .EQ. 0.0) THEN
+          vpsqi = 1.0
+        ELSE
+          vpsqi = 1.0/vpsq
+        END IF
 Ccc     CLTSTRP(J) = CNRMSTRP(J) * VPSQI
+        cltstrp(j) = cl_lstrp(j)*vpsqi
+        clastrp(j) = cl_lstrp(j)*vsqi
 C
 C--- Moment about strip LE midpoint in direction of LE segment
-        CALL PUSHREAL8(r(1))
         r(1) = xr - rle(1, j)
-        CALL PUSHREAL8(r(2))
         r(2) = yr - rle(2, j)
-        CALL PUSHREAL8(r(3))
         r(3) = zr - rle(3, j)
+        delx = rle2(1, j) - rle1(1, j)
+        dely = rle2(2, j) - rle1(2, j)
+        delz = rle2(3, j) - rle1(3, j)
 C
+        IF (imags(nsurfs(j)) .LT. 0) THEN
+          delx = -delx
+          dely = -dely
+          delz = -delz
+        END IF
+        dmag = SQRT(delx**2 + dely**2 + delz**2)
+        cmle(j) = 0.0
+        IF (dmag .NE. 0.0) cmle(j) = delx/dmag*(cmx+(cfz*r(2)-cfy*r(3))/
+     +      cr) + dely/dmag*(cmy+(cfx*r(3)-cfz*r(1))/cr) + delz/dmag*(
+     +      cmz+(cfy*r(1)-cfx*r(2))/cr)
       ENDDO
 C
 C
@@ -868,51 +1258,51 @@ C    zero out the asymmetric forces and double the symmetric ones
           clsurf_diff(is) = clsurf_diff(is) + cltot_diff
           cdsurf_diff(is) = cdsurf_diff(is) + cdtot_diff
         END IF
-        CALL POPINTEGER4(ad_to1)
-        DO jj=ad_to1,1,-1
+        CALL POPINTEGER4(ad_to)
+        DO jj=ad_to,1,-1
           j = jfrst(is) + jj - 1
           sr = chord(j)*wstrip(j)
           cdv_lstrp_diff(j) = cdv_lstrp_diff(j) + sr*cdvsurf_diff(is)/
      +      sref
-          temp_diff0 = cdv_lstrp(j)*cdvsurf_diff(is)/sref
-          sr_diff = temp_diff0
-          sref_diff = sref_diff - sr*temp_diff0/sref
+          temp_diff = cdv_lstrp(j)*cdvsurf_diff(is)/sref
+          sr_diff = temp_diff
+          sref_diff = sref_diff - sr*temp_diff/sref
           cr = chord(j)
-          temp_diff0 = cnsurf_diff(is)/(bref*sref)
-          cnstrp_diff(j) = cnstrp_diff(j) + sr*cr*temp_diff0
-          sr_diff = sr_diff + cr*cnstrp(j)*temp_diff0
-          cr_diff = sr*cnstrp(j)*temp_diff0
-          sref_diff = sref_diff - cnstrp(j)*sr*cr*temp_diff0/sref
-          temp_diff0 = cmsurf_diff(is)/(cref*sref)
-          cmstrp_diff(j) = cmstrp_diff(j) + sr*cr*temp_diff0
-          sr_diff = sr_diff + cr*cmstrp(j)*temp_diff0
-          cr_diff = cr_diff + sr*cmstrp(j)*temp_diff0
-          sref_diff = sref_diff - cmstrp(j)*sr*cr*temp_diff0/sref
-          temp_diff0 = crsurf_diff(is)/(bref*sref)
-          crstrp_diff(j) = crstrp_diff(j) + sr*cr*temp_diff0
-          sr_diff = sr_diff + cr*crstrp(j)*temp_diff0
-          cr_diff = cr_diff + sr*crstrp(j)*temp_diff0
-          sref_diff = sref_diff - crstrp(j)*sr*cr*temp_diff0/sref
+          temp_diff = cnsurf_diff(is)/(bref*sref)
+          cnstrp_diff(j) = cnstrp_diff(j) + sr*cr*temp_diff
+          sr_diff = sr_diff + cr*cnstrp(j)*temp_diff
+          cr_diff = sr*cnstrp(j)*temp_diff
+          sref_diff = sref_diff - cnstrp(j)*sr*cr*temp_diff/sref
+          temp_diff = cmsurf_diff(is)/(cref*sref)
+          cmstrp_diff(j) = cmstrp_diff(j) + sr*cr*temp_diff
+          sr_diff = sr_diff + cr*cmstrp(j)*temp_diff
+          cr_diff = cr_diff + sr*cmstrp(j)*temp_diff
+          sref_diff = sref_diff - cmstrp(j)*sr*cr*temp_diff/sref
+          temp_diff = crsurf_diff(is)/(bref*sref)
+          crstrp_diff(j) = crstrp_diff(j) + sr*cr*temp_diff
+          sr_diff = sr_diff + cr*crstrp(j)*temp_diff
+          cr_diff = cr_diff + sr*crstrp(j)*temp_diff
+          sref_diff = sref_diff - crstrp(j)*sr*cr*temp_diff/sref
           czstrp_diff(j) = czstrp_diff(j) + sr*czsurf_diff(is)/sref
-          temp_diff0 = czstrp(j)*czsurf_diff(is)/sref
-          sr_diff = sr_diff + temp_diff0
-          sref_diff = sref_diff - sr*temp_diff0/sref
+          temp_diff = czstrp(j)*czsurf_diff(is)/sref
+          sr_diff = sr_diff + temp_diff
+          sref_diff = sref_diff - sr*temp_diff/sref
           cystrp_diff(j) = cystrp_diff(j) + sr*cysurf_diff(is)/sref
-          temp_diff0 = cystrp(j)*cysurf_diff(is)/sref
-          sr_diff = sr_diff + temp_diff0
-          sref_diff = sref_diff - sr*temp_diff0/sref
+          temp_diff = cystrp(j)*cysurf_diff(is)/sref
+          sr_diff = sr_diff + temp_diff
+          sref_diff = sref_diff - sr*temp_diff/sref
           cxstrp_diff(j) = cxstrp_diff(j) + sr*cxsurf_diff(is)/sref
-          temp_diff0 = cxstrp(j)*cxsurf_diff(is)/sref
-          sr_diff = sr_diff + temp_diff0
-          sref_diff = sref_diff - sr*temp_diff0/sref
+          temp_diff = cxstrp(j)*cxsurf_diff(is)/sref
+          sr_diff = sr_diff + temp_diff
+          sref_diff = sref_diff - sr*temp_diff/sref
           clstrp_diff(j) = clstrp_diff(j) + sr*clsurf_diff(is)/sref
-          temp_diff0 = clstrp(j)*clsurf_diff(is)/sref
-          sr_diff = sr_diff + temp_diff0
-          sref_diff = sref_diff - sr*temp_diff0/sref
+          temp_diff = clstrp(j)*clsurf_diff(is)/sref
+          sr_diff = sr_diff + temp_diff
+          sref_diff = sref_diff - sr*temp_diff/sref
           cdstrp_diff(j) = cdstrp_diff(j) + sr*cdsurf_diff(is)/sref
-          temp_diff0 = cdstrp(j)*cdsurf_diff(is)/sref
-          sr_diff = sr_diff + temp_diff0
-          sref_diff = sref_diff - sr*temp_diff0/sref
+          temp_diff = cdstrp(j)*cdsurf_diff(is)/sref
+          sr_diff = sr_diff + temp_diff
+          sref_diff = sref_diff - sr*temp_diff/sref
           CALL POPREAL8(cr)
           chord_diff(j) = chord_diff(j) + cr_diff + wstrip(j)*sr_diff
           CALL POPREAL8(sr)
@@ -954,6 +1344,15 @@ C    zero out the asymmetric forces and double the symmetric ones
       ENDDO
       DO ii1=1,nsmax
         ensz_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
+        xsref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
+        ysref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
+        zsref_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nvmax
         DO ii2=1,3
@@ -997,28 +1396,526 @@ C    zero out the asymmetric forces and double the symmetric ones
       DO ii1=1,3
         spn_diff(ii1) = 0.D0
       ENDDO
-      DO j=nstrip,1,-1
-        CALL POPREAL8(r(3))
+      CALL POPREAL8ARRAY(spn, 3)
+      CALL POPREAL8ARRAY(rrot, 3)
+      CALL POPREAL8ARRAY(fgam, 3)
+      CALL POPREAL8ARRAY(ulift, 3)
+      CALL POPREAL8ARRAY(veff, 3)
+      CALL POPREAL8ARRAY(vrot, 3)
+      CALL POPREAL8ARRAY(udrag, 3)
+      CALL POPREAL8ARRAY(r, 3)
+      CALL POPREAL8ARRAY(g, 3)
+      CALL POPREAL8ARRAY(f, 3)
+C$BWD-OF II-LOOP 
+      DO j=1,nstrip
+C
+        i1 = ijfrst(j)
+        nvc_strp = nvstrp(j)
+C
+        cr = chord(j)
+        sr = chord(j)*wstrip(j)
+C
+        xte1 = rle1(1, j) + chord1(j)
+        xte2 = rle2(1, j) + chord2(j)
+C
+C--- Define local strip lift and drag directions
+C--- The "spanwise" vector is cross product of strip normal with X chordline 
+        spn(1) = 0.0
+        spn(2) = ensz(j)
+        spn(3) = -ensy(j)
+C--- Stability axes stream vector defines drag direction
+        udrag(1) = cosa
+        udrag(2) = 0.0
+        udrag(3) = sina
+C--- Lift direction is vector product of "stream" and spanwise vector
+        CALL CROSS(udrag, spn, ulift)
+        result1 = DOT(ulift, ulift)
+        ulmag = SQRT(result1)
+        IF (ulmag .EQ. 0.) THEN
+          CALL PUSHREAL8(ulift(3))
+          ulift(3) = 1.0
+          CALL PUSHCONTROL1B(0)
+        ELSE
+          CALL PUSHREAL8(ulift(1))
+          ulift(1) = ulift(1)/ulmag
+          CALL PUSHREAL8(ulift(2))
+          ulift(2) = ulift(2)/ulmag
+          CALL PUSHREAL8(ulift(3))
+          ulift(3) = ulift(3)/ulmag
+          CALL PUSHCONTROL1B(1)
+        END IF
+C
+C...Use the strip 1/4 chord location for strip moments
+        xr = rle(1, j) + 0.25*cr
+        yr = rle(2, j)
+        zr = rle(3, j)
+C
+        cfx = 0.
+        cfy = 0.
+        cfz = 0.
+        CALL PUSHREAL8ARRAY(f, 3)
+        CALL PUSHREAL8ARRAY(g, 3)
+        CALL PUSHREAL8ARRAY(r, 3)
+        CALL PUSHREAL8ARRAY(vrot, 3)
+        CALL PUSHREAL8ARRAY(veff, 3)
+        CALL PUSHREAL8(result1)
+        CALL PUSHREAL8ARRAY(fgam, 3)
+        CALL PUSHREAL8ARRAY(rrot, 3)
+C$FWD-OF II-LOOP 
+C
+C...Sum the forces in the strip as generated by velocity
+C    (freestream + rotation + induced) acting on bound vortex 
+        DO ii=1,nvc_strp
+          i = i1 + (ii-1)
+C
+C------- local moment reference vector from vortex midpoint to strip c/4 pt.
+C          R(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XR
+C          R(2) = 0.5*(RV1(2,I) + RV2(2,I)) - YR
+C          R(3) = 0.5*(RV1(3,I) + RV2(3,I)) - ZR
+          r(1) = rv(1, i) - xr
+          r(2) = rv(2, i) - yr
+          r(3) = rv(3, i) - zr
+C
+C------- vector from rotation axes
+C          RROT(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XYZREF(1)
+C          RROT(2) = 0.5*(RV1(2,I) + RV2(2,I)) - XYZREF(2)
+C          RROT(3) = 0.5*(RV1(3,I) + RV2(3,I)) - XYZREF(3)
+          rrot(1) = rv(1, i) - xyzref(1)
+          rrot(2) = rv(2, i) - xyzref(2)
+          rrot(3) = rv(3, i) - xyzref(3)
+C
+C-------- set total effective velocity = freestream + rotation + induced
+          CALL CROSS(rrot, wrot, vrot)
+          veff(1) = vinf(1) + vrot(1) + wv(1, i)
+          veff(2) = vinf(2) + vrot(2) + wv(2, i)
+C$AD II-LOOP
+          veff(3) = vinf(3) + vrot(3) + wv(3, i)
+C
+C-------- set VEFF sensitivities to freestream,rotation components
+          DO k=1,3
+            veff_u(1, k) = wv_u(1, i, k)
+            veff_u(2, k) = wv_u(2, i, k)
+            veff_u(3, k) = wv_u(3, i, k)
+            veff_u(k, k) = 1.0 + veff_u(k, k)
+          ENDDO
+          DO k=4,6
+            wrot_u(1) = 0.
+            wrot_u(2) = 0.
+            wrot_u(3) = 0.
+            wrot_u(k-3) = 1.0
+            CALL CROSS(rrot, wrot_u, vrot_u)
+            veff_u(1, k) = vrot_u(1) + wv_u(1, i, k)
+            veff_u(2, k) = vrot_u(2) + wv_u(2, i, k)
+            veff_u(3, k) = vrot_u(3) + wv_u(3, i, k)
+          ENDDO
+C
+C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
+          g(1) = rv2(1, i) - rv1(1, i)
+          g(2) = rv2(2, i) - rv1(2, i)
+          g(3) = rv2(3, i) - rv1(3, i)
+          CALL CROSS(veff, g, f)
+          DO n=1,numax
+            CALL CROSS(veff_u(1, n), g, f_u(1, n))
+          ENDDO
+C
+          fgam(1) = 2.0*gam(i)*f(1)
+          fgam(2) = 2.0*gam(i)*f(2)
+C$AD II-LOOP
+          fgam(3) = 2.0*gam(i)*f(3)
+          DO n=1,numax
+            fgam_u(1, n) = 2.0*gam_u(i, n)*f(1) + 2.0*gam(i)*f_u(1, n)
+            fgam_u(2, n) = 2.0*gam_u(i, n)*f(2) + 2.0*gam(i)*f_u(2, n)
+            fgam_u(3, n) = 2.0*gam_u(i, n)*f(3) + 2.0*gam(i)*f_u(3, n)
+          ENDDO
+          DO n=1,ncontrol
+            fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+            fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+            fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
+          ENDDO
+          DO n=1,ndesign
+            fgam_g(1, n) = 2.0*gam_g(i, n)*f(1)
+            fgam_g(2, n) = 2.0*gam_g(i, n)*f(2)
+            fgam_g(3, n) = 2.0*gam_g(i, n)*f(3)
+          ENDDO
+C
+C
+C-------- Delta Cp (loading across lifting surface) from vortex 
+          fnv = DOT(env(1, i), fgam)
+C$AD II-LOOP
+          dcp(i) = fnv/(dxv(i)*wstrip(j))
+C
+          DO n=1,numax
+            fnv_u = DOT(env(1, i), fgam_u(1, n))
+            dcp_u(i, n) = fnv_u/(dxv(i)*wstrip(j))
+          ENDDO
+C
+          DO n=1,ncontrol
+            result1 = DOT(env(1, i), fgam_d(1, n))
+            result2 = DOT(env_d(1, i, n), fgam)
+            fnv_d = result1 + result2
+            dcp_d(i, n) = fnv_d/(dxv(i)*wstrip(j))
+          ENDDO
+C
+          DO n=1,ndesign
+            result1 = DOT(env(1, i), fgam_g(1, n))
+            result2 = DOT(env_g(1, i, n), fgam)
+            fnv_g = result1 + result2
+            dcp_g(i, n) = fnv_g/(dxv(i)*wstrip(j))
+          ENDDO
+C
+C-------- vortex contribution to strip forces
+          dcfx = fgam(1)/sr
+          dcfy = fgam(2)/sr
+          dcfz = fgam(3)/sr
+C
+C-------- forces normalized by strip area
+          cfx = cfx + dcfx
+          cfy = cfy + dcfy
+          cfz = cfz + dcfz
+C
+C-------- moments referred to strip c/4 pt., normalized by strip chord and area
+          cmx = cmx + (dcfz*r(2)-dcfy*r(3))/cr
+          cmy = cmy + (dcfx*r(3)-dcfz*r(1))/cr
+          cmz = cmz + (dcfy*r(1)-dcfx*r(2))/cr
+C
+C-------- accumulate strip spanloading = c*CN
+C$AD II-LOOP
+          cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
+C
+C-------- freestream and rotation derivatives
+          DO n=1,numax
+            dcfx_u = fgam_u(1, n)/sr
+            dcfy_u = fgam_u(2, n)/sr
+            dcfz_u = fgam_u(3, n)/sr
+C
+            cfx_u(n) = cfx_u(n) + dcfx_u
+            cfy_u(n) = cfy_u(n) + dcfy_u
+            cfz_u(n) = cfz_u(n) + dcfz_u
+            cmx_u(n) = cmx_u(n) + (dcfz_u*r(2)-dcfy_u*r(3))/cr
+            cmy_u(n) = cmy_u(n) + (dcfx_u*r(3)-dcfz_u*r(1))/cr
+            cmz_u(n) = cmz_u(n) + (dcfy_u*r(1)-dcfx_u*r(2))/cr
+C
+            cnc_u(j, n) = cnc_u(j, n) + cr*(ensy(j)*dcfy_u+ensz(j)*
+     +        dcfz_u)
+          ENDDO
+C
+C-------- control derivatives
+          DO n=1,ncontrol
+            dcfx_d = fgam_d(1, n)/sr
+            dcfy_d = fgam_d(2, n)/sr
+            dcfz_d = fgam_d(3, n)/sr
+C
+            cfx_d(n) = cfx_d(n) + dcfx_d
+            cfy_d(n) = cfy_d(n) + dcfy_d
+            cfz_d(n) = cfz_d(n) + dcfz_d
+            cmx_d(n) = cmx_d(n) + (dcfz_d*r(2)-dcfy_d*r(3))/cr
+            cmy_d(n) = cmy_d(n) + (dcfx_d*r(3)-dcfz_d*r(1))/cr
+            cmz_d(n) = cmz_d(n) + (dcfy_d*r(1)-dcfx_d*r(2))/cr
+C
+            cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcfy_d+ensz(j)*
+     +        dcfz_d)
+          ENDDO
+C
+C-------- design derivatives
+          DO n=1,ndesign
+            dcfx_g = fgam_g(1, n)/sr
+            dcfy_g = fgam_g(2, n)/sr
+            dcfz_g = fgam_g(3, n)/sr
+C
+            cfx_g(n) = cfx_g(n) + dcfx_g
+            cfy_g(n) = cfy_g(n) + dcfy_g
+            cfz_g(n) = cfz_g(n) + dcfz_g
+            cmx_g(n) = cmx_g(n) + (dcfz_g*r(2)-dcfy_g*r(3))/cr
+            cmy_g(n) = cmy_g(n) + (dcfx_g*r(3)-dcfz_g*r(1))/cr
+            cmz_g(n) = cmz_g(n) + (dcfy_g*r(1)-dcfx_g*r(2))/cr
+C
+            cnc_g(j, n) = cnc_g(j, n) + cr*(ensy(j)*dcfy_g+ensz(j)*
+     +        dcfz_g)
+          ENDDO
+C
+C-------- hinge moments
+          DO l=1,ncontrol
+            rh(1) = rv(1, i) - phinge(1, j, l)
+            rh(2) = rv(2, i) - phinge(2, j, l)
+            rh(3) = rv(3, i) - phinge(3, j, l)
+C
+            dfac = dcontrol(i, l)/(sref*cref)
+C
+            CALL CROSS(rh, fgam, mh)
+            result1 = DOT(mh, vhinge(1, j, l))
+            chinge(l) = chinge(l) + result1*dfac
+C
+            DO n=1,numax
+              CALL CROSS(rh, fgam_u(1, n), mh)
+              result1 = DOT(mh, vhinge(1, j, l))
+              chinge_u(l, n) = chinge_u(l, n) + result1*dfac
+            ENDDO
+            DO n=1,ncontrol
+              CALL CROSS(rh, fgam_d(1, n), mh)
+              result1 = DOT(mh, vhinge(1, j, l))
+              chinge_d(l, n) = chinge_d(l, n) + result1*dfac
+            ENDDO
+            DO n=1,ndesign
+              CALL CROSS(rh, fgam_g(1, n), mh)
+              result1 = DOT(mh, vhinge(1, j, l))
+              chinge_g(l, n) = chinge_g(l, n) + result1*dfac
+            ENDDO
+          ENDDO
+        ENDDO
+C
+C
+C
+        IF (.NOT.ltrforce) THEN
+          CALL PUSHCONTROL1B(0)
+        ELSE
+C
+C...Sum forces in the strip as generated by velocity (freestream + rotation)
+C     the parts of trailing legs which lie on the surface
+          DO ii=1,nvc_strp
+            CALL PUSHINTEGER4(i)
+            i = i1 + (ii-1)
+C
+            DO ileg=1,2
+              IF (ileg .EQ. 1) THEN
+C----------- local moment reference vector from vortex midpoint to strip c/4 pt
+                CALL PUSHREAL8(r(1))
+                r(1) = 0.5*(rv1(1, i)+xte1) - xr
+                CALL PUSHREAL8(r(2))
+                r(2) = rv1(2, i) - yr
+                CALL PUSHREAL8(r(3))
+                r(3) = rv1(3, i) - zr
+C 
+C----------- vector from rotation axes
+                CALL PUSHREAL8(rrot(1))
+                rrot(1) = 0.5*(rv1(1, i)+xte1) - xyzref(1)
+                CALL PUSHREAL8(rrot(2))
+                rrot(2) = rv1(2, i) - xyzref(2)
+                CALL PUSHREAL8(rrot(3))
+                rrot(3) = rv1(3, i) - xyzref(3)
+C
+C----------- part of trailing leg lying on surface
+                CALL PUSHREAL8(g(1))
+                g(1) = rv1(1, i) - xte1
+                CALL PUSHREAL8(g(2))
+                g(2) = 0.
+                CALL PUSHREAL8(g(3))
+                g(3) = 0.
+C
+                CALL PUSHCONTROL1B(0)
+              ELSE
+C----------- local moment reference vector from vortex midpoint to strip c/4 pt
+                CALL PUSHREAL8(r(1))
+                r(1) = 0.5*(rv2(1, i)+xte2) - xr
+                CALL PUSHREAL8(r(2))
+                r(2) = rv2(2, i) - yr
+                CALL PUSHREAL8(r(3))
+                r(3) = rv2(3, i) - zr
+C
+C----------- vector from rotation axes
+                CALL PUSHREAL8(rrot(1))
+                rrot(1) = 0.5*(rv2(1, i)+xte2) - xyzref(1)
+                CALL PUSHREAL8(rrot(2))
+                rrot(2) = rv2(2, i) - xyzref(2)
+                CALL PUSHREAL8(rrot(3))
+                rrot(3) = rv2(3, i) - xyzref(3)
+C
+C----------- part of trailing leg lying on surface
+                CALL PUSHREAL8(g(1))
+                g(1) = xte2 - rv2(1, i)
+                CALL PUSHREAL8(g(2))
+                g(2) = 0.
+                CALL PUSHREAL8(g(3))
+                g(3) = 0.
+                CALL PUSHCONTROL1B(1)
+              END IF
+C
+C---------- set total effective velocity = freestream + rotation
+              CALL CROSS(rrot, wrot, vrot)
+              CALL PUSHREAL8(veff(1))
+              veff(1) = vinf(1) + vrot(1)
+              CALL PUSHREAL8(veff(2))
+              veff(2) = vinf(2) + vrot(2)
+C$AD II-LOOP
+              CALL PUSHREAL8(veff(3))
+              veff(3) = vinf(3) + vrot(3)
+C
+C---------- Force coefficient on vortex segment is 2(Veff x Gamma)
+              CALL PUSHREAL8ARRAY(f, 3)
+              CALL CROSS(veff, g, f)
+C
+              CALL PUSHREAL8(fgam(1))
+              fgam(1) = 2.0*gam(i)*f(1)
+              CALL PUSHREAL8(fgam(2))
+              fgam(2) = 2.0*gam(i)*f(2)
+C$AD II-LOOP
+              CALL PUSHREAL8(fgam(3))
+              fgam(3) = 2.0*gam(i)*f(3)
+              CALL PUSHINTEGER4(n)
+              CALL PUSHINTEGER4(n)
+C
+CC---------- Delta Cp (loading across lifting surface) due to vortex 
+C            FNV = DOT(ENV(1,I),FGAM)
+C            DCP(I) = FNV / (DXV(I)*WSTRIP(J))
+CC
+C            DO N = 1, NUMAX
+C              FNV_U = DOT(ENV(1,I),FGAM_U(1,N))
+C              DCP_U(I,N) = FNV_U / (DXV(I)*WSTRIP(J))
+C            ENDDO
+CC
+C            DO N = 1, NCONTROL
+C              FNV_D = DOT(ENV(1,I),FGAM_D(1,N)) + DOT(ENV_D(1,I,N),FGAM)
+C              DCP_D(I,N) = FNV_D / (DXV(I)*WSTRIP(J))
+C            ENDDO
+CC
+C            DO N = 1, NDESIGN
+C              FNV_G = DOT(ENV(1,I),FGAM_G(1,N)) + DOT(ENV_G(1,I,N),FGAM)
+C              DCP_G(I,N) = FNV_G / (DXV(I)*WSTRIP(J))
+C            ENDDO
+C
+C
+C---------- vortex contribution to strip forces
+              dcfx = fgam(1)/sr
+              dcfy = fgam(2)/sr
+              dcfz = fgam(3)/sr
+C
+C---------- forces normalized by strip area
+              cfx = cfx + dcfx
+              cfy = cfy + dcfy
+              cfz = cfz + dcfz
+C
+C---------- moments referred to strip c/4 pt., normalized by strip chord and area
+C
+C---------- accumulate strip spanloading = c*CN
+              CALL PUSHINTEGER4(n)
+              CALL PUSHINTEGER4(n)
+            ENDDO
+          ENDDO
+          CALL PUSHCONTROL1B(1)
+        END IF
+C
+CC---------- hinge moments
+C            DO L=1, NCONTROL
+C              RH(1) = RV(1,I) - PHINGE(1,J,L)
+C              RH(2) = RV(2,I) - PHINGE(2,J,L)
+C              RH(3) = RV(3,I) - PHINGE(3,J,L)
+CC
+C              DFAC = DCONTROL(I,L) / (SREF * CREF)
+CC
+C              CALL CROSS(RH,FGAM,MH)
+C              CHINGE(L) = CHINGE(L) + DOT(MH,VHINGE(1,J,L))*DFAC
+CC
+C              DO N = 1, NUMAX
+C                CALL CROSS(RH,FGAM_U(1,N),MH)
+C                CHINGE_U(L,N) = CHINGE_U(L,N) + DOT(MH,VHINGE(1,J,L))*DFAC
+C              ENDDO
+C              DO N = 1, NCONTROL
+C                CALL CROSS(RH,FGAM_D(1,N),MH)
+C                CHINGE_D(L,N) = CHINGE_D(L,N) + DOT(MH,VHINGE(1,J,L))*DFAC
+C              ENDDO
+C              DO N = 1, NDESIGN
+C                CALL CROSS(RH,FGAM_G(1,N),MH)
+C                CHINGE_G(L,N) = CHINGE_G(L,N) + DOT(MH,VHINGE(1,J,L))*DFAC
+C              ENDDO
+C            ENDDO
+C
+C
+C
+C*******************************************************************
+C--- Drag terms due to viscous effects
+C    Drag forces are assumed to be characterized by velocity at the c/4 
+C    point and are assumed to act thru the same point. CD is defined by 
+C    user-specified CD(CL) polar.  Drag comes from function lookup on 
+C    section polar drag using local lift coefficient.  
+C
+C
+        IF (lvisc .AND. lviscstrp(j)) THEN
+C--- local moment reference vector from ref point to c/4 point
+C         R(1) = XR - XR
+C         R(2) = YR - YR
+C         R(3) = ZR - ZR
+C--- Get rotational velocity at strip 1/4 chord reference point 
+          CALL PUSHREAL8(rrot(1))
+          rrot(1) = xr - xyzref(1)
+          CALL PUSHREAL8(rrot(2))
+          rrot(2) = yr - xyzref(2)
+          CALL PUSHREAL8(rrot(3))
+          rrot(3) = zr - xyzref(3)
+C--- Onset velocity at strip c/4 = freestream + rotation
+          CALL CROSS(rrot, wrot, vrot)
+          CALL PUSHREAL8(veff(1))
+          veff(1) = vinf(1) + vrot(1)
+          CALL PUSHREAL8(veff(2))
+          veff(2) = vinf(2) + vrot(2)
+          CALL PUSHREAL8(veff(3))
+          veff(3) = vinf(3) + vrot(3)
+          veffmag = SQRT(veff(1)**2 + veff(2)**2 + veff(3)**2)
+C
+C--- Generate CD from stored function using strip CL as parameter
+          clv = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
+C
+          CALL CDCL(j, clv, cdv, cdv_clv)
+C
+C--- Strip viscous force contribution (per unit strip area)
+          dcvfx = veff(1)*veffmag*cdv
+          dcvfy = veff(2)*veffmag*cdv
+          dcvfz = veff(3)*veffmag*cdv
+C
+C--- Add viscous terms to strip forces and moments
+          CALL PUSHREAL8(cfx)
+          cfx = cfx + dcvfx
+          CALL PUSHREAL8(cfy)
+          cfy = cfy + dcvfy
+          CALL PUSHREAL8(cfz)
+          cfz = cfz + dcvfz
+C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
+C         CMX = CMX + (DCVFZ*R(2) - DCVFY*R(3))/CR
+C         CMY = CMY + (DCVFX*R(3) - DCVFZ*R(1))/CR
+C         CMZ = CMZ + (DCVFY*R(1) - DCVFX*R(2))/CR
+C
+C$AD II-LOOP
+          CALL PUSHCONTROL1B(0)
+        ELSE
+          CALL PUSHCONTROL1B(1)
+        END IF
+C
+C... Set strip moments about the overall moment reference point XYZREF 
+C     (still normalized by strip area and chord)
+        CALL PUSHREAL8(r(1))
+        r(1) = xr - xyzref(1)
+        CALL PUSHREAL8(r(2))
+        r(2) = yr - xyzref(2)
+        CALL PUSHREAL8(r(3))
+        r(3) = zr - xyzref(3)
+C
+C...Take components of X,Y,Z forces in local strip axes 
+C   (axial/normal and lift/drag)
+C    in plane normal to (possibly dihedralled) strip
+C
+C------ vector at chord reference point from rotation axes
+        CALL PUSHREAL8(rrot(1))
+        rrot(1) = xsref(j) - xyzref(1)
+        CALL PUSHREAL8(rrot(2))
+        rrot(2) = ysref(j) - xyzref(2)
+        CALL PUSHREAL8(rrot(3))
+        rrot(3) = zsref(j) - xyzref(3)
+C
+C------ set total effective velocity = freestream + rotation
+C
         zr_diff = r_diff(3)
         rle_diff(3, j) = rle_diff(3, j) - r_diff(3)
         r_diff(3) = 0.D0
-        CALL POPREAL8(r(2))
         yr_diff = r_diff(2)
         rle_diff(2, j) = rle_diff(2, j) - r_diff(2)
         r_diff(2) = 0.D0
-        CALL POPREAL8(r(1))
         xr_diff = r_diff(1)
         rle_diff(1, j) = rle_diff(1, j) - r_diff(1)
         r_diff(1) = 0.D0
-        CALL POPREAL8(veff(3))
         vinf_diff(3) = vinf_diff(3) + veff_diff(3)
         vrot_diff(3) = vrot_diff(3) + veff_diff(3)
         veff_diff(3) = 0.D0
-        CALL POPREAL8(veff(2))
         vinf_diff(2) = vinf_diff(2) + veff_diff(2)
         vrot_diff(2) = vrot_diff(2) + veff_diff(2)
         veff_diff(2) = 0.D0
-        CALL POPREAL8(veff(1))
         vinf_diff(1) = vinf_diff(1) + veff_diff(1)
         vrot_diff(1) = vrot_diff(1) + veff_diff(1)
         veff_diff(1) = 0.D0
@@ -1027,38 +1924,41 @@ C    zero out the asymmetric forces and double the symmetric ones
         ENDDO
         CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff)
         CALL POPREAL8(rrot(3))
+        zsref_diff(j) = zsref_diff(j) + rrot_diff(3)
         xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
         rrot_diff(3) = 0.D0
         CALL POPREAL8(rrot(2))
+        ysref_diff(j) = ysref_diff(j) + rrot_diff(2)
         xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
         rrot_diff(2) = 0.D0
         CALL POPREAL8(rrot(1))
+        xsref_diff(j) = xsref_diff(j) + rrot_diff(1)
         xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
         rrot_diff(1) = 0.D0
         cmz_diff = cnstrp_diff(j)
-        temp_diff = cnstrp_diff(j)/cr
+        temp_diff0 = cnstrp_diff(j)/cr
         cnstrp_diff(j) = 0.D0
-        cfy_diff = r(1)*temp_diff
-        r_diff(1) = r_diff(1) + cfy*temp_diff
-        cfx_diff = -(r(2)*temp_diff)
-        r_diff(2) = r_diff(2) - cfx*temp_diff
-        cr_diff = -((cfy*r(1)-cfx*r(2))*temp_diff/cr)
+        cfy_diff = r(1)*temp_diff0
+        r_diff(1) = r_diff(1) + cfy*temp_diff0
+        cfx_diff = -(r(2)*temp_diff0)
+        r_diff(2) = r_diff(2) - cfx*temp_diff0
+        cr_diff = -((cfy*r(1)-cfx*r(2))*temp_diff0/cr)
         cmy_diff = cmstrp_diff(j)
-        temp_diff = cmstrp_diff(j)/cr
+        temp_diff0 = cmstrp_diff(j)/cr
         cmstrp_diff(j) = 0.D0
-        cfx_diff = cfx_diff + r(3)*temp_diff
-        r_diff(3) = r_diff(3) + cfx*temp_diff
-        cfz_diff = -(r(1)*temp_diff)
-        r_diff(1) = r_diff(1) - cfz*temp_diff
-        cr_diff = cr_diff - (cfx*r(3)-cfz*r(1))*temp_diff/cr
+        cfx_diff = cfx_diff + r(3)*temp_diff0
+        r_diff(3) = r_diff(3) + cfx*temp_diff0
+        cfz_diff = -(r(1)*temp_diff0)
+        r_diff(1) = r_diff(1) - cfz*temp_diff0
+        cr_diff = cr_diff - (cfx*r(3)-cfz*r(1))*temp_diff0/cr
         cmx_diff = crstrp_diff(j)
-        temp_diff = crstrp_diff(j)/cr
+        temp_diff0 = crstrp_diff(j)/cr
         crstrp_diff(j) = 0.D0
-        cfz_diff = cfz_diff + r(2)*temp_diff
-        r_diff(2) = r_diff(2) + cfz*temp_diff
-        cfy_diff = cfy_diff - r(3)*temp_diff
-        r_diff(3) = r_diff(3) - cfy*temp_diff
-        cr_diff = cr_diff - (cfz*r(2)-cfy*r(3))*temp_diff/cr
+        cfz_diff = cfz_diff + r(2)*temp_diff0
+        r_diff(2) = r_diff(2) + cfz*temp_diff0
+        cfy_diff = cfy_diff - r(3)*temp_diff0
+        r_diff(3) = r_diff(3) - cfy*temp_diff0
+        cr_diff = cr_diff - (cfz*r(2)-cfy*r(3))*temp_diff0/cr
         CALL POPREAL8(r(3))
         zr_diff = zr_diff + r_diff(3)
         xyzref_diff(3) = xyzref_diff(3) - r_diff(3)
@@ -1085,9 +1985,6 @@ C    zero out the asymmetric forces and double the symmetric ones
         cdstrp_diff(j) = 0.D0
         CALL POPCONTROL1B(branch)
         IF (branch .EQ. 0) THEN
-          dcvfx = veff(1)*veffmag*cdv
-          dcvfy = veff(2)*veffmag*cdv
-          dcvfz = veff(3)*veffmag*cdv
           udrag_diff(1) = udrag_diff(1) + dcvfx*cdv_lstrp_diff(j)
           dcvfx_diff = udrag(1)*cdv_lstrp_diff(j) + cfx_diff
           udrag_diff(2) = udrag_diff(2) + dcvfy*cdv_lstrp_diff(j)
@@ -1105,8 +2002,6 @@ C    zero out the asymmetric forces and double the symmetric ones
      +      dcvfy_diff + veffmag*veff(1)*dcvfx_diff
           veff_diff(2) = veff_diff(2) + veffmag*cdv*dcvfy_diff
           veff_diff(1) = veff_diff(1) + veffmag*cdv*dcvfx_diff
-          clv = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
-          CALL POPREAL8(cdv)
           CALL CDCL_B(j, clv, clv_diff, cdv, cdv_diff, cdv_clv)
           ulift_diff(1) = ulift_diff(1) + cfx*clv_diff
           cfx_diff = cfx_diff + ulift(1)*clv_diff
@@ -1114,16 +2009,15 @@ C    zero out the asymmetric forces and double the symmetric ones
           cfy_diff = cfy_diff + ulift(2)*clv_diff
           ulift_diff(3) = ulift_diff(3) + cfz*clv_diff
           cfz_diff = cfz_diff + ulift(3)*clv_diff
-          CALL POPREAL8(veffmag)
           IF (veff(1)**2 + veff(2)**2 + veff(3)**2 .EQ. 0.D0) THEN
-            temp_diff = 0.D0
+            temp_diff0 = 0.D0
           ELSE
-            temp_diff = veffmag_diff/(2.0*SQRT(veff(1)**2+veff(2)**2+
+            temp_diff0 = veffmag_diff/(2.0*SQRT(veff(1)**2+veff(2)**2+
      +        veff(3)**2))
           END IF
-          veff_diff(1) = veff_diff(1) + 2*veff(1)*temp_diff
-          veff_diff(2) = veff_diff(2) + 2*veff(2)*temp_diff
-          veff_diff(3) = veff_diff(3) + 2*veff(3)*temp_diff
+          veff_diff(1) = veff_diff(1) + 2*veff(1)*temp_diff0
+          veff_diff(2) = veff_diff(2) + 2*veff(2)*temp_diff0
+          veff_diff(3) = veff_diff(3) + 2*veff(3)*temp_diff0
           CALL POPREAL8(veff(3))
           vinf_diff(3) = vinf_diff(3) + veff_diff(3)
           vrot_diff(3) = vrot_diff(3) + veff_diff(3)
@@ -1164,35 +2058,39 @@ C    zero out the asymmetric forces and double the symmetric ones
           xte1_diff = 0.D0
           xte2_diff = 0.D0
           sr_diff = 0.D0
-          CALL POPINTEGER4(ad_to0)
-          DO ii=ad_to0,1,-1
+          DO ii=nvc_strp,1,-1
+            i = i1 + (ii-1)
             DO ileg=2,1,-1
+              CALL POPINTEGER4(n)
+              CALL POPINTEGER4(n)
               dcfx = fgam(1)/sr
               dcfy = fgam(2)/sr
-              temp_diff = cmz_diff/cr
-              dcfy_diff = r(1)*temp_diff
-              r_diff(1) = r_diff(1) + dcfy*temp_diff
-              dcfx_diff = -(r(2)*temp_diff)
-              r_diff(2) = r_diff(2) - dcfx*temp_diff
-              cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff/cr
+              temp_diff0 = cmz_diff/cr
+              dcfy_diff = r(1)*temp_diff0
+              r_diff(1) = r_diff(1) + dcfy*temp_diff0
+              dcfx_diff = -(r(2)*temp_diff0)
+              r_diff(2) = r_diff(2) - dcfx*temp_diff0
+              cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff0/cr
               dcfz = fgam(3)/sr
-              temp_diff = cmy_diff/cr
-              dcfx_diff = dcfx_diff + r(3)*temp_diff + cfx_diff
-              r_diff(3) = r_diff(3) + dcfx*temp_diff
-              dcfz_diff = -(r(1)*temp_diff)
-              r_diff(1) = r_diff(1) - dcfz*temp_diff
-              cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff/cr
-              temp_diff = cmx_diff/cr
-              dcfz_diff = dcfz_diff + r(2)*temp_diff + cfz_diff
-              r_diff(2) = r_diff(2) + dcfz*temp_diff
-              dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff
-              r_diff(3) = r_diff(3) - dcfy*temp_diff
-              cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff/cr
+              temp_diff0 = cmy_diff/cr
+              dcfx_diff = dcfx_diff + r(3)*temp_diff0 + cfx_diff
+              r_diff(3) = r_diff(3) + dcfx*temp_diff0
+              dcfz_diff = -(r(1)*temp_diff0)
+              r_diff(1) = r_diff(1) - dcfz*temp_diff0
+              cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff0/cr
+              temp_diff0 = cmx_diff/cr
+              dcfz_diff = dcfz_diff + r(2)*temp_diff0 + cfz_diff
+              r_diff(2) = r_diff(2) + dcfz*temp_diff0
+              dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff0
+              r_diff(3) = r_diff(3) - dcfy*temp_diff0
+              cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff0/cr
               fgam_diff(3) = fgam_diff(3) + dcfz_diff/sr
               sr_diff = sr_diff - fgam(3)*dcfz_diff/sr**2 - fgam(2)*
      +          dcfy_diff/sr**2 - fgam(1)*dcfx_diff/sr**2
               fgam_diff(2) = fgam_diff(2) + dcfy_diff/sr
               fgam_diff(1) = fgam_diff(1) + dcfx_diff/sr
+              CALL POPINTEGER4(n)
+              CALL POPINTEGER4(n)
               CALL POPREAL8(fgam(3))
               gam_diff(i) = gam_diff(i) + f(3)*2.0*fgam_diff(3) + f(2)*
      +          2.0*fgam_diff(2) + f(1)*2.0*fgam_diff(1)
@@ -1295,70 +2193,128 @@ C    zero out the asymmetric forces and double the symmetric ones
             CALL POPINTEGER4(i)
           ENDDO
         END IF
-        CALL POPINTEGER4(ad_to)
-        DO ii=ad_to,1,-1
+        CALL POPREAL8ARRAY(rrot, 3)
+        CALL POPREAL8ARRAY(fgam, 3)
+        CALL POPREAL8(result1)
+        CALL POPREAL8ARRAY(veff, 3)
+        CALL POPREAL8ARRAY(vrot, 3)
+        CALL POPREAL8ARRAY(r, 3)
+        CALL POPREAL8ARRAY(g, 3)
+        CALL POPREAL8ARRAY(f, 3)
+C$BWD-OF II-LOOP 
+        DO ii=1,nvc_strp
+          i = i1 + (ii-1)
+C
+C------- local moment reference vector from vortex midpoint to strip c/4 pt.
+C          R(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XR
+C          R(2) = 0.5*(RV1(2,I) + RV2(2,I)) - YR
+C          R(3) = 0.5*(RV1(3,I) + RV2(3,I)) - ZR
+          r(1) = rv(1, i) - xr
+          r(2) = rv(2, i) - yr
+          r(3) = rv(3, i) - zr
+C
+C------- vector from rotation axes
+C          RROT(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XYZREF(1)
+C          RROT(2) = 0.5*(RV1(2,I) + RV2(2,I)) - XYZREF(2)
+C          RROT(3) = 0.5*(RV1(3,I) + RV2(3,I)) - XYZREF(3)
+          rrot(1) = rv(1, i) - xyzref(1)
+          rrot(2) = rv(2, i) - xyzref(2)
+          rrot(3) = rv(3, i) - xyzref(3)
+C
+C-------- set total effective velocity = freestream + rotation + induced
+          CALL CROSS(rrot, wrot, vrot)
+          veff(1) = vinf(1) + vrot(1) + wv(1, i)
+          veff(2) = vinf(2) + vrot(2) + wv(2, i)
+C$AD II-LOOP
+          veff(3) = vinf(3) + vrot(3) + wv(3, i)
+C
+C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
+          g(1) = rv2(1, i) - rv1(1, i)
+          g(2) = rv2(2, i) - rv1(2, i)
+          g(3) = rv2(3, i) - rv1(3, i)
+          CALL CROSS(veff, g, f)
+C
+          fgam(1) = 2.0*gam(i)*f(1)
+          fgam(2) = 2.0*gam(i)*f(2)
+C$AD II-LOOP
+          fgam(3) = 2.0*gam(i)*f(3)
+          CALL PUSHINTEGER4(n)
+          CALL PUSHINTEGER4(n)
+          CALL PUSHINTEGER4(n)
+          CALL PUSHINTEGER4(n)
+C
+C-------- vortex contribution to strip forces
           dcfx = fgam(1)/sr
           dcfy = fgam(2)/sr
-          temp_diff = cmz_diff/cr
-          dcfy_diff = r(1)*temp_diff
-          r_diff(1) = r_diff(1) + dcfy*temp_diff
-          dcfx_diff = -(r(2)*temp_diff)
-          r_diff(2) = r_diff(2) - dcfx*temp_diff
-          cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff/cr
           dcfz = fgam(3)/sr
-          temp_diff = cmy_diff/cr
-          dcfx_diff = dcfx_diff + r(3)*temp_diff + cfx_diff
-          r_diff(3) = r_diff(3) + dcfx*temp_diff
-          dcfz_diff = -(r(1)*temp_diff)
-          r_diff(1) = r_diff(1) - dcfz*temp_diff
-          cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff/cr
-          temp_diff = cmx_diff/cr
-          dcfz_diff = dcfz_diff + r(2)*temp_diff + cfz_diff
-          r_diff(2) = r_diff(2) + dcfz*temp_diff
-          dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff
-          r_diff(3) = r_diff(3) - dcfy*temp_diff
-          cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff/cr
+C
+C-------- forces normalized by strip area
+C
+C-------- moments referred to strip c/4 pt., normalized by strip chord and area
+C
+C-------- accumulate strip spanloading = c*CN
+C$AD II-LOOP
+          CALL PUSHINTEGER4(n)
+          CALL PUSHINTEGER4(n)
+          CALL PUSHINTEGER4(l)
+          CALL PUSHINTEGER4(n)
+          CALL POPINTEGER4(n)
+          CALL POPINTEGER4(l)
+          CALL POPINTEGER4(n)
+          CALL POPINTEGER4(n)
+          temp_diff0 = cmz_diff/cr
+          dcfy_diff = r(1)*temp_diff0
+          r_diff(1) = r_diff(1) + dcfy*temp_diff0
+          dcfx_diff = -(r(2)*temp_diff0)
+          r_diff(2) = r_diff(2) - dcfx*temp_diff0
+          cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff0/cr
+          temp_diff0 = cmy_diff/cr
+          dcfx_diff = dcfx_diff + r(3)*temp_diff0 + cfx_diff
+          r_diff(3) = r_diff(3) + dcfx*temp_diff0
+          dcfz_diff = -(r(1)*temp_diff0)
+          r_diff(1) = r_diff(1) - dcfz*temp_diff0
+          cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff0/cr
+          temp_diff0 = cmx_diff/cr
+          dcfz_diff = dcfz_diff + r(2)*temp_diff0 + cfz_diff
+          r_diff(2) = r_diff(2) + dcfz*temp_diff0
+          dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff0
+          r_diff(3) = r_diff(3) - dcfy*temp_diff0
+          cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff0/cr
           fgam_diff(3) = fgam_diff(3) + dcfz_diff/sr
           sr_diff = sr_diff - fgam(3)*dcfz_diff/sr**2 - fgam(2)*
      +      dcfy_diff/sr**2 - fgam(1)*dcfx_diff/sr**2
           fgam_diff(2) = fgam_diff(2) + dcfy_diff/sr
           fgam_diff(1) = fgam_diff(1) + dcfx_diff/sr
-          CALL POPREAL8(fgam(3))
+          CALL POPINTEGER4(n)
+          CALL POPINTEGER4(n)
+          CALL POPINTEGER4(n)
+          CALL POPINTEGER4(n)
           gam_diff(i) = gam_diff(i) + f(3)*2.0*fgam_diff(3) + f(2)*2.0*
      +      fgam_diff(2) + f(1)*2.0*fgam_diff(1)
           f_diff(3) = f_diff(3) + gam(i)*2.0*fgam_diff(3)
           fgam_diff(3) = 0.D0
-          CALL POPREAL8(fgam(2))
           f_diff(2) = f_diff(2) + gam(i)*2.0*fgam_diff(2)
           fgam_diff(2) = 0.D0
-          CALL POPREAL8(fgam(1))
           f_diff(1) = f_diff(1) + gam(i)*2.0*fgam_diff(1)
           fgam_diff(1) = 0.D0
-          CALL POPREAL8ARRAY(f, 3)
           CALL CROSS_B(veff, veff_diff, g, g_diff, f, f_diff)
-          CALL POPREAL8(g(3))
           rv2_diff(3, i) = rv2_diff(3, i) + g_diff(3)
           rv1_diff(3, i) = rv1_diff(3, i) - g_diff(3)
           g_diff(3) = 0.D0
-          CALL POPREAL8(g(2))
           rv2_diff(2, i) = rv2_diff(2, i) + g_diff(2)
           rv1_diff(2, i) = rv1_diff(2, i) - g_diff(2)
           g_diff(2) = 0.D0
-          CALL POPREAL8(g(1))
           rv2_diff(1, i) = rv2_diff(1, i) + g_diff(1)
           rv1_diff(1, i) = rv1_diff(1, i) - g_diff(1)
           g_diff(1) = 0.D0
-          CALL POPREAL8(veff(3))
           vinf_diff(3) = vinf_diff(3) + veff_diff(3)
           vrot_diff(3) = vrot_diff(3) + veff_diff(3)
           wv_diff(3, i) = wv_diff(3, i) + veff_diff(3)
           veff_diff(3) = 0.D0
-          CALL POPREAL8(veff(2))
           vinf_diff(2) = vinf_diff(2) + veff_diff(2)
           vrot_diff(2) = vrot_diff(2) + veff_diff(2)
           wv_diff(2, i) = wv_diff(2, i) + veff_diff(2)
           veff_diff(2) = 0.D0
-          CALL POPREAL8(veff(1))
           vinf_diff(1) = vinf_diff(1) + veff_diff(1)
           vrot_diff(1) = vrot_diff(1) + veff_diff(1)
           wv_diff(1, i) = wv_diff(1, i) + veff_diff(1)
@@ -1368,32 +2324,22 @@ C    zero out the asymmetric forces and double the symmetric ones
           ENDDO
           CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
-          CALL POPREAL8(rrot(3))
           rv_diff(3, i) = rv_diff(3, i) + rrot_diff(3) + r_diff(3)
           xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
           rrot_diff(3) = 0.D0
-          CALL POPREAL8(rrot(2))
           rv_diff(2, i) = rv_diff(2, i) + rrot_diff(2) + r_diff(2)
           xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
           rrot_diff(2) = 0.D0
-          CALL POPREAL8(rrot(1))
           rv_diff(1, i) = rv_diff(1, i) + rrot_diff(1) + r_diff(1)
           xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
           rrot_diff(1) = 0.D0
-          CALL POPREAL8(r(3))
           zr_diff = zr_diff - r_diff(3)
           r_diff(3) = 0.D0
-          CALL POPREAL8(r(2))
           yr_diff = yr_diff - r_diff(2)
           r_diff(2) = 0.D0
-          CALL POPREAL8(r(1))
           xr_diff = xr_diff - r_diff(1)
           r_diff(1) = 0.D0
-          CALL POPINTEGER4(i)
         ENDDO
-        CALL POPREAL8(cfz)
-        CALL POPREAL8(cfy)
-        CALL POPREAL8(cfx)
         rle_diff(3, j) = rle_diff(3, j) + zr_diff
         rle_diff(2, j) = rle_diff(2, j) + yr_diff
         rle_diff(1, j) = rle_diff(1, j) + xr_diff
@@ -1413,48 +2359,37 @@ C    zero out the asymmetric forces and double the symmetric ones
           ulift_diff(2) = ulift_diff(2)/ulmag
           ulift_diff(1) = ulift_diff(1)/ulmag
         END IF
-        CALL POPREAL8(ulmag)
         IF (result1 .EQ. 0.D0) THEN
           result1_diff = 0.D0
         ELSE
           result1_diff = ulmag_diff/(2.0*SQRT(result1))
         END IF
-        CALL POPREAL8(result1)
         CALL DOT_B(ulift, ulift_diff, ulift, ulift_diff, result1_diff)
-        CALL POPREAL8ARRAY(ulift, 3)
         CALL CROSS_B(udrag, udrag_diff, spn, spn_diff, ulift, ulift_diff
      +              )
-        CALL POPREAL8(udrag(3))
         sina_diff = sina_diff + udrag_diff(3)
         udrag_diff(3) = 0.D0
-        CALL POPREAL8(udrag(2))
         udrag_diff(2) = 0.D0
-        CALL POPREAL8(udrag(1))
         cosa_diff = cosa_diff + udrag_diff(1)
         udrag_diff(1) = 0.D0
-        CALL POPREAL8(spn(3))
         ensy_diff(j) = ensy_diff(j) - spn_diff(3)
         spn_diff(3) = 0.D0
-        CALL POPREAL8(spn(2))
         ensz_diff(j) = ensz_diff(j) + spn_diff(2)
         spn_diff(2) = 0.D0
-        CALL POPREAL8(spn(1))
         spn_diff(1) = 0.D0
         rle2_diff(1, j) = rle2_diff(1, j) + xte2_diff
         chord2_diff(j) = chord2_diff(j) + xte2_diff
         rle1_diff(1, j) = rle1_diff(1, j) + xte1_diff
         chord1_diff(j) = chord1_diff(j) + xte1_diff
-        CALL POPREAL8(sr)
         chord_diff(j) = chord_diff(j) + wstrip(j)*sr_diff + cr_diff
         wstrip_diff(j) = wstrip_diff(j) + chord(j)*sr_diff
-        CALL POPREAL8(cr)
       ENDDO
       alfa_diff = alfa_diff + COS(alfa)*sina_diff - SIN(alfa)*cosa_diff
       END
 
 C  Differentiation of bdforc in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: vinf sref cdtot cltot cxtot
-C                cytot cztot crtot cmtot cntot
+C   gradient     of useful results: alfa vinf sref cdtot cltot
+C                cxtot cytot cztot crtot cmtot cntot
 C   with respect to varying inputs: alfa vinf sref xyzref mach
 C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
 C SFFORC
@@ -1772,7 +2707,7 @@ C
         clbdy_diff(ib) = 0.D0
         cdbdy_diff(ib) = 0.D0
       ENDDO
-      alfa_diff = COS(alfa)*sina_diff - SIN(alfa)*cosa_diff
+      alfa_diff = alfa_diff + COS(alfa)*sina_diff - SIN(alfa)*cosa_diff
       IF (1.0 - mach**2 .EQ. 0.D0) THEN
         mach_diff = 0.D0
       ELSE

@@ -23,8 +23,6 @@ SURFACE
 Wing
 #Nchordwise  Cspace   [Nspan   Sspace]
      1        1.0      1      -2.0
-YDUPLICATE
-0.0
 SCALE
 1.0  1.0  1.0
 TRANSLATE
@@ -35,10 +33,10 @@ ANGLE
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
-0.0    0.0    0     1.0     0.0
+0.00    0.0    0     1.0     0.0
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
-0.0    1.0    0     1.0     0.0
+0.00    1.0    0.0     1.0     0.0
 
 # -- END OF FILE --

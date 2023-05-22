@@ -7,3 +7,9 @@ except importlib.metadata.PackageNotFoundError:
     __version__ = "0.0.0"
 
 from .pyAVL import AVLSolver
+
+try:
+    from .om_warpper import AVLGroup
+except ImportError:
+    # if openmdao is not installed, then we can't use the wrapper
+    pass

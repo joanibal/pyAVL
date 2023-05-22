@@ -3,7 +3,7 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of build_aic in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: aicn
-C   with respect to varying inputs: ysym zsym mach rv1 rv2 rc chordv
+C   with respect to varying inputs: ysym zsym rv1 rv2 rc chordv
 C                enc
 C SETUP
 C
@@ -12,10 +12,9 @@ C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       REAL betm
-      REAL betm_diff
       INTRINSIC SQRT
-      INTEGER i
       INTEGER j
+      INTEGER i
       INTEGER n
       INTEGER j1
       INTEGER jn
@@ -23,33 +22,23 @@ C
       INTEGER iv
       INTEGER jv
       REAL(kind=8) arg1
-      REAL(kind=8) arg1_diff
-      REAL(kind=avl_real) temp
       INTEGER ii2
       INTEGER ii1
-      amach_diff = mach_diff
       amach = mach
-      arg1_diff = -(2*amach*amach_diff)
       arg1 = 1.0 - amach**2
-      temp = SQRT(arg1)
-      IF (arg1 .EQ. 0.D0) THEN
-        betm_diff = 0.D0
-      ELSE
-        betm_diff = arg1_diff/(2.0*temp)
-      END IF
-      betm = temp
+      betm = SQRT(arg1)
       IF (lverbose) WRITE(*, *) ' Building normalwash AIC matrix...'
-      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
-     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
-     +            , nsurfv, chordv, chordv_diff, nvor, rc, rc_diff, 
-     +            nsurfv, .false., wc_gam, wc_gam_diff, nvmax)
+      CALL VVOR_D(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
+     +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
+     +            chordv, chordv_diff, nvor, rc, rc_diff, nsurfv, 
+     +            .false., wc_gam, wc_gam_diff, nvmax)
       DO ii1=1,nvmax
         DO ii2=1,nvmax
           aicn_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO i=1,nvor
-        DO j=1,nvor
+      DO j=1,nvor
+        DO i=1,nvor
           aicn_diff(i, j) = enc(1, i)*wc_gam_diff(1, i, j) + wc_gam(1, i
      +      , j)*enc_diff(1, i) + enc(2, i)*wc_gam_diff(2, i, j) + 
      +      wc_gam(2, i, j)*enc_diff(2, i) + enc(3, i)*wc_gam_diff(3, i
@@ -66,8 +55,9 @@ C----- process each surface which does not shed a wake
 C
 C------- go over TE control points on this surface
           j1 = jfrst(n)
+C$AD II-LOOP
           jn = jfrst(n) + nj(n) - 1
-C
+C 
           DO j=j1,jn
             i1 = ijfrst(j)
             iv = ijfrst(j) + nvstrp(j) - 1
@@ -77,6 +67,7 @@ C--------- clear system row for TE control point
               aicn_diff(iv, jv) = 0.D0
               aicn(iv, jv) = 0.
             ENDDO
+C$AD II-LOOP
             lvnc(iv) = .false.
 C
 C--------- set  sum_strip(Gamma) = 0  for this strip
@@ -91,8 +82,9 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
 
 C  Differentiation of velsum in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: wv
-C   with respect to varying inputs: vinf wrot gam
+C   with respect to varying inputs: vinf wrot gam wv_gam
 C   RW status of diff variables: vinf:in wrot:in gam:in wv:out
+C                wv_gam:in
 C GAMSUM
 C
 C
@@ -133,7 +125,8 @@ C
         DO i=1,nvor
           DO k=1,3
             wc(k, i) = wc(k, i) + wc_gam(k, i, j)*gam(j)
-            wv_diff(k, i) = wv_diff(k, i) + wv_gam(k, i, j)*gam_diff(j)
+            wv_diff(k, i) = wv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
+     +        + wv_gam(k, i, j)*gam_diff(j)
             wv(k, i) = wv(k, i) + wv_gam(k, i, j)*gam(j)
           ENDDO
         ENDDO
@@ -163,9 +156,87 @@ C
       RETURN
       END
 
+C  Differentiation of set_par_and_cons in forward (tangent) mode (with options i4 dr8 r8):
+C   variations   of useful results: alfa beta wrot xyzref
+C   with respect to varying inputs: conval xyzref
+C WSENS
+      SUBROUTINE SET_PAR_AND_CONS_D(niter, ir)
+      INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_ad_seeds.inc'
+      INTEGER niter, ir
+      INTEGER n
+      INTEGER iv
+      INTEGER ic
+      INTEGER ii1
+      xyzref_diff(1) = 0.D0
+      xyzref(1) = parval(ipxcg, ir)
+      xyzref_diff(2) = 0.D0
+      xyzref(2) = parval(ipycg, ir)
+      xyzref_diff(3) = 0.D0
+      xyzref(3) = parval(ipzcg, ir)
+C
+      cdref = parval(ipcd0, ir)
+C
+      mach = parval(ipmach, ir)
+C
+      IF (mach .NE. amach) THEN
+C----- new Mach number invalidates close to everything that's stored
+        laic = .false.
+        lsrd = .false.
+        lsol = .false.
+        lsen = .false.
+      END IF
+      IF (niter .GT. 0) THEN
+C----- might as well directly set operating variables if they are known
+        IF (icon(ivalfa, ir) .EQ. icalfa) THEN
+          alfa_diff = dtr*conval_diff(icalfa, ir)
+          alfa = conval(icalfa, ir)*dtr
+        ELSE
+          alfa_diff = 0.D0
+        END IF
+        IF (icon(ivbeta, ir) .EQ. icbeta) THEN
+          beta_diff = dtr*conval_diff(icbeta, ir)
+          beta = conval(icbeta, ir)*dtr
+        ELSE
+          beta_diff = 0.D0
+        END IF
+        IF (icon(ivrotx, ir) .EQ. icrotx) THEN
+          DO ii1=1,3
+            wrot_diff(ii1) = 0.D0
+          ENDDO
+          wrot_diff(1) = 2.*conval_diff(icrotx, ir)/bref
+          wrot(1) = conval(icrotx, ir)*2./bref
+        ELSE
+          DO ii1=1,3
+            wrot_diff(ii1) = 0.D0
+          ENDDO
+        END IF
+        IF (icon(ivroty, ir) .EQ. icroty) THEN
+          wrot_diff(2) = 2.*conval_diff(icroty, ir)/cref
+          wrot(2) = conval(icroty, ir)*2./cref
+        END IF
+C$AD-II-loop
+        IF (icon(ivrotz, ir) .EQ. icrotz) THEN
+          wrot_diff(3) = 2.*conval_diff(icrotz, ir)/bref
+          wrot(3) = conval(icrotz, ir)*2./bref
+        END IF
+        DO n=1,ndmax
+          iv = ivtot + n
+          ic = ictot + n
+          IF (icon(iv, ir) .EQ. ic) delcon(n) = conval(ic, ir)
+        ENDDO
+      ELSE
+        alfa_diff = 0.D0
+        beta_diff = 0.D0
+        DO ii1=1,3
+          wrot_diff(ii1) = 0.D0
+        ENDDO
+      END IF
+      END
+
 C  Differentiation of set_vel_rhs in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rhs
-C   with respect to varying inputs: vinf xyzref rc enc
+C   with respect to varying inputs: vinf wrot xyzref rc enc
       SUBROUTINE SET_VEL_RHS_D()
 C
       INCLUDE 'AVL.INC'
@@ -180,6 +251,7 @@ C
       REAL result1_diff
       rhs_diff = 0.D0
       vunit_diff = 0.D0
+      wunit_diff = 0.D0
       vunit_w_term_diff = 0.D0
       rrot_diff = 0.D0
       DO i=1,nvor
@@ -190,8 +262,11 @@ C
           vunit(2) = 0.
           vunit_diff(3) = 0.D0
           vunit(3) = 0.
+          wunit_diff(1) = 0.D0
           wunit(1) = 0.
+          wunit_diff(2) = 0.D0
           wunit(2) = 0.
+          wunit_diff(3) = 0.D0
           wunit(3) = 0.
           IF (lvalbe(i)) THEN
             vunit_diff(1) = vinf_diff(1)
@@ -200,8 +275,11 @@ C
             vunit(2) = vinf(2)
             vunit_diff(3) = vinf_diff(3)
             vunit(3) = vinf(3)
+            wunit_diff(1) = wrot_diff(1)
             wunit(1) = wrot(1)
+            wunit_diff(2) = wrot_diff(2)
             wunit(2) = wrot(2)
+            wunit_diff(3) = wrot_diff(3)
             wunit(3) = wrot(3)
           END IF
           rrot_diff(1) = rc_diff(1, i) - xyzref_diff(1)
@@ -210,7 +288,6 @@ C
           rrot(2) = rc(2, i) - xyzref(2)
           rrot_diff(3) = rc_diff(3, i) - xyzref_diff(3)
           rrot(3) = rc(3, i) - xyzref(3)
-          wunit_diff = 0.D0
           CALL CROSS_D(rrot, rrot_diff, wunit, wunit_diff, vunit_w_term
      +                 , vunit_w_term_diff)
           vunit_diff = vunit_diff + vunit_w_term_diff
@@ -239,6 +316,7 @@ Cset_vel_rhs
       INTEGER j
       INTEGER i
       INTEGER n
+C$AD II-LOOP
       out_vec = 0.
       out_vec_diff = 0.D0
       DO j=1,n

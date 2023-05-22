@@ -3,16 +3,17 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of update_surfaces in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rle chord rle1 chord1 rle2
-C                chord2 wstrip rv1 rv2 rv rc rs dxv chordv enc
-C                env
+C                chord2 wstrip ess ensy ensz xsref ysref zsref
+C                rv1 rv2 rv rc rs dxv chordv enc env
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf
 C   RW status of diff variables: xyzscal:in xyztran:in addinc:in
 C                xyzles:in chords:in aincs:in xasec:in sasec:in
 C                claf:in rle:out chord:out rle1:out chord1:out
-C                rle2:out chord2:out wstrip:out rv1:out rv2:out
-C                rv:out rc:out rs:out dxv:out chordv:out enc:out
-C                env:out
+C                rle2:out chord2:out wstrip:out ess:out ensy:out
+C                ensz:out xsref:out ysref:out zsref:out rv1:out
+C                rv2:out rv:out rc:out rs:out dxv:out chordv:out
+C                enc:out env:out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_D()
       INCLUDE 'AVL.INC'
@@ -627,12 +628,12 @@ C
             clafr = claf(isec+1, isurf)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-            aincl_diff = aincs_diff(isec, isurf) + dtr*addinc_diff(isurf
-     +        )
-            aincl = aincs(isec, isurf) + addinc(isurf)*dtr
-            aincr_diff = aincs_diff(isec+1, isurf) + dtr*addinc_diff(
+            aincl_diff = dtr*aincs_diff(isec, isurf) + dtr*addinc_diff(
      +        isurf)
-            aincr = aincs(isec+1, isurf) + addinc(isurf)*dtr
+            aincl = aincs(isec, isurf)*dtr + addinc(isurf)*dtr
+            aincr_diff = dtr*aincs_diff(isec+1, isurf) + dtr*addinc_diff
+     +        (isurf)
+            aincr = aincs(isec+1, isurf)*dtr + addinc(isurf)*dtr
 Cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 Cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -937,7 +938,6 @@ C
 C-------- go over vortices in this strip
               idx_vor = ijfrst(idx_strip)
 C NVOR = NVOR + 1
-C write(*,*) 'make surf nvor', nvor, idx_vor
               DO ivc=1,nvc(isurf)
 C
                 rv1_diff(1, idx_vor) = rle1_diff(1, idx_strip) + xvr(ivc
@@ -1329,8 +1329,9 @@ C
       END
 
 C  Differentiation of encalc in forward (tangent) mode (with options i4 dr8 r8):
-C   variations   of useful results: enc env
-C   with respect to varying inputs: ainc ainc_g rv1 rv2 slopev
+C   variations   of useful results: ess ensy ensz xsref ysref zsref
+C                enc env
+C   with respect to varying inputs: ainc ainc_g rv1 rv2 rv slopev
 C                slopec
 C BDUPL
 C
@@ -1347,22 +1348,31 @@ C
       INTEGER j
       INTEGER i
       REAL dxle
+      REAL dxle_diff
       REAL dyle
       REAL dyle_diff
       REAL dzle
       REAL dzle_diff
       REAL axle
+      REAL axle_diff
       REAL ayle
+      REAL ayle_diff
       REAL azle
+      REAL azle_diff
       REAL dxte
+      REAL dxte_diff
       REAL dyte
       REAL dyte_diff
       REAL dzte
       REAL dzte_diff
       REAL axte
+      REAL axte_diff
       REAL ayte
+      REAL ayte_diff
       REAL azte
+      REAL azte_diff
       REAL dxt
+      REAL dxt_diff
       REAL dyt
       REAL dyt_diff
       REAL dzt
@@ -1402,10 +1412,24 @@ C
       INTEGER ii1
       INTEGER ii2
       DO ii1=1,nsmax
+        DO ii2=1,3
+          ess_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nsmax
         ensy_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nsmax
         ensz_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
+        xsref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
+        ysref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
+        zsref_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nvmax
         DO ii2=1,3
@@ -1436,6 +1460,7 @@ C
 C
 C...Calculate normal vector for the strip (normal to X axis)
         i = ijfrst(j)
+        dxle_diff = rv2_diff(1, i) - rv1_diff(1, i)
         dxle = rv2(1, i) - rv1(1, i)
         dyle_diff = rv2_diff(2, i) - rv1_diff(2, i)
         dyle = rv2(2, i) - rv1(2, i)
@@ -1444,11 +1469,15 @@ C...Calculate normal vector for the strip (normal to X axis)
 C       AXLE = (RV2(1,I)+RV1(1,I))*0.5
 C       AYLE = (RV2(2,I)+RV1(2,I))*0.5
 C       AZLE = (RV2(3,I)+RV1(3,I))*0.5
+        axle_diff = rv_diff(1, i)
         axle = rv(1, i)
+        ayle_diff = rv_diff(2, i)
         ayle = rv(2, i)
+        azle_diff = rv_diff(3, i)
         azle = rv(3, i)
 C
         i = ijfrst(j) + (nvstrp(j)-1)
+        dxte_diff = rv2_diff(1, i) - rv1_diff(1, i)
         dxte = rv2(1, i) - rv1(1, i)
         dyte_diff = rv2_diff(2, i) - rv1_diff(2, i)
         dyte = rv2(2, i) - rv1(2, i)
@@ -1457,24 +1486,52 @@ C
 C       AXTE = (RV2(1,I)+RV1(1,I))*0.5
 C       AYTE = (RV2(2,I)+RV1(2,I))*0.5
 C       AZTE = (RV2(3,I)+RV1(3,I))*0.5
+        axte_diff = rv_diff(1, i)
         axte = rv(1, i)
+        ayte_diff = rv_diff(2, i)
         ayte = rv(2, i)
+        azte_diff = rv_diff(3, i)
         azte = rv(3, i)
 C
+        dxt_diff = (1.0-saxfr)*dxle_diff + saxfr*dxte_diff
         dxt = (1.0-saxfr)*dxle + saxfr*dxte
         dyt_diff = (1.0-saxfr)*dyle_diff + saxfr*dyte_diff
         dyt = (1.0-saxfr)*dyle + saxfr*dyte
         dzt_diff = (1.0-saxfr)*dzle_diff + saxfr*dzte_diff
         dzt = (1.0-saxfr)*dzle + saxfr*dzte
 C
+        arg1_diff = 2*dxt*dxt_diff + 2*dyt*dyt_diff + 2*dzt*dzt_diff
         arg1 = dxt*dxt + dyt*dyt + dzt*dzt
-        result1 = SQRT(arg1)
+        temp = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp)
+        END IF
+        result1 = temp
+        ess_diff(1, j) = (dxt_diff-dxt*result1_diff/result1)/result1
         ess(1, j) = dxt/result1
+        arg1_diff = 2*dxt*dxt_diff + 2*dyt*dyt_diff + 2*dzt*dzt_diff
         arg1 = dxt*dxt + dyt*dyt + dzt*dzt
-        result1 = SQRT(arg1)
+        temp = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp)
+        END IF
+        result1 = temp
+        ess_diff(2, j) = (dyt_diff-dyt*result1_diff/result1)/result1
         ess(2, j) = dyt/result1
+        arg1_diff = 2*dxt*dxt_diff + 2*dyt*dyt_diff + 2*dzt*dzt_diff
         arg1 = dxt*dxt + dyt*dyt + dzt*dzt
-        result1 = SQRT(arg1)
+        temp = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp)
+        END IF
+        result1 = temp
+        ess_diff(3, j) = (dzt_diff-dzt*result1_diff/result1)/result1
         ess(3, j) = dzt/result1
 C
         arg1_diff = 2*dyt*dyt_diff + 2*dzt*dzt_diff
@@ -1500,8 +1557,11 @@ C
         ensz_diff(j) = (dyt_diff-dyt*result1_diff/result1)/result1
         ensz(j) = dyt/result1
 C
+        xsref_diff(j) = (1.0-saxfr)*axle_diff + saxfr*axte_diff
         xsref(j) = (1.0-saxfr)*axle + saxfr*axte
+        ysref_diff(j) = (1.0-saxfr)*ayle_diff + saxfr*ayte_diff
         ysref(j) = (1.0-saxfr)*ayle + saxfr*ayte
+        zsref_diff(j) = (1.0-saxfr)*azle_diff + saxfr*azte_diff
         zsref(j) = (1.0-saxfr)*azle + saxfr*azte
 C
 C

@@ -78,6 +78,19 @@ class AVLSolver(object):
         "visc CM_a": 28,
         "visc CM_u": 29,
     }
+    conval_idx_dict = {
+        "alpha": 0,
+        "beta": 1,
+        "pb/2V": 2,
+        "qc/2V": 3,
+        "rb/2V": 4,
+        "CL": 5,
+        "CY": 6,
+        "CR BA": 7,
+        "CM": 8,
+        "CR": 9,
+    }
+
     # fmt: off
     # This dict has the following structure:
     # python key: [common block name, fortran varaiable name]
@@ -177,7 +190,7 @@ class AVLSolver(object):
                     f.close()
             except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"Could not open the file {file} from python. This is usually an issue with the specified file path"
+                    f"Could not open the file '{file}' from python. This is usually an issue with the specified file path"
                 )
 
             self.avl.avl()
@@ -328,7 +341,7 @@ class AVLSolver(object):
             avl_var = var
         else:
             raise ValueError(
-                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}."
+                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}. Constraints that must be implicitly satisfied (such as `CL`) are set with `add_trim_constraint`."
             )
 
         if con_var is None:
@@ -409,18 +422,18 @@ class AVLSolver(object):
         # this had to be split up into two steps to work
         # get the corresponding common block object.
         # it must be lowercase because of f2py
-        common_block = getattr(self.avl, common_block.upper())
+        common_block_obj = getattr(self.avl, common_block.upper())
 
         # get the value of the variable from the common block
         if slicer is None:
-            setattr(common_block, variable.upper(), val)
+            setattr(common_block_obj, variable.upper(), val)
         else:
             # flip the order of the slicer to match the cordinates of the val
             new_slicer = slicer[::-1]
 
-            original_val = getattr(common_block, variable.upper())
+            original_val = getattr(common_block_obj, variable.upper())
             original_val[new_slicer] = val
-            setattr(common_block, variable.upper(), original_val)
+            setattr(common_block_obj, variable.upper(), original_val)
 
         return
 
@@ -452,6 +465,15 @@ class AVLSolver(object):
 
         return param_val
 
+    def get_case_constraint(self, con_key: str) -> float:
+        """ """
+        convals = self.get_avl_fort_arr("CASE_R", "CONVAL")
+
+        # [0] because pyavl only supports 1 run case
+        con_val = convals[0][self.conval_idx_dict[con_key]]
+
+        return con_val
+
     def set_case_parameter(self, param_key: str, param_val: float) -> None:
         """
         analogous to ruinont Modify parameters for the oper menu to view parameters.
@@ -473,26 +495,16 @@ class AVLSolver(object):
         # (1) here because we want to set the first runcase with fortran indexing (the only one)
         self.avl.set_params(1)
 
-    # def get_condition_data(self) -> Dict[str, float]:
-    #     """get the data defining the run condition from the fortran layer"""
-    #     # fmt: off
-    #     var_to_fort_var = {
-    #         "alpha": ["CASE_R", "ALPHA"],
-    #         "beta": ["CASE_R", "BETA"],
-    #         "Vinf": ["CASE_R", "VINF"],
-    #         "mach": ["CASE_R", "MACH"],
-    #     }
-    #     # fmt: on
-    #     condition_data = {}
+    def get_control_deflections(self) -> Dict[str, float]:
+        control_surfaces = self.get_control_names()
 
-    #     for key, avl_key in var_to_fort_var.items():
-    #         val = self.get_avl_fort_arr(*avl_key)
-    #         # [()] because all the data is stored as a ndarray.
-    #         # for scalars this results in a 0-d array.
-    #         # It is easier to work with floats so we extract the value with [()]
-    #         condition_data[key] = val[()]
+        def_arr = copy.deepcopy(self.get_avl_fort_arr("CASE_R", "DELCON"))
 
-    #     return condition_data
+        def_dict = {}
+        for idx_con, con_surf in enumerate(control_surfaces):
+            def_dict[con_surf] = def_arr[idx_con]
+
+        return def_dict
 
     def get_hinge_moments(self) -> Dict[str, float]:
         """
@@ -555,6 +567,12 @@ class AVLSolver(object):
                 idx_srp_beg, idx_srp_end = self.get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
 
+        cref = self.get_avl_fort_arr("CASE_R", "CREF")
+        for surf_key in strip_data:
+            # add sectional lift and drag
+            strip_data[surf_key]["lift dist"] = strip_data[surf_key]["CL"] * strip_data[surf_key]["chord"] / cref
+            strip_data[surf_key]["drag dist"] = strip_data[surf_key]["CD"] * strip_data[surf_key]["chord"] / cref
+
         return strip_data
 
     def get_surface_strip_indices(self, idx_surf):
@@ -612,7 +630,6 @@ class AVLSolver(object):
             raise ValueError(
                 f"param, {param}, not in found for {surf_name}, that has control surface data {self.con_surf_to_fort_var[surf_name].keys()}"
             )
-        # print(fort_var[0], fort_var[1], fort_var[2][idx_slice])
         param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_slice])
         return param
 
@@ -624,7 +641,6 @@ class AVLSolver(object):
             raise ValueError(
                 f"param, {param}, not in found for {surf_name}, that has control surface data {self.con_surf_to_fort_var[surf_name].keys()}"
             )
-        # print(fort_var[0], fort_var[1], fort_var[2][idx_slice])
         # param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_slice])
         self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2][idx_slice])
 
@@ -721,10 +737,11 @@ class AVLSolver(object):
         unique_surf_names = self.get_surface_names(remove_dublicated=True)
 
         for surf_name in surf_data:
-            
             if surf_name not in unique_surf_names:
-                raise ValueError(f"surface name, {surf_name}, not found in the current avl object. Note duplicated surfaces can not be set directly")
-            
+                raise ValueError(
+                    f"surface name, {surf_name}, not found in the current avl object. Note duplicated surfaces can not be set directly"
+                )
+
             for var in surf_data[surf_name]:
                 # do not set the data this way if it is a control surface
                 if var not in self.con_surf_to_fort_var[surf_name]:
@@ -745,9 +762,10 @@ class AVLSolver(object):
             fid.write("# generated using pyAVL\n")
             self.__write_header(fid)
 
-            surf_data = self.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True, include_airfoils=True)
+            surf_data = self.get_surface_params(
+                include_geom=True, include_panneling=True, include_con_surf=True, include_airfoils=True
+            )
             for surf_name in surf_data:
-                print("writing surface: {}".format(surf_name))
                 self.__write_surface(fid, surf_name, surf_data[surf_name])
 
     def __write_fort_vars(self, fid, common_block: str, fort_var: str, newline: bool = True) -> None:
@@ -767,7 +785,6 @@ class AVLSolver(object):
         if newline:
             out_str += "\n"
 
-        print(out_str)
         fid.write(out_str)
 
     def __write_header(self, fid):
@@ -833,7 +850,6 @@ class AVLSolver(object):
             if newline:
                 out_str += "\n"
 
-            print(out_str)
             fid.write(out_str)
 
         # start with the banner
@@ -919,6 +935,13 @@ class AVLSolver(object):
         """Get the number of surfaces in the geometry"""
         return self.get_avl_fort_arr("CASE_I", "NSURF")
 
+    def get_num_sections(self, surf_name) -> int:
+        """Get the number of surfaces in the geometry"""
+        surf_names = self.get_surface_names()
+        idx_surf = surf_names.index(surf_name)
+        slice_idx_surf = (idx_surf,)
+        return self.get_avl_fort_arr("SURF_GEOM_I", "NSEC", slicer=slice_idx_surf)
+
     def get_num_strips(self) -> int:
         """Get the number of strips in the mesh"""
         return self.get_avl_fort_arr("CASE_I", "NSTRIP")
@@ -958,25 +981,43 @@ class AVLSolver(object):
     def get_constraint_ad_seeds(self) -> Dict[str, float]:
         con_seeds = {}
         for con in self.con_var_to_fort_var:
-            blk, var = self.con_var_to_fort_var[con]
-            blk += self.ad_suffix
-            var += self.ad_suffix
+            idx_con = self.conval_idx_dict[con]
+            blk = "CASE_R" + self.ad_suffix
+            var = "CONVAL" + self.ad_suffix
+            slicer = (0, idx_con)
 
-            con_seeds[con] = copy.deepcopy(self.get_avl_fort_arr(blk, var))
+            fort_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
+            con_seeds[con] = copy.deepcopy(fort_arr)
+
         return con_seeds
 
     def set_constraint_ad_seeds(self, con_seeds: Dict[str, Dict[str, float]], mode: str = "AD", scale=1.0) -> None:
         for con in con_seeds:
-            blk, var = self.con_var_to_fort_var[con]
-            if mode == "AD":
-                blk += self.ad_suffix
-                var += self.ad_suffix
-                val = con_seeds[con] * scale
-            elif mode == "FD":
-                val = self.get_avl_fort_arr(blk, var)
-                val += con_seeds[con] * scale
+            # determine the proper index
 
-            self.set_avl_fort_arr(blk, var, val)
+            idx_con = self.conval_idx_dict[con]
+            # determine the proper index
+
+            con_seed_arr = con_seeds[con]
+
+            if mode == "AD":
+                # [0] because pyavl only supports 1 run case
+                blk = "CASE_R" + self.ad_suffix
+                var = "CONVAL" + self.ad_suffix
+                val = con_seed_arr * scale
+                slicer = (0, idx_con)
+
+                self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+
+            elif mode == "FD":
+                # reverse lookup in the con_var_to_fort_var dict
+
+                val = self.get_case_constraint(con)
+
+                val += con_seed_arr * scale
+
+                # use the contraint API to adjust the value
+                self.add_constraint(con, val)
 
     def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:
         geom_seeds = {}
@@ -1004,7 +1045,6 @@ class AVLSolver(object):
                 elif mode == "FD":
                     val = self.get_avl_fort_arr(blk, var, slicer=slicer)
                     val += geom_seeds[surf_key][geom_key] * scale
-
                 # print(blk, var, val, slicer)
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
@@ -1118,19 +1158,10 @@ class AVLSolver(object):
             self.set_geom_ad_seeds(geom_seeds)
             self.set_gamma_ad_seeds(gamma_seeds)
 
-            # propogate the seeds through without resolving
-            # print('fwd 0', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
-            # print('fwd 0', self.avl.CASE_R_DIFF.CLTOT_DIFF)
             self.avl.update_surfaces_d()
-            # print('fwd 1', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
-            # print('fwd 1', self.avl.CASE_R_DIFF.CLTOT_DIFF)
             self.avl.get_res_d()
-            # print('fwd 2', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
-            # print('fwd 2', self.avl.CASE_R_DIFF.CLTOT_DIFF)
             self.avl.velsum_d()
             self.avl.aero_d()
-            # print('fwd 3', self.avl.SURF_GEOM_R_DIFF.XYZSCAL_DIFF[0])
-            # print('fwd 3', self.avl.CASE_R_DIFF.CLTOT_DIFF)
 
             # extract derivatives seeds and set the output dict of functions
             func_seeds = self.get_function_ad_seeds()
@@ -1143,13 +1174,6 @@ class AVLSolver(object):
             self.set_avl_fort_arr("VRTX_R_DIFF", "GAM_DIFF", gamma_seeds * 0.0, slicer=res_slice)
 
         if mode == "FD":
-            self.avl.update_surfaces()
-            self.avl.get_res()
-            self.avl.aero()
-            coef_data = self.get_case_total_data()
-            # strp_data = self.get_strip_data()
-            res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
-
             self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
@@ -1160,13 +1184,22 @@ class AVLSolver(object):
             self.avl.velsum()
             self.avl.aero()
 
+            coef_data_peturb = self.get_case_total_data()
+            # strp_data_petrub = self.get_strip_data()
+            res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+
             self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
 
-            coef_data_peturb = self.get_case_total_data()
-            # strp_data_petrub = self.get_strip_data()
-            res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+            self.avl.update_surfaces()
+            self.avl.get_res()
+            self.avl.velsum()
+            self.avl.aero()
+
+            coef_data = self.get_case_total_data()
+            # strp_data = self.get_strip_data()
+            res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
 
             func_seeds = {}
             for func_key in coef_data:
@@ -1189,8 +1222,6 @@ class AVLSolver(object):
 
         if res_seeds is None:
             res_seeds = np.zeros(mesh_size)
-
-        res_slice = (slice(0, mesh_size),)
 
         # set derivative seeds
         # self.clear_ad_seeds()
@@ -1237,16 +1268,17 @@ class AVLSolver(object):
         for func in funcs:
             sens[func] = {}
             # get the RHS of the adjiont equation (pFpU)
+            # TODO: remove seeds if it doesn't effect accuracy
+            # self.clear_ad_seeds()
             _, _, pfpU = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
 
-            self.clear_ad_seeds()
+            # self.clear_ad_seeds()
             # u solver adjoint equation with RHS
             self.set_gamma_ad_seeds(-1 * pfpU)
             self.avl.solve_adjoint()
             # get the resulting adjoint vector (dfunc/dRes) from fortran
             dfdR = self.get_residual_ad_seeds()
-
-            self.clear_ad_seeds()
+            # self.clear_ad_seeds()
             con_seeds, geom_seeds, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0}, res_seeds=dfdR)
 
             sens[func].update(con_seeds)
