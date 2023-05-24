@@ -1,9 +1,7 @@
-# from numpy.distutils.core import setup
 from setuptools import setup
 import re
 import os
 import subprocess
-# from numpy.distutils.core import Extension
 
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
@@ -34,8 +32,6 @@ def make_avl_lib():
 
 
 if __name__ == "__main__":
-    # make_avl_lib()
-    # cwd = os.getcwd()
     # to install locally use `python setup_deprecated.py develop`
 
     setup(

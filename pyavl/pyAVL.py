@@ -520,6 +520,20 @@ class AVLSolver(object):
 
         return hinge_moments
 
+    def get_hinge_moments(self) -> Dict[str, float]:
+        """
+        get the hinge moments from the fortran layer and return them as a dictionary
+        """
+        hinge_moments = {}
+
+        control_surfaces = self.get_control_names()
+        mom_array = self.get_avl_fort_var("CASE_R", "CHINGE")
+
+        for idx_con, con_surf in enumerate(control_surfaces):
+            hinge_moments[con_surf] = mom_array[idx_con]
+
+        return hinge_moments
+
     def get_strip_data(self) -> Dict[str, Dict[str, np.ndarray]]:
         # fmt: off
         var_to_fort_var = {
