@@ -143,6 +143,35 @@ class TestHingeMom(unittest.TestCase):
         np.testing.assert_allclose(mom_data["Rudder"], -1.0957068091302286e-3, rtol=1e-8)
         np.testing.assert_allclose(mom_data["Elevator"], -1.065702741142345e-2, rtol=1e-8)
 
+class TestVariableSetting(unittest.TestCase):
+    def setUp(self) -> None:
+        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+
+    def test_alpha_set(self):
+        """
+        Test that setting the alpha works
+        """
+        
+        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.execute_run()
+        alfa_new = self.avl_solver.get_case_parameter('alpha')
+        np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
+        
+
+    def test_con_surf_set(self):
+        """
+        Test that setting the control surface works
+        """
+        
+        self.avl_solver.add_constraint("Elevator", 10.00)
+        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.execute_run()
+        alfa_new = self.avl_solver.get_case_parameter('alpha')
+        np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
+        def_dict = self.avl_solver.get_control_deflections()
+        np.testing.assert_allclose(def_dict['Elevator'], 10.00, rtol=1e-15)
+
+        
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,7 @@
 
 default:
 # Check if the config.mk file is in the config dir.
-	if [ ! -f "config/config.mk" ]; then \
+	@if [ ! -f "config/config.mk" ]; then \
 	echo "WARNING: this method of compiling is deprecated use meson insted!"; \
 	echo "Before compiling, copy an existing config file from the "; \
 	echo "config/defaults/ directory to the config/ directory and  "; \

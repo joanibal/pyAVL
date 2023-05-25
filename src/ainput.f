@@ -443,7 +443,7 @@ C------ read surface angle change
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         READ (LINE,*,ERR=990) ADDINC(ISURF)
-        ADDINC(ISURF) = ADDINC(ISURF)*DTR
+        ! ADDINC(ISURF) = ADDINC(ISURF)*DTR
         
 C
 C===========================================================================
@@ -534,7 +534,7 @@ C
         XYZLES(2,ISEC, ISURF) = RINPUT(2)
         XYZLES(3,ISEC, ISURF) = RINPUT(3)
         CHORDS(ISEC, ISURF) = RINPUT(4)
-        AINCS(ISEC, ISURF)  = RINPUT(5)*DTR
+        AINCS(ISEC, ISURF)  = RINPUT(5)
 C
         IF(NINPUT.GE.7) THEN
          NSPANS(ISEC, ISURF) = INT( RINPUT(6) + 0.001 )

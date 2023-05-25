@@ -35,17 +35,19 @@ class TestGeom(unittest.TestCase):
                 "angle": 1.23,
                 "nspans": np.array([5, 4, 3, 2, 1]),
                 "sspaces": np.array([-1.0, 0.0, 1.0, 2.0, 3.0]),
-                "aincs": np.deg2rad(np.array([0.5, 0.4, 0.3, 0.2, 0.1])),
+                "aincs": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
                 "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
                 "xyzles": np.array([[0, 0, 0], [0.1, 1.0, 0.01], [0.2, 2.0, 0.02], [0.3, 3.0, 0.03], [0.4, 4.0, 0.04]]),
             },
         }
 
-        data = self.avl_solver.get_surface_params()
+        data = self.avl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
+        
+        from pprint import pprint
+        
 
         for surf in reference_data:
             for key in reference_data[surf]:
-                # print(key, data[surf][key], reference_data[surf][key])
                 np.testing.assert_allclose(
                     data[surf][key],
                     reference_data[surf][key],
@@ -56,6 +58,10 @@ class TestGeom(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 6.00)
         self.avl_solver.add_constraint("beta", 2.00)
         self.avl_solver.execute_run()
+        
+        assert self.avl_solver.get_num_surfaces() == 5
+        assert self.avl_solver.get_num_strips() == 90
+        assert self.avl_solver.get_mesh_size() == 780
 
         np.testing.assert_allclose(
             self.avl_solver.get_case_parameter("alpha"),
@@ -74,6 +80,7 @@ class TestGeom(unittest.TestCase):
         )
 
         self.avl_solver.set_surface_params(data)
+        
 
         assert self.avl_solver.get_num_surfaces() == 5
         assert self.avl_solver.get_num_strips() == 90

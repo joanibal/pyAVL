@@ -42,6 +42,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+src/ad_src/forward_tmp/
+src/ad_src/reverse_tmp/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -1110,6 +1110,10 @@ C------ default CG location is the input reference location
         PARVAL(IPXCG,IR) = XYZREF0(1)
         PARVAL(IPYCG,IR) = XYZREF0(2)
         PARVAL(IPZCG,IR) = XYZREF0(3)
+C       just set the initial values         
+        XYZREF(1) = XYZREF0(1)
+        XYZREF(2) = XYZREF0(2)
+        XYZREF(3) = XYZREF0(3)
 C
         PARVAL(IPMASS,IR) = RMASS0
         PARVAL(IPIXX,IR) = RINER0(1,1)

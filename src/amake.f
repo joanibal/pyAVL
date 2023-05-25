@@ -45,6 +45,7 @@ C
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX)
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
+      integer idx_vor, idx_strip
 C
 C
       IF(NSEC(ISURF).LT.2) THEN
@@ -69,9 +70,26 @@ C--- Image flag set to indicate section definition direction
 C    IMAGS= 1  defines edge 1 located at surface root edge 
 C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
       IMAGS(ISURF) = 1
-      IFRST(ISURF) = NVOR   + 1 
-      JFRST(ISURF) = NSTRIP + 1
+      
+      if (ISURF == 1) then
+            IFRST(ISURF) = 1
+      else
+            IFRST(ISURF) =  IFRST(ISURF-1) +  NK(ISURF-1)*NJ(ISURF-1)        
+      endif
+      ! write(*,*) 'IFRST(ISURF)', IFRST(ISURF)
+      ! IFRST(ISURF) = NVOR   + 1 
+      ! write(*,*) 'IFRST(ISURF) 2', IFRST(ISURF)
+      
+      
+      ! JFRST(ISURF) = NSTRIP + 1
+      if (ISURF == 1) then
+            JFRST(ISURF) = 1
+      else
+            JFRST(ISURF) =  JFRST(ISURF-1) +  NJ(ISURF-1)
+      endif
+      
       NK(ISURF) = NVC(ISURF)
+      idx_strip = JFRST(ISURF)
 C
 C-----------------------------------------------------------------
 C---- section arc lengths of wing trace in y-z plane
@@ -244,8 +262,8 @@ C
         CLAFR = CLAF(ISEC+1,ISURF)
 C
 C------ removed CLAF influence on zero-lift angle  (MD  21 Mar 08)
-        AINCL = AINCS(ISEC  , ISURF) + ADDINC(ISURF)
-        AINCR = AINCS(ISEC+1, ISURF) + ADDINC(ISURF)
+        AINCL = AINCS(ISEC  , ISURF)*DTR + ADDINC(ISURF)*DTR
+        AINCR = AINCS(ISEC+1, ISURF)*DTR + ADDINC(ISURF)*DTR
 cc      AINCL = AINCS(ISEC)   + ADDINC(ISURF) - 4.0*DTR*(CLAFL-1.0)
 cc      AINCR = AINCS(ISEC+1) + ADDINC(ISURF) - 4.0*DTR*(CLAFR-1.0)
 C
@@ -292,7 +310,9 @@ C
 C------ go over chord strips
         IPTL = IPTLOC(ISEC)
         IPTR = IPTLOC(ISEC+1)
-        NSPAN = IPTR - IPTL
+        NSPAN = IPTR - IPTL       
+        NJ(ISURF) = NJ(ISURF) +  NSPAN
+
         DO 150 ISPAN = 1, NSPAN
 C-------- define left and right edges of vortex strip
 C-          note that incidence angle is set by ATAN of chord projections,
@@ -305,36 +325,36 @@ C-          not by linear interpolation of AINC
           FC = (YCP(IVS) -YPT(IPTL))/(YPT(IPTR)-YPT(IPTL))
 C
 C-------- store strip in global data arrays
-          NSTRIP = NSTRIP + 1
-          NJ(ISURF) = NJ(ISURF) + 1
+      !     NSTRIP = NSTRIP + 1
+      !     NJ(ISURF) = NJ(ISURF) + 1
 C
-          RLE1(1,NSTRIP) = (1.0-F1)*XYZLEL(1) + F1*XYZLER(1)
-          RLE1(2,NSTRIP) = (1.0-F1)*XYZLEL(2) + F1*XYZLER(2)
-          RLE1(3,NSTRIP) = (1.0-F1)*XYZLEL(3) + F1*XYZLER(3)
-          CHORD1(NSTRIP) = (1.0-F1)*CHORDL    + F1*CHORDR
+          RLE1(1,idx_strip) = (1.0-F1)*XYZLEL(1) + F1*XYZLER(1)
+          RLE1(2,idx_strip) = (1.0-F1)*XYZLEL(2) + F1*XYZLER(2)
+          RLE1(3,idx_strip) = (1.0-F1)*XYZLEL(3) + F1*XYZLER(3)
+          CHORD1(idx_strip) = (1.0-F1)*CHORDL    + F1*CHORDR
 C
-          RLE2(1,NSTRIP) = (1.0-F2)*XYZLEL(1) + F2*XYZLER(1)
-          RLE2(2,NSTRIP) = (1.0-F2)*XYZLEL(2) + F2*XYZLER(2)
-          RLE2(3,NSTRIP) = (1.0-F2)*XYZLEL(3) + F2*XYZLER(3)
-          CHORD2(NSTRIP) = (1.0-F2)*CHORDL    + F2*CHORDR
+          RLE2(1,idx_strip) = (1.0-F2)*XYZLEL(1) + F2*XYZLER(1)
+          RLE2(2,idx_strip) = (1.0-F2)*XYZLEL(2) + F2*XYZLER(2)
+          RLE2(3,idx_strip) = (1.0-F2)*XYZLEL(3) + F2*XYZLER(3)
+          CHORD2(idx_strip) = (1.0-F2)*CHORDL    + F2*CHORDR
 C
-          RLE(1,NSTRIP)  = (1.0-FC)*XYZLEL(1) + FC*XYZLER(1)
-          RLE(2,NSTRIP)  = (1.0-FC)*XYZLEL(2) + FC*XYZLER(2)
-          RLE(3,NSTRIP)  = (1.0-FC)*XYZLEL(3) + FC*XYZLER(3)
-          CHORD(NSTRIP)  = (1.0-FC)*CHORDL    + FC*CHORDR
+          RLE(1,idx_strip)  = (1.0-FC)*XYZLEL(1) + FC*XYZLER(1)
+          RLE(2,idx_strip)  = (1.0-FC)*XYZLEL(2) + FC*XYZLER(2)
+          RLE(3,idx_strip)  = (1.0-FC)*XYZLEL(3) + FC*XYZLER(3)
+          CHORD(idx_strip)  = (1.0-FC)*CHORDL    + FC*CHORDR
 C
-          WSTRIP(NSTRIP) = ABS(F2-F1)*WIDTH
-          TANLE(NSTRIP)  = (XYZLER(1)-XYZLEL(1))/WIDTH
-          TANTE(NSTRIP)  = (XYZLER(1)+CHORDR - XYZLEL(1)-CHORDL)/WIDTH
+          WSTRIP(idx_strip) = ABS(F2-F1)*WIDTH
+          TANLE(idx_strip)  = (XYZLER(1)-XYZLEL(1))/WIDTH
+          TANTE(idx_strip)  = (XYZLER(1)+CHORDR - XYZLEL(1)-CHORDL)/WIDTH
 C
           CHSIN = CHSINL + FC*(CHSINR-CHSINL)
           CHCOS = CHCOSL + FC*(CHCOSR-CHCOSL)
-          AINC(NSTRIP) = ATAN2(CHSIN,CHCOS)
+          AINC(idx_strip) = ATAN2(CHSIN,CHCOS)
 C
           DO N = 1, NDESIGN
             CHSIN_G = (1.0-FC)*CHSINL_G(N) + FC*CHSINR_G(N)
             CHCOS_G = (1.0-FC)*CHCOSL_G(N) + FC*CHCOSR_G(N)
-            AINC_G(NSTRIP,N) = (CHCOS*CHSIN_G - CHSIN*CHCOS_G)
+            AINC_G(idx_strip,N) = (CHCOS*CHSIN_G - CHSIN*CHCOS_G)
      &                       / (CHSIN**2 + CHCOS**2)
           ENDDO
 C
@@ -348,15 +368,15 @@ C----------- no control effect here
              XLED(N) = 0.
              XTED(N) = 0.
 C
-             VHINGE(1,NSTRIP,N) = 0.
-             VHINGE(2,NSTRIP,N) = 0.
-             VHINGE(3,NSTRIP,N) = 0.
+             VHINGE(1,idx_strip,N) = 0.
+             VHINGE(2,idx_strip,N) = 0.
+             VHINGE(3,idx_strip,N) = 0.
 C
-             VREFL(NSTRIP,N) = 0.
+             VREFL(idx_strip,N) = 0.
 C
-             PHINGE(1,NSTRIP,N) = 0.
-             PHINGE(2,NSTRIP,N) = 0.
-             PHINGE(3,NSTRIP,N) = 0.
+             PHINGE(1,idx_strip,N) = 0.
+             PHINGE(2,idx_strip,N) = 0.
+             PHINGE(3,idx_strip,N) = 0.
 C
             ELSE
 C----------- control variable # N is active here
@@ -368,7 +388,7 @@ C
              IF(XHD.GE.0.0) THEN
 C------------ TE control surface, with hinge at XHD
               XLED(N) = XHD
-              XTED(N) = CHORD(NSTRIP)
+              XTED(N) = CHORD(idx_strip)
              ELSE
 C------------ LE control surface, with hinge at -XHD
               XLED(N) =  0.0
@@ -396,20 +416,20 @@ C------------ default: set hinge vector along hingeline
              ENDIF
 C
              VMOD = SQRT(VSQ)
-             VHINGE(1,NSTRIP,N) = VHX/VMOD
-             VHINGE(2,NSTRIP,N) = VHY/VMOD
-             VHINGE(3,NSTRIP,N) = VHZ/VMOD
+             VHINGE(1,idx_strip,N) = VHX/VMOD
+             VHINGE(2,idx_strip,N) = VHY/VMOD
+             VHINGE(3,idx_strip,N) = VHZ/VMOD
 C
-             VREFL(NSTRIP,N) = REFLD(ICL,ISEC, ISURF)
+             VREFL(idx_strip,N) = REFLD(ICL,ISEC, ISURF)
 C
              IF(XHD .GE. 0.0) THEN
-              PHINGE(1,NSTRIP,N) = RLE(1,NSTRIP) + XHD
-              PHINGE(2,NSTRIP,N) = RLE(2,NSTRIP)
-              PHINGE(3,NSTRIP,N) = RLE(3,NSTRIP)
+              PHINGE(1,idx_strip,N) = RLE(1,idx_strip) + XHD
+              PHINGE(2,idx_strip,N) = RLE(2,idx_strip)
+              PHINGE(3,idx_strip,N) = RLE(3,idx_strip)
              ELSE
-              PHINGE(1,NSTRIP,N) = RLE(1,NSTRIP) - XHD
-              PHINGE(2,NSTRIP,N) = RLE(2,NSTRIP)
-              PHINGE(3,NSTRIP,N) = RLE(3,NSTRIP)
+              PHINGE(1,idx_strip,N) = RLE(1,idx_strip) - XHD
+              PHINGE(2,idx_strip,N) = RLE(2,idx_strip)
+              PHINGE(3,idx_strip,N) = RLE(3,idx_strip)
              ENDIF
 C
             ENDIF
@@ -417,22 +437,31 @@ C
 C
 C--- Interpolate CD-CL polar defining data from input sections to strips
           DO L = 1, 6
-            CLCD(L,NSTRIP) = (1.0-FC)*CLCDSEC(L,ISEC  ,ISURF) 
+            CLCD(L,idx_strip) = (1.0-FC)*CLCDSEC(L,ISEC  ,ISURF) 
      &                      +     FC *CLCDSEC(L,ISEC+1,ISURF)
           END DO
 C--- If the min drag is zero flag the strip as no-viscous data
-          LVISCSTRP(NSTRIP) = (CLCD(4,NSTRIP).NE.0.0)
+          LVISCSTRP(idx_strip) = (CLCD(4,idx_strip).NE.0.0)
 C
 C
-          IJFRST(NSTRIP) = NVOR + 1
-          NVSTRP(NSTRIP) = NVC(ISURF)
+      !     IJFRST(idx_strip) = NVOR + 1
+          if (idx_strip ==1) then 
+            IJFRST(idx_strip) = 1
+          ELSE
+            IJFRST(idx_strip) = IJFRST(idx_strip - 1) + 
+     &                          NVSTRP(idx_strip - 1)
+          endif
+          
+          NVSTRP(idx_strip) = NVC(ISURF)
+!           write(*,*) 'IJFRST(idx_strip)', IJFRST(idx_strip),
+!      &               'NVSTRP(idx_strip)', IJFRST(idx_strip - 1) + NVC(ISURF)
 C
-          NSURFS(NSTRIP) = ISURF
+          NSURFS(idx_strip) = ISURF
 C
           NSL = NASEC(ISEC  , ISURF)
           NSR = NASEC(ISEC+1, ISURF)
 C
-          CHORDC = CHORD(NSTRIP)
+          CHORDC = CHORD(idx_strip)
 C
           CLAFC =  (1.-FC)*(CHORDL/CHORDC)*CLAFL
      &           +     FC *(CHORDR/CHORDC)*CLAFR
@@ -441,52 +470,55 @@ C-------- set chordwise spacing fraction arrays
           CALL CSPACER(NVC(ISURF),CSPACE(ISURF),CLAFC, XPT,XVR,XSR,XCP)
 c
 C-------- go over vortices in this strip
+          idx_vor = IJFRST(idx_strip)
           DO 1505 IVC = 1, NVC(ISURF)
-            NVOR = NVOR + 1
+            ! NVOR = NVOR + 1
 C
-            RV1(1,NVOR) = RLE1(1,NSTRIP) + XVR(IVC)*CHORD1(NSTRIP)
-            RV1(2,NVOR) = RLE1(2,NSTRIP)
-            RV1(3,NVOR) = RLE1(3,NSTRIP)
+            RV1(1,idx_vor) = RLE1(1,idx_strip)
+     &                        + XVR(IVC)*CHORD1(idx_strip)
+            RV1(2,idx_vor) = RLE1(2,idx_strip)
+            RV1(3,idx_vor) = RLE1(3,idx_strip)
 C
-            RV2(1,NVOR) = RLE2(1,NSTRIP) + XVR(IVC)*CHORD2(NSTRIP)
-            RV2(2,NVOR) = RLE2(2,NSTRIP)
-            RV2(3,NVOR) = RLE2(3,NSTRIP)
+            RV2(1,idx_vor) = RLE2(1,idx_strip) 
+     &                       + XVR(IVC)*CHORD2(idx_strip)
+            RV2(2,idx_vor) = RLE2(2,idx_strip)
+            RV2(3,idx_vor) = RLE2(3,idx_strip)
 C
-            RV(1,NVOR) = RLE(1,NSTRIP) + XVR(IVC)*CHORDC
-            RV(2,NVOR) = RLE(2,NSTRIP)
-            RV(3,NVOR) = RLE(3,NSTRIP)
+            RV(1,idx_vor) = RLE(1,idx_strip) + XVR(IVC)*CHORDC
+            RV(2,idx_vor) = RLE(2,idx_strip)
+            RV(3,idx_vor) = RLE(3,idx_strip)
 C
-            RC(1,NVOR) = RLE(1,NSTRIP) + XCP(IVC)*CHORDC
-            RC(2,NVOR) = RLE(2,NSTRIP)
-            RC(3,NVOR) = RLE(3,NSTRIP)
+            RC(1,idx_vor) = RLE(1,idx_strip) + XCP(IVC)*CHORDC
+            RC(2,idx_vor) = RLE(2,idx_strip)
+            RC(3,idx_vor) = RLE(3,idx_strip)
 C
-            RS(1,NVOR) = RLE(1,NSTRIP) + XSR(IVC)*CHORDC
-            RS(2,NVOR) = RLE(2,NSTRIP)
-            RS(3,NVOR) = RLE(3,NSTRIP)
+            RS(1,idx_vor) = RLE(1,idx_strip) + XSR(IVC)*CHORDC
+            RS(2,idx_vor) = RLE(2,idx_strip)
+            RS(3,idx_vor) = RLE(3,idx_strip)
 C
             CALL AKIMA(XASEC(1,ISEC,  ISURF),SASEC(1,ISEC,  ISURF),NSL,
      &                 XCP(IVC),SLOPEL, DSDX)
             CALL AKIMA(XASEC(1,ISEC+1,ISURF),SASEC(1,ISEC+1,ISURF),NSR,
      &                 XCP(IVC),SLOPER, DSDX)
-            SLOPEC(NVOR) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
+            SLOPEC(idx_vor) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
      &                    +     FC *(CHORDR/CHORDC)*SLOPER
 C
             CALL AKIMA(XASEC(1,ISEC  ,ISURF),SASEC(1,ISEC  ,ISURF),NSL,
      &                 XVR(IVC),SLOPEL, DSDX)
             CALL AKIMA(XASEC(1,ISEC+1,ISURF),SASEC(1,ISEC+1,ISURF),NSR,
      &                 XVR(IVC),SLOPER, DSDX)
-            SLOPEV(NVOR) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
+            SLOPEV(idx_vor) =  (1.-FC)*(CHORDL/CHORDC)*SLOPEL 
      &                    +     FC *(CHORDR/CHORDC)*SLOPER
 C
             DXOC = XPT(IVC+1) - XPT(IVC)
-            DXV(NVOR) = DXOC*CHORDC
-            CHORDV(NVOR) = CHORDC
-            NSURFV(NVOR) = LSCOMP(ISURF)
+            DXV(idx_vor) = DXOC*CHORDC
+            CHORDV(idx_vor) = CHORDC
+            NSURFV(idx_vor) = LSCOMP(ISURF)
 
-            LVNC(NVOR) = .TRUE.
+            LVNC(idx_vor) = .TRUE.
 C
 C---------- element inherits alpha,beta flag from surface
-            LVALBE(NVOR) = LFALBE(ISURF)
+            LVALBE(idx_vor) = LFALBE(ISURF)
 C
             DO N = 1, NCONTROL
 C------------ scale control gain by factor 0..1, (fraction of element on control surface)
@@ -496,14 +528,16 @@ C
               FRACLE = MIN( 1.0 , MAX( 0.0 , FRACLE ) )
               FRACTE = MIN( 1.0 , MAX( 0.0 , FRACTE ) )
 C
-              DCONTROL(NVOR,N) = GAINDA(N)*(FRACTE-FRACLE)
+              DCONTROL(idx_vor,N) = GAINDA(N)*(FRACTE-FRACLE)
             ENDDO
 C
 C---------- TE control point used only if surface sheds a wake
-            LVNC(NVOR) = LFWAKE(ISURF)
+            LVNC(idx_vor) = LFWAKE(ISURF)
+            idx_vor = idx_vor + 1
 
  1505     CONTINUE
-C
+C           
+        idx_strip = idx_strip + 1
  150    CONTINUE
 C
  200  CONTINUE
@@ -524,6 +558,10 @@ C
       ELSE
        CAVESURF(ISURF) = SUM/WTOT
       ENDIF
+C     add number of strips to the global count
+      NSTRIP = NSTRIP + NJ(ISURF)
+C     add number of of votrices
+      NVOR = NVOR + NK(ISURF)*NJ(ISURF) 
 C
       RETURN
       END ! MAKESURF
@@ -636,7 +674,7 @@ C
         RL(3,NLNODE) = XYZTRAN_B(3,IBODY) + XYZSCAL_B(3,IBODY)*YVB
 C
         CALL AKIMA(XBOD,TBOD,NBOD,XVB,TVB,DRDX)
-        RADL(NLNODE) = SQRT(XYZSCAL(2,IBODY)*XYZSCAL(3,IBODY)) * 0.5*TVB
+        RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) * 0.5*TVB
       ENDDO
 C---- get surface length, area and volume
       VOLB = 0.0
@@ -677,6 +715,7 @@ C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*(*) MSG
+      integer idx_vor
 C
       NNI = NSURF + 1
       IF(NNI.GT.NFMAX) THEN
@@ -703,8 +742,10 @@ C---- same various logical flags
       LFLOAD(NNI) = LFLOAD(NN)
 
 C---- accumulate stuff for new image surface 
-      IFRST(NNI) = NVOR   + 1
-      JFRST(NNI) = NSTRIP + 1
+      ! IFRST(NNI) = NVOR   + 1
+      IFRST(NNI) =  IFRST(NNI-1) +  NK(NNI-1)*NJ(NNI-1)
+      JFRST(NNI) =  JFRST(NNI-1) +  NJ(NNI-1)
+      ! JFRST(NNI) = NSTRIP + 1
       NJ(NNI) = NJ(NN)
       NK(NNI) = NK(NN)
 C
@@ -725,9 +766,10 @@ C
 C--- Create image strips, to maintain the same sense of positive GAMMA
 C    these have the 1 and 2 strip edges reversed (i.e. root is edge 2, 
 C    not edge 1 as for a strip with IMAGS=1
+      idx_strip = JFRST(NNI)
       DO 100 IVS = 1, NVS(NNI)
-        NSTRIP = NSTRIP + 1
-        IF(NSTRIP.GT.NSMAX) THEN
+      !   NSTRIP = NSTRIP + 1
+        IF(idx_strip.GT.NSMAX) THEN
           WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX.'
           STOP
         ENDIF
@@ -750,7 +792,7 @@ C
         TANLE(JJI)  = -TANLE(JJ)
         AINC (JJI)  =  AINC(JJ)
 C
-        NSURFS(NSTRIP) = NNI
+        NSURFS(idx_strip) = NNI
 C
         DO N = 1, NDESIGN
           AINC_G(JJI,N) = AINC_G(JJ,N)
@@ -769,16 +811,21 @@ C
         ENDDO
 C
 C--- The defined section for image strip is flagged with (-)
-        IJFRST(JJI)  = NVOR + 1
+      !   IJFRST(JJI)  = NVOR + 1
+      !   IJFRST(JJI) = IJFRST(NSTRIP - 1) + NVC(NNI)
+        IJFRST(JJI) = IJFRST(JJI - 1) + NVSTRP(JJI - 1)
+
         NVSTRP(JJI)  = NVC(NNI)
         DO L = 1, 6
           CLCD(L,JJI) = CLCD(L,JJ) 
         END DO
         LVISCSTRP(JJI) = LVISCSTRP(JJ)
 C
+        idx_vor = IJFRST(JJI)
+
         DO 80 IVC = 1, NVC(NNI)
-          NVOR = NVOR + 1
-          IF(NVOR.GT.NVMAX) THEN
+      !     NVOR = NVOR + 1
+          IF(idx_vor.GT.NVMAX) THEN
             WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX.'
             STOP
           ENDIF
@@ -810,6 +857,8 @@ ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
             RSGN = VREFL(JJ,N)
             DCONTROL(III,N) = -DCONTROL(II,N)*RSGN
           ENDDO
+          idx_vor = idx_vor + 1
+
 C
    80   CONTINUE
 C
@@ -817,6 +866,9 @@ C
 C
       
 C
+      NSTRIP = NSTRIP + NJ(NNI)
+      NVOR = NVOR + NK(NNI)*NJ(NNI) 
+
       RETURN
       END ! SDUPL
 
@@ -987,7 +1039,7 @@ C
           ENDDO
 C
 C...Define unit vector along bound leg
-          DXB = RV2(1,I)-RV1(1,I)
+          DXB = RV2(1,I)-RV1(1,I) ! right h.v. pt - left h.v. pt 
           DYB = RV2(2,I)-RV1(2,I)
           DZB = RV2(3,I)-RV1(3,I)
           EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
@@ -1011,6 +1063,7 @@ C
           EC(1) =  COSC
           EC(2) = -SINC*ES(2)
           EC(3) = -SINC*ES(3)
+      !     EC  = rotation of strip normal vector? or along chord?
           DO N = 1, NDESIGN
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)

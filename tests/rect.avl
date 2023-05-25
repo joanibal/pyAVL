@@ -1,0 +1,42 @@
+MACH MDAO AVL
+#======================================================
+#------------------- Geometry File --------------------
+#======================================================
+# AVL Conventions
+# SI Used: m, kg, etc
+
+#Mach
+0.1
+#IYsym   IZsym   Zsym
+ 0       0       0
+#Sref    Cref    b_wing
+1.123    0.25    6.01
+#Xref    Yref    Zref
+0,0 0.0 0.0
+# CDp
+0.00
+
+#======================================================
+#--------------------- Main Wing ----------------------
+#======================================================
+SURFACE
+Wing
+#Nchordwise  Cspace   [Nspan   Sspace]
+     1        1.0      1      -2.0
+SCALE
+1.0  1.0  1.0
+TRANSLATE
+0.0  0.0  0.0
+ANGLE
+0.0
+#------------------------------------------------------
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.00    0.0    0     1.0     0.0
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.00    1.0    0.0     1.0     0.0
+
+# -- END OF FILE --

@@ -228,7 +228,6 @@ C---- pick up here to try decoding for remaining commands
 C
 C       IF(COMAND .EQ. 'X   ') THEN
 C------ execute calculation
-C         ALFA = 2.5
 
 
 
@@ -935,43 +934,28 @@ C----- NASA Std. Stability axes, X fwd, Z down
 C----- Geometric Stability axes, X aft, Z up
        DIR =  1.0
       ENDIF
-C
-      XYZREF(1) = PARVAL(IPXCG,IR)
-      XYZREF(2) = PARVAL(IPYCG,IR)
-      XYZREF(3) = PARVAL(IPZCG,IR)
-C
-      CDREF = PARVAL(IPCD0,IR)
-C
-      MACH = PARVAL(IPMACH,IR)
-C
-      IF(MACH.NE.AMACH) THEN
-C----- new Mach number invalidates close to everything that's stored
-       LAIC = .FALSE.
-       LSRD = .FALSE.
-       LSOL = .FALSE.
-       LSEN = .FALSE.
-      ENDIF
+C     
+      call set_par_and_cons(NITER, IR)
+      
       call cpu_time(t0)
-
 C
 C---- set, factor AIC matrix and induced-velocity matrix (if they don't exist)
       CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
       if (ltiming) then 
             call cpu_time(t1)
             write(*,*) ' SETUP time: ', t1 - t0
       end if
 C
-      IF(NITER.GT.0) THEN
-C----- might as well directly set operating variables if they are known
-       IF(ICON(IVALFA,IR).EQ.ICALFA) ALFA    = CONVAL(ICALFA,IR)*DTR
-       IF(ICON(IVBETA,IR).EQ.ICBETA) BETA    = CONVAL(ICBETA,IR)*DTR
-       IF(ICON(IVROTX,IR).EQ.ICROTX) WROT(1) = CONVAL(ICROTX,IR)*2./BREF
-       IF(ICON(IVROTY,IR).EQ.ICROTY) WROT(2) = CONVAL(ICROTY,IR)*2./CREF
-       IF(ICON(IVROTZ,IR).EQ.ICROTZ) WROT(3) = CONVAL(ICROTZ,IR)*2./BREF
-      ENDIF
+
 C
 C----- set GAM_U
-ccc       WRITE(*,*) ' Solving for unit-freestream vortex circulations...'
+      if (lverbose) then
+      WRITE(*,*) ' Solving for unit-freestream vortex circulations...'
+      endif
       CALL GUCALC
       if (ltiming) then 
             call cpu_time(t2)
@@ -1943,4 +1927,72 @@ C
       RETURN
       END ! OUTSTRP
 
+C ============= Added to AVL ===============
 
+      subroutine exec_rhs
+      include "AVL.INC"
+      ! CALL EXEC(10,1,1)
+      call set_par_and_cons(NITMAX, IRUN)
+      
+      CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
+      CALL VINFAB
+      
+      call set_vel_rhs
+      
+C---- copy RHS vector into GAM that will be used for soluiton
+      GAM = RHS
+
+      CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
+
+      end !subroutine solve_rhs
+      
+      subroutine get_res
+      INCLUDE "AVL.INC"
+      call set_par_and_cons(NITMAX, IRUN)
+C---  
+      ! Do not use this routine in the sovler
+      ! IF(.NOT.LAIC) THEN
+      !      CALL build_AIC
+      ! end if
+      CALL build_AIC
+      AMACH = MACH
+      BETM = SQRT(1.0 - AMACH**2)
+      CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
+     &           NVOR,RV1,RV2,NSURFV,CHORDV,
+     &           NVOR,RV ,    NSURFV,.TRUE.,
+     &           WV_GAM,NVMAX)
+C---- set VINF() vector from initial ALFA,BETA
+      CALL VINFAB
+            
+      call set_vel_rhs
+
+      
+      call mat_prod(AICN, GAM, NVOR, res)
+C---- add the RHS vector to the residual
+      !$AD II-LOOP
+      do I = 1, NVOR
+            res(I) = res(I) - RHS(I)
+      enddo      
+      
+      
+      end !get_res
+
+      
+      
+      subroutine solve_adjoint()
+      include "AVL.INC"
+      include "AVL_ad_seeds.inc"
+      CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
+      RES_diff = GAM_diff
+      
+      CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
+      
+      end !subroutine solve_adjoint

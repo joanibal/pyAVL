@@ -1,3 +1,4 @@
+from setuptools import setup
 import re
 import os
 import subprocess
@@ -28,10 +29,10 @@ def make_avl_lib():
         raise OSError("make", f"The compile command failed! Check the log at {compile_log} for more information.")
 
 
+
+
 if __name__ == "__main__":
-    from setuptools import setup
-    make_avl_lib()
-    cwd = os.getcwd()
+    # to install locally use `python setup_deprecated.py develop`
 
     setup(
         name="pyavl-wrapper",

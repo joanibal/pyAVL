@@ -65,7 +65,7 @@ C--------------------------------------------------------------------
      &     RV2(3,NV),
      &     CHORDV(NV)
       REAL RC(3,NC),
-     &     WC_GAM(3,NCDIM,*)
+     &     WC_GAM(3,NCDIM,NCDIM)
       INTEGER NSURFV(NV), NSURFC(NC)
       LOGICAL LVTEST
 C     
@@ -78,7 +78,7 @@ C
 C...  Nested pair of loops to calculate the normalwash influence matrix
 C     the outer loop runs over all the control points
 C     the inner loop runs over all the vortex elements 
-C     
+C$AD II-LOOP
       DO 200 I = 1, NC
 C...  Control point location
          X = RC(1,I)
@@ -89,6 +89,7 @@ C
          V = 0.
          W = 0.
 C     
+C$AD II-LOOP
          DO 100 J = 1, NV
 C--------- set vortex core
             DSYZ = SQRT(  (RV2(2,J)-RV1(2,J))**2
