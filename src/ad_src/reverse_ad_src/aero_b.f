@@ -4,21 +4,26 @@ C
 C  Differentiation of aero in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: clff cyff cdff spanef cdtot
 C                cltot cxtot cytot cztot crtot cmtot cntot crsax
-C                cnsax cdvtot cystrp
+C                cnsax cdvtot cdtot_d cltot_d cxtot_d cytot_d cztot_d
+C                crtot_d cmtot_d cntot_d
 C   with respect to varying inputs: alfa vinf sref xyzref mach
 C                clff cyff cdff spanef cdtot cltot cxtot cytot
-C                cztot crtot cmtot cntot crsax cnsax cdvtot rle
-C                chord rle1 chord1 rle2 chord2 wstrip ensy ensz
-C                xsref ysref zsref cystrp rv1 rv2 rv rc gam wv
+C                cztot crtot cmtot cntot crsax cnsax cdvtot cdtot_d
+C                cltot_d cxtot_d cytot_d cztot_d crtot_d cmtot_d
+C                cntot_d rle chord rle1 chord1 rle2 chord2 wstrip
+C                ensy ensz xsref ysref zsref rv1 rv2 rv rc gam
+C                gam_d wv
 C   RW status of diff variables: alfa:out vinf:out sref:out xyzref:out
 C                mach:out clff:in-zero cyff:in-zero cdff:in-zero
 C                spanef:in-zero cdtot:in-zero cltot:in-zero cxtot:in-zero
 C                cytot:in-zero cztot:in-zero crtot:in-zero cmtot:in-zero
 C                cntot:in-zero crsax:in-zero cnsax:in-zero cdvtot:in-zero
+C                cdtot_d:in-out cltot_d:in-out cxtot_d:in-out cytot_d:in-out
+C                cztot_d:in-out crtot_d:in-out cmtot_d:in-out cntot_d:in-out
 C                rle:out chord:out rle1:out chord1:out rle2:out
 C                chord2:out wstrip:out ensy:out ensz:out xsref:out
-C                ysref:out zsref:out cystrp:in-out rv1:out rv2:out
-C                rv:out rc:out gam:out wv:out
+C                ysref:out zsref:out rv1:out rv2:out rv:out rc:out
+C                gam:out gam_d:out wv:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -53,6 +58,7 @@ C
       INTRINSIC COS
       REAL dir
       EXTERNAL GETSA
+      INTEGER k
       REAL vsq
       REAL vsq_diff
       REAL vmag
@@ -123,6 +129,14 @@ C
 C
 C
       CALL PUSHREAL8ARRAY(cdv_lstrp, nsmax)
+      CALL PUSHREAL8ARRAY(cmst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(cnst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(crst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(czst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(cyst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(cxst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(clst_d, nsmax*ndmax)
+      CALL PUSHREAL8ARRAY(cdst_d, nsmax*ndmax)
       CALL PUSHREAL8ARRAY(cmstrp, nsmax)
       CALL PUSHREAL8ARRAY(cnstrp, nsmax)
       CALL PUSHREAL8ARRAY(crstrp, nsmax)
@@ -163,6 +177,10 @@ C
      +  vsq_diff
       vinf_diff(1) = vinf_diff(1) + vmag*cdref*cxtot_diff + 2*vinf(1)*
      +  vsq_diff
+      DO k=ncontrol,1,-1
+        cntot_d_diff(k) = dir*cntot_d_diff(k)
+        crtot_d_diff(k) = dir*crtot_d_diff(k)
+      ENDDO
       temp_diff = dir*cnsax_diff
       cntot_diff = cntot_diff + cosa*temp_diff
       cosa_diff = cntot*temp_diff
@@ -184,8 +202,26 @@ C
       CALL POPREAL8ARRAY(crstrp, nsmax)
       CALL POPREAL8ARRAY(cnstrp, nsmax)
       CALL POPREAL8ARRAY(cmstrp, nsmax)
+      CALL POPREAL8ARRAY(cdst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(clst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(cxst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(cyst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(czst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(crst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(cnst_d, nsmax*ndmax)
+      CALL POPREAL8ARRAY(cmst_d, nsmax*ndmax)
       CALL POPREAL8ARRAY(cdv_lstrp, nsmax)
       CALL SFFORC_B()
+      DO n=ncontrol,1,-1
+        cntot_d_diff(n) = 0.D0
+        cmtot_d_diff(n) = 0.D0
+        crtot_d_diff(n) = 0.D0
+        cztot_d_diff(n) = 0.D0
+        cytot_d_diff(n) = 0.D0
+        cxtot_d_diff(n) = 0.D0
+        cltot_d_diff(n) = 0.D0
+        cdtot_d_diff(n) = 0.D0
+      ENDDO
       clff_diff = 0.D0
       cyff_diff = 0.D0
       cdff_diff = 0.D0
@@ -206,10 +242,13 @@ C
 C  Differentiation of sfforc in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: alfa vinf sref xyzref cdtot
 C                cltot cxtot cytot cztot crtot cmtot cntot cdvtot
-C                cystrp rv1 rv2 gam
-C   with respect to varying inputs: alfa vinf sref xyzref rle chord
-C                rle1 chord1 rle2 chord2 wstrip ensy ensz xsref
-C                ysref zsref cystrp rv1 rv2 rv gam wv
+C                cdtot_d cltot_d cxtot_d cytot_d cztot_d crtot_d
+C                cmtot_d cntot_d rv1 rv2 gam
+C   with respect to varying inputs: alfa vinf sref xyzref cdtot_d
+C                cltot_d cxtot_d cytot_d cztot_d crtot_d cmtot_d
+C                cntot_d rle chord rle1 chord1 rle2 chord2 wstrip
+C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_d
+C                wv
 C AERO
 C
 C
@@ -228,7 +267,7 @@ C
       REAL f(3), f_u(3, 6)
       REAL f_diff(3)
       REAL fgam(3), fgam_u(3, 6), fgam_d(3, ndmax), fgam_g(3, ngmax)
-      REAL fgam_diff(3)
+      REAL fgam_diff(3), fgam_d_diff(3, ndmax)
       REAL enave(3), spn(3), udrag(3), ulift(3)
       REAL spn_diff(3), udrag_diff(3), ulift_diff(3)
 C
@@ -237,6 +276,9 @@ C
      +     ndmax), cmx_d(ndmax), cmy_d(ndmax), cmz_d(ndmax), cfx_g(ngmax
      +     ), cfy_g(ngmax), cfz_g(ngmax), cmx_g(ngmax), cmy_g(ngmax), 
      +     cmz_g(ngmax), clv_u(numax), clv_d(ndmax), clv_g(ngmax)
+      REAL cfx_d_diff(ndmax), cfy_d_diff(ndmax), cfz_d_diff(ndmax), 
+     +     cmx_d_diff(ndmax), cmy_d_diff(ndmax), cmz_d_diff(ndmax), 
+     +     clv_d_diff(ndmax)
       REAL sina
       REAL sina_diff
       INTRINSIC SIN
@@ -294,8 +336,11 @@ C
       REAL dcfy_u
       REAL dcfz_u
       REAL dcfx_d
+      REAL dcfx_d_diff
       REAL dcfy_d
+      REAL dcfy_d_diff
       REAL dcfz_d
+      REAL dcfz_d_diff
       REAL dcfx_g
       REAL dcfy_g
       REAL dcfz_g
@@ -309,6 +354,7 @@ C
       REAL cdv
       REAL cdv_diff
       REAL cdv_clv
+      REAL cdv_clv_diff
       REAL dcvfx
       REAL dcvfx_diff
       REAL dcvfy
@@ -319,8 +365,11 @@ C
       REAL dcvfy_u
       REAL dcvfz_u
       REAL dcvfx_d
+      REAL dcvfx_d_diff
       REAL dcvfy_d
+      REAL dcvfy_d_diff
       REAL dcvfz_d
+      REAL dcvfz_d_diff
       REAL dcvfx_g
       REAL dcvfy_g
       REAL dcvfz_g
@@ -345,8 +394,9 @@ C
       REAL result1_diff
       REAL result2
       REAL(kind=8) temp_diff
-      INTEGER ii1
       REAL temp_diff0
+      INTEGER ii1
+      REAL temp_diff1
       INTEGER branch
       INTEGER ad_to
       INTEGER ii2
@@ -358,11 +408,16 @@ C
       CALL PUSHREAL8ARRAY(g, 3)
       CALL PUSHREAL8ARRAY(r, 3)
       CALL PUSHREAL8ARRAY(udrag, 3)
+      CALL PUSHREAL8ARRAY(cfx_d, ndmax)
+      CALL PUSHREAL8ARRAY(cfz_d, ndmax)
       CALL PUSHREAL8ARRAY(vrot, 3)
+      CALL PUSHREAL8ARRAY(clv_d, ndmax)
       CALL PUSHREAL8ARRAY(veff, 3)
       CALL PUSHREAL8ARRAY(ulift, 3)
       CALL PUSHREAL8ARRAY(fgam, 3)
       CALL PUSHREAL8ARRAY(rrot, 3)
+      CALL PUSHREAL8ARRAY(cfy_d, ndmax)
+      CALL PUSHREAL8ARRAY(fgam_d, 3*ndmax)
       CALL PUSHREAL8ARRAY(spn, 3)
 C$FWD-OF II-LOOP 
 C
@@ -1150,8 +1205,12 @@ C   XX_SRF values normalized to each surface reference quantities
 C
         nstrps = nj(is)
         DO jj=1,nstrps
+          CALL PUSHINTEGER4(j)
+          j = jfrst(is) + jj - 1
           CALL PUSHREAL8(sr)
+          sr = chord(j)*wstrip(j)
           CALL PUSHREAL8(cr)
+          cr = chord(j)
 C
 C
 C
@@ -1178,6 +1237,16 @@ C
 C--- If case is XZ symmetric (IYSYM=1), add contributions from images,
 C    zero out the asymmetric forces and double the symmetric ones
       IF (iysym .EQ. 1) THEN
+        DO n=ncontrol,1,-1
+          cntot_d_diff(n) = 0.D0
+          cmtot_d_diff(n) = 2.0*cmtot_d_diff(n)
+          crtot_d_diff(n) = 0.D0
+          cztot_d_diff(n) = 2.0*cztot_d_diff(n)
+          cytot_d_diff(n) = 0.D0
+          cxtot_d_diff(n) = 2.0*cxtot_d_diff(n)
+          cltot_d_diff(n) = 2.0*cltot_d_diff(n)
+          cdtot_d_diff(n) = 2.0*cdtot_d_diff(n)
+        ENDDO
         cdvtot_diff = 2.0*cdvtot_diff
         cmtot_diff = 2.0*cmtot_diff
         cztot_diff = 2.0*cztot_diff
@@ -1215,6 +1284,46 @@ C    zero out the asymmetric forces and double the symmetric ones
       DO ii1=1,nfmax
         cdvsurf_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cds_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cls_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cxs_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cys_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          czs_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          crs_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cns_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cms_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii1=1,nsmax
         chord_diff(ii1) = 0.D0
       ENDDO
@@ -1231,6 +1340,9 @@ C    zero out the asymmetric forces and double the symmetric ones
         cxstrp_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nsmax
+        cystrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,nsmax
         czstrp_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nsmax
@@ -1242,12 +1354,62 @@ C    zero out the asymmetric forces and double the symmetric ones
       DO ii1=1,nsmax
         cmstrp_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cdst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          clst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cxst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cyst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          czst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          crst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cnst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cmst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii1=1,nsmax
         cdv_lstrp_diff(ii1) = 0.D0
       ENDDO
       DO is=nsurf,1,-1
         CALL POPCONTROL1B(branch)
         IF (branch .EQ. 0) THEN
+          DO n=ncontrol,1,-1
+            cns_d_diff(is, n) = cns_d_diff(is, n) + cntot_d_diff(n)
+            cms_d_diff(is, n) = cms_d_diff(is, n) + cmtot_d_diff(n)
+            crs_d_diff(is, n) = crs_d_diff(is, n) + crtot_d_diff(n)
+            czs_d_diff(is, n) = czs_d_diff(is, n) + cztot_d_diff(n)
+            cys_d_diff(is, n) = cys_d_diff(is, n) + cytot_d_diff(n)
+            cxs_d_diff(is, n) = cxs_d_diff(is, n) + cxtot_d_diff(n)
+            cls_d_diff(is, n) = cls_d_diff(is, n) + cltot_d_diff(n)
+            cds_d_diff(is, n) = cds_d_diff(is, n) + cdtot_d_diff(n)
+          ENDDO
           cdvsurf_diff(is) = cdvsurf_diff(is) + cdvtot_diff
           cnsurf_diff(is) = cnsurf_diff(is) + cntot_diff
           cmsurf_diff(is) = cmsurf_diff(is) + cmtot_diff
@@ -1260,18 +1422,61 @@ C    zero out the asymmetric forces and double the symmetric ones
         END IF
         CALL POPINTEGER4(ad_to)
         DO jj=ad_to,1,-1
-          j = jfrst(is) + jj - 1
-          sr = chord(j)*wstrip(j)
+          sr_diff = 0.D0
+          cr_diff = 0.D0
+          DO n=ncontrol,1,-1
+            temp_diff = cns_d_diff(is, n)/(bref*sref)
+            cnst_d_diff(j, n) = cnst_d_diff(j, n) + sr*cr*temp_diff
+            temp_diff0 = cnst_d(j, n)*temp_diff
+            sref_diff = sref_diff - cnst_d(j, n)*sr*cr*temp_diff/sref
+            sr_diff = sr_diff + cr*temp_diff0
+            cr_diff = cr_diff + sr*temp_diff0
+            temp_diff = cms_d_diff(is, n)/(cref*sref)
+            cmst_d_diff(j, n) = cmst_d_diff(j, n) + sr*cr*temp_diff
+            temp_diff0 = cmst_d(j, n)*temp_diff
+            sref_diff = sref_diff - cmst_d(j, n)*sr*cr*temp_diff/sref
+            sr_diff = sr_diff + cr*temp_diff0
+            cr_diff = cr_diff + sr*temp_diff0
+            temp_diff = crs_d_diff(is, n)/(bref*sref)
+            crst_d_diff(j, n) = crst_d_diff(j, n) + sr*cr*temp_diff
+            temp_diff0 = crst_d(j, n)*temp_diff
+            sref_diff = sref_diff - crst_d(j, n)*sr*cr*temp_diff/sref
+            cr_diff = cr_diff + sr*temp_diff0
+            czst_d_diff(j, n) = czst_d_diff(j, n) + sr*czs_d_diff(is, n)
+     +        /sref
+            temp_diff = czst_d(j, n)*czs_d_diff(is, n)/sref
+            sr_diff = sr_diff + cr*temp_diff0 + temp_diff
+            sref_diff = sref_diff - sr*temp_diff/sref
+            cyst_d_diff(j, n) = cyst_d_diff(j, n) + sr*cys_d_diff(is, n)
+     +        /sref
+            temp_diff = cyst_d(j, n)*cys_d_diff(is, n)/sref
+            sr_diff = sr_diff + temp_diff
+            sref_diff = sref_diff - sr*temp_diff/sref
+            cxst_d_diff(j, n) = cxst_d_diff(j, n) + sr*cxs_d_diff(is, n)
+     +        /sref
+            temp_diff = cxst_d(j, n)*cxs_d_diff(is, n)/sref
+            sr_diff = sr_diff + temp_diff
+            sref_diff = sref_diff - sr*temp_diff/sref
+            clst_d_diff(j, n) = clst_d_diff(j, n) + sr*cls_d_diff(is, n)
+     +        /sref
+            temp_diff = clst_d(j, n)*cls_d_diff(is, n)/sref
+            sr_diff = sr_diff + temp_diff
+            sref_diff = sref_diff - sr*temp_diff/sref
+            cdst_d_diff(j, n) = cdst_d_diff(j, n) + sr*cds_d_diff(is, n)
+     +        /sref
+            temp_diff = cdst_d(j, n)*cds_d_diff(is, n)/sref
+            sr_diff = sr_diff + temp_diff
+            sref_diff = sref_diff - sr*temp_diff/sref
+          ENDDO
           cdv_lstrp_diff(j) = cdv_lstrp_diff(j) + sr*cdvsurf_diff(is)/
      +      sref
           temp_diff = cdv_lstrp(j)*cdvsurf_diff(is)/sref
-          sr_diff = temp_diff
+          sr_diff = sr_diff + temp_diff
           sref_diff = sref_diff - sr*temp_diff/sref
-          cr = chord(j)
           temp_diff = cnsurf_diff(is)/(bref*sref)
           cnstrp_diff(j) = cnstrp_diff(j) + sr*cr*temp_diff
           sr_diff = sr_diff + cr*cnstrp(j)*temp_diff
-          cr_diff = sr*cnstrp(j)*temp_diff
+          cr_diff = cr_diff + sr*cnstrp(j)*temp_diff
           sref_diff = sref_diff - cnstrp(j)*sr*cr*temp_diff/sref
           temp_diff = cmsurf_diff(is)/(cref*sref)
           cmstrp_diff(j) = cmstrp_diff(j) + sr*cr*temp_diff
@@ -1307,6 +1512,17 @@ C    zero out the asymmetric forces and double the symmetric ones
           chord_diff(j) = chord_diff(j) + cr_diff + wstrip(j)*sr_diff
           CALL POPREAL8(sr)
           wstrip_diff(j) = wstrip_diff(j) + chord(j)*sr_diff
+          CALL POPINTEGER4(j)
+        ENDDO
+        DO n=ncontrol,1,-1
+          cns_d_diff(is, n) = 0.D0
+          cms_d_diff(is, n) = 0.D0
+          crs_d_diff(is, n) = 0.D0
+          czs_d_diff(is, n) = 0.D0
+          cys_d_diff(is, n) = 0.D0
+          cxs_d_diff(is, n) = 0.D0
+          cls_d_diff(is, n) = 0.D0
+          cds_d_diff(is, n) = 0.D0
         ENDDO
         cdvsurf_diff(is) = 0.D0
         cnsurf_diff(is) = 0.D0
@@ -1359,6 +1575,11 @@ C    zero out the asymmetric forces and double the symmetric ones
           rv_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvmax
+          gam_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii1=1,nvmax
         DO ii2=1,3
           wv_diff(ii2, ii1) = 0.D0
@@ -1376,9 +1597,24 @@ C    zero out the asymmetric forces and double the symmetric ones
       DO ii1=1,3
         udrag_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        cmy_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cfx_d_diff(ii1) = 0.D0
+      ENDDO
       cosa_diff = 0.D0
+      DO ii1=1,ndmax
+        cfz_d_diff(ii1) = 0.D0
+      ENDDO
       DO ii1=1,3
         vrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        clv_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cmx_d_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         veff_diff(ii1) = 0.D0
@@ -1390,18 +1626,34 @@ C    zero out the asymmetric forces and double the symmetric ones
       DO ii1=1,3
         fgam_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        cmz_d_diff(ii1) = 0.D0
+      ENDDO
       DO ii1=1,3
         rrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cfy_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,3
+          fgam_d_diff(ii2, ii1) = 0.D0
+        ENDDO
       ENDDO
       DO ii1=1,3
         spn_diff(ii1) = 0.D0
       ENDDO
       CALL POPREAL8ARRAY(spn, 3)
+      CALL POPREAL8ARRAY(fgam_d, 3*ndmax)
+      CALL POPREAL8ARRAY(cfy_d, ndmax)
       CALL POPREAL8ARRAY(rrot, 3)
       CALL POPREAL8ARRAY(fgam, 3)
       CALL POPREAL8ARRAY(ulift, 3)
       CALL POPREAL8ARRAY(veff, 3)
+      CALL POPREAL8ARRAY(clv_d, ndmax)
       CALL POPREAL8ARRAY(vrot, 3)
+      CALL POPREAL8ARRAY(cfz_d, ndmax)
+      CALL POPREAL8ARRAY(cfx_d, ndmax)
       CALL POPREAL8ARRAY(udrag, 3)
       CALL POPREAL8ARRAY(r, 3)
       CALL POPREAL8ARRAY(g, 3)
@@ -1453,6 +1705,12 @@ C
         cfx = 0.
         cfy = 0.
         cfz = 0.
+C
+        DO n=1,ncontrol
+          cfx_d(n) = 0.
+          cfy_d(n) = 0.
+          cfz_d(n) = 0.
+        ENDDO
         CALL PUSHREAL8ARRAY(f, 3)
         CALL PUSHREAL8ARRAY(g, 3)
         CALL PUSHREAL8ARRAY(r, 3)
@@ -1461,6 +1719,7 @@ C
         CALL PUSHREAL8(result1)
         CALL PUSHREAL8ARRAY(fgam, 3)
         CALL PUSHREAL8ARRAY(rrot, 3)
+        CALL PUSHREAL8ARRAY(fgam_d, 3*ndmax)
 C$FWD-OF II-LOOP 
 C
 C...Sum the forces in the strip as generated by velocity
@@ -1750,8 +2009,13 @@ C
 C$AD II-LOOP
               CALL PUSHREAL8(fgam(3))
               fgam(3) = 2.0*gam(i)*f(3)
-              CALL PUSHINTEGER4(n)
-              CALL PUSHINTEGER4(n)
+              CALL PUSHREAL8ARRAY(fgam_d, 3*ndmax)
+C$FWD-OF II-LOOP 
+              DO n=1,ncontrol
+                fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+                fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+                fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
+              ENDDO
 C
 CC---------- Delta Cp (loading across lifting surface) due to vortex 
 C            FNV = DOT(ENV(1,I),FGAM)
@@ -1786,8 +2050,24 @@ C
 C---------- moments referred to strip c/4 pt., normalized by strip chord and area
 C
 C---------- accumulate strip spanloading = c*CN
-              CALL PUSHINTEGER4(n)
-              CALL PUSHINTEGER4(n)
+C$FWD-OF II-LOOP 
+C
+C---------- control derivatives
+              DO n=1,ncontrol
+                dcfx_d = fgam_d(1, n)/sr
+                dcfy_d = fgam_d(2, n)/sr
+                dcfz_d = fgam_d(3, n)/sr
+C  
+                cfx_d(n) = cfx_d(n) + dcfx_d
+                cfy_d(n) = cfy_d(n) + dcfy_d
+                cfz_d(n) = cfz_d(n) + dcfz_d
+                cmx_d(n) = cmx_d(n) + (dcfz_d*r(2)-dcfy_d*r(3))/cr
+                cmy_d(n) = cmy_d(n) + (dcfx_d*r(3)-dcfz_d*r(1))/cr
+                cmz_d(n) = cmz_d(n) + (dcfy_d*r(1)-dcfx_d*r(2))/cr
+C  
+                cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcfy_d+ensz(j)*
+     +            dcfz_d)
+              ENDDO
             ENDDO
           ENDDO
           CALL PUSHCONTROL1B(1)
@@ -1853,6 +2133,11 @@ C
 C--- Generate CD from stored function using strip CL as parameter
           clv = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
 C
+          DO n=1,ncontrol
+            clv_d(n) = ensy(j)*cfy_d(n) + ensz(j)*(cfz_d(n)*cosa-cfx_d(n
+     +        )*sina)
+          ENDDO
+C
           CALL CDCL(j, clv, cdv, cdv_clv)
 C
 C--- Strip viscous force contribution (per unit strip area)
@@ -1873,6 +2158,24 @@ C         CMY = CMY + (DCVFX*R(3) - DCVFZ*R(1))/CR
 C         CMZ = CMZ + (DCVFY*R(1) - DCVFX*R(2))/CR
 C
 C$AD II-LOOP
+C
+          DO n=1,ncontrol
+            dcvfx_d = veff(1)*veffmag*cdv_clv*clv_d(n)
+            dcvfy_d = veff(2)*veffmag*cdv_clv*clv_d(n)
+            dcvfz_d = veff(3)*veffmag*cdv_clv*clv_d(n)
+C
+            CALL PUSHREAL8(cfx_d(n))
+            cfx_d(n) = cfx_d(n) + dcvfx_d
+            CALL PUSHREAL8(cfy_d(n))
+            cfy_d(n) = cfy_d(n) + dcvfy_d
+            CALL PUSHREAL8(cfz_d(n))
+            cfz_d(n) = cfz_d(n) + dcvfz_d
+C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
+C           CMX_D(N) = CMX_D(N) + (DCVFZ_D*R(2) - DCVFY_D*R(3))/CR
+C           CMY_D(N) = CMY_D(N) + (DCVFX_D*R(3) - DCVFZ_D*R(1))/CR
+C           CMZ_D(N) = CMZ_D(N) + (DCVFY_D*R(1) - DCVFX_D*R(2))/CR
+C
+          ENDDO
           CALL PUSHCONTROL1B(0)
         ELSE
           CALL PUSHCONTROL1B(1)
@@ -1935,30 +2238,60 @@ C
         xsref_diff(j) = xsref_diff(j) + rrot_diff(1)
         xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
         rrot_diff(1) = 0.D0
+        cr_diff = 0.D0
+        DO n=ncontrol,1,-1
+          cmz_d_diff(n) = cmz_d_diff(n) + cnst_d_diff(j, n)
+          temp_diff1 = cnst_d_diff(j, n)/cr
+          cnst_d_diff(j, n) = 0.D0
+          cfy_d_diff(n) = cfy_d_diff(n) + r(1)*temp_diff1
+          r_diff(1) = r_diff(1) + cfy_d(n)*temp_diff1
+          cfx_d_diff(n) = cfx_d_diff(n) - r(2)*temp_diff1
+          r_diff(2) = r_diff(2) - cfx_d(n)*temp_diff1
+          cr_diff = cr_diff - (cfy_d(n)*r(1)-cfx_d(n)*r(2))*temp_diff1/
+     +      cr
+          cmy_d_diff(n) = cmy_d_diff(n) + cmst_d_diff(j, n)
+          temp_diff1 = cmst_d_diff(j, n)/cr
+          cmst_d_diff(j, n) = 0.D0
+          cfx_d_diff(n) = cfx_d_diff(n) + r(3)*temp_diff1
+          r_diff(3) = r_diff(3) + cfx_d(n)*temp_diff1
+          cfz_d_diff(n) = cfz_d_diff(n) - r(1)*temp_diff1
+          r_diff(1) = r_diff(1) - cfz_d(n)*temp_diff1
+          cr_diff = cr_diff - (cfx_d(n)*r(3)-cfz_d(n)*r(1))*temp_diff1/
+     +      cr
+          cmx_d_diff(n) = cmx_d_diff(n) + crst_d_diff(j, n)
+          temp_diff1 = crst_d_diff(j, n)/cr
+          crst_d_diff(j, n) = 0.D0
+          cfz_d_diff(n) = cfz_d_diff(n) + r(2)*temp_diff1
+          r_diff(2) = r_diff(2) + cfz_d(n)*temp_diff1
+          cfy_d_diff(n) = cfy_d_diff(n) - r(3)*temp_diff1
+          r_diff(3) = r_diff(3) - cfy_d(n)*temp_diff1
+          cr_diff = cr_diff - (cfz_d(n)*r(2)-cfy_d(n)*r(3))*temp_diff1/
+     +      cr
+        ENDDO
         cmz_diff = cnstrp_diff(j)
-        temp_diff0 = cnstrp_diff(j)/cr
+        temp_diff1 = cnstrp_diff(j)/cr
         cnstrp_diff(j) = 0.D0
-        cfy_diff = r(1)*temp_diff0
-        r_diff(1) = r_diff(1) + cfy*temp_diff0
-        cfx_diff = -(r(2)*temp_diff0)
-        r_diff(2) = r_diff(2) - cfx*temp_diff0
-        cr_diff = -((cfy*r(1)-cfx*r(2))*temp_diff0/cr)
+        cfy_diff = r(1)*temp_diff1
+        r_diff(1) = r_diff(1) + cfy*temp_diff1
+        cfx_diff = -(r(2)*temp_diff1)
+        r_diff(2) = r_diff(2) - cfx*temp_diff1
+        cr_diff = cr_diff - (cfy*r(1)-cfx*r(2))*temp_diff1/cr
         cmy_diff = cmstrp_diff(j)
-        temp_diff0 = cmstrp_diff(j)/cr
+        temp_diff1 = cmstrp_diff(j)/cr
         cmstrp_diff(j) = 0.D0
-        cfx_diff = cfx_diff + r(3)*temp_diff0
-        r_diff(3) = r_diff(3) + cfx*temp_diff0
-        cfz_diff = -(r(1)*temp_diff0)
-        r_diff(1) = r_diff(1) - cfz*temp_diff0
-        cr_diff = cr_diff - (cfx*r(3)-cfz*r(1))*temp_diff0/cr
+        cfx_diff = cfx_diff + r(3)*temp_diff1
+        r_diff(3) = r_diff(3) + cfx*temp_diff1
+        cfz_diff = -(r(1)*temp_diff1)
+        r_diff(1) = r_diff(1) - cfz*temp_diff1
+        cr_diff = cr_diff - (cfx*r(3)-cfz*r(1))*temp_diff1/cr
         cmx_diff = crstrp_diff(j)
-        temp_diff0 = crstrp_diff(j)/cr
+        temp_diff1 = crstrp_diff(j)/cr
         crstrp_diff(j) = 0.D0
-        cfz_diff = cfz_diff + r(2)*temp_diff0
-        r_diff(2) = r_diff(2) + cfz*temp_diff0
-        cfy_diff = cfy_diff - r(3)*temp_diff0
-        r_diff(3) = r_diff(3) - cfy*temp_diff0
-        cr_diff = cr_diff - (cfz*r(2)-cfy*r(3))*temp_diff0/cr
+        cfz_diff = cfz_diff + r(2)*temp_diff1
+        r_diff(2) = r_diff(2) + cfz*temp_diff1
+        cfy_diff = cfy_diff - r(3)*temp_diff1
+        r_diff(3) = r_diff(3) - cfy*temp_diff1
+        cr_diff = cr_diff - (cfz*r(2)-cfy*r(3))*temp_diff1/cr
         CALL POPREAL8(r(3))
         zr_diff = zr_diff + r_diff(3)
         xyzref_diff(3) = xyzref_diff(3) - r_diff(3)
@@ -1971,6 +2304,22 @@ C
         xr_diff = xr_diff + r_diff(1)
         xyzref_diff(1) = xyzref_diff(1) - r_diff(1)
         r_diff(1) = 0.D0
+        DO n=ncontrol,1,-1
+          cfz_d_diff(n) = cfz_d_diff(n) + czst_d_diff(j, n) + cosa*
+     +      clst_d_diff(j, n) + sina*cdst_d_diff(j, n)
+          czst_d_diff(j, n) = 0.D0
+          cfy_d_diff(n) = cfy_d_diff(n) + cyst_d_diff(j, n)
+          cyst_d_diff(j, n) = 0.D0
+          cfx_d_diff(n) = cfx_d_diff(n) + cxst_d_diff(j, n) + cosa*
+     +      cdst_d_diff(j, n) - sina*clst_d_diff(j, n)
+          cxst_d_diff(j, n) = 0.D0
+          cosa_diff = cosa_diff + cfz_d(n)*clst_d_diff(j, n) + cfx_d(n)*
+     +      cdst_d_diff(j, n)
+          sina_diff = sina_diff + cfz_d(n)*cdst_d_diff(j, n) - cfx_d(n)*
+     +      clst_d_diff(j, n)
+          clst_d_diff(j, n) = 0.D0
+          cdst_d_diff(j, n) = 0.D0
+        ENDDO
         cfz_diff = cfz_diff + czstrp_diff(j) + cosa*clstrp_diff(j) + 
      +    sina*cdstrp_diff(j)
         czstrp_diff(j) = 0.D0
@@ -1985,6 +2334,34 @@ C
         cdstrp_diff(j) = 0.D0
         CALL POPCONTROL1B(branch)
         IF (branch .EQ. 0) THEN
+          cdv_clv_diff = 0.D0
+          veffmag_diff = 0.D0
+          DO n=ncontrol,1,-1
+            CALL POPREAL8(cfz_d(n))
+            dcvfz_d_diff = cfz_d_diff(n)
+            CALL POPREAL8(cfy_d(n))
+            dcvfy_d_diff = cfy_d_diff(n)
+            CALL POPREAL8(cfx_d(n))
+            dcvfx_d_diff = cfx_d_diff(n)
+            temp_diff1 = veff(3)*clv_d(n)*dcvfz_d_diff
+            temp_diff0 = veffmag*cdv_clv*dcvfz_d_diff
+            veff_diff(3) = veff_diff(3) + clv_d(n)*temp_diff0
+            clv_d_diff(n) = clv_d_diff(n) + veff(3)*temp_diff0
+            veffmag_diff = veffmag_diff + cdv_clv*temp_diff1
+            cdv_clv_diff = cdv_clv_diff + veffmag*temp_diff1
+            temp_diff1 = veff(2)*clv_d(n)*dcvfy_d_diff
+            temp_diff0 = veffmag*cdv_clv*dcvfy_d_diff
+            veff_diff(2) = veff_diff(2) + clv_d(n)*temp_diff0
+            clv_d_diff(n) = clv_d_diff(n) + veff(2)*temp_diff0
+            temp_diff0 = veff(1)*clv_d(n)*dcvfx_d_diff
+            veffmag_diff = veffmag_diff + cdv_clv*temp_diff1 + cdv_clv*
+     +        temp_diff0
+            cdv_clv_diff = cdv_clv_diff + veffmag*temp_diff1 + veffmag*
+     +        temp_diff0
+            temp_diff1 = veffmag*cdv_clv*dcvfx_d_diff
+            veff_diff(1) = veff_diff(1) + clv_d(n)*temp_diff1
+            clv_d_diff(n) = clv_d_diff(n) + veff(1)*temp_diff1
+          ENDDO
           udrag_diff(1) = udrag_diff(1) + dcvfx*cdv_lstrp_diff(j)
           dcvfx_diff = udrag(1)*cdv_lstrp_diff(j) + cfx_diff
           udrag_diff(2) = udrag_diff(2) + dcvfy*cdv_lstrp_diff(j)
@@ -1996,13 +2373,26 @@ C
           CALL POPREAL8(cfy)
           CALL POPREAL8(cfx)
           veff_diff(3) = veff_diff(3) + veffmag*cdv*dcvfz_diff
-          veffmag_diff = cdv*veff(3)*dcvfz_diff + cdv*veff(2)*dcvfy_diff
-     +      + cdv*veff(1)*dcvfx_diff
+          veffmag_diff = veffmag_diff + cdv*veff(3)*dcvfz_diff + cdv*
+     +      veff(2)*dcvfy_diff + cdv*veff(1)*dcvfx_diff
           cdv_diff = veffmag*veff(3)*dcvfz_diff + veffmag*veff(2)*
      +      dcvfy_diff + veffmag*veff(1)*dcvfx_diff
           veff_diff(2) = veff_diff(2) + veffmag*cdv*dcvfy_diff
           veff_diff(1) = veff_diff(1) + veffmag*cdv*dcvfx_diff
-          CALL CDCL_B(j, clv, clv_diff, cdv, cdv_diff, cdv_clv)
+          CALL CDCL_B(j, clv, clv_diff, cdv, cdv_diff, cdv_clv, 
+     +                cdv_clv_diff)
+          DO n=ncontrol,1,-1
+            ensy_diff(j) = ensy_diff(j) + cfy_d(n)*clv_d_diff(n)
+            cfy_d_diff(n) = cfy_d_diff(n) + ensy(j)*clv_d_diff(n)
+            ensz_diff(j) = ensz_diff(j) + (cfz_d(n)*cosa-cfx_d(n)*sina)*
+     +        clv_d_diff(n)
+            temp_diff0 = ensz(j)*clv_d_diff(n)
+            clv_d_diff(n) = 0.D0
+            cfz_d_diff(n) = cfz_d_diff(n) + cosa*temp_diff0
+            cosa_diff = cosa_diff + cfz_d(n)*temp_diff0
+            cfx_d_diff(n) = cfx_d_diff(n) - sina*temp_diff0
+            sina_diff = sina_diff - cfx_d(n)*temp_diff0
+          ENDDO
           ulift_diff(1) = ulift_diff(1) + cfx*clv_diff
           cfx_diff = cfx_diff + ulift(1)*clv_diff
           ulift_diff(2) = ulift_diff(2) + cfy*clv_diff
@@ -2061,8 +2451,44 @@ C
           DO ii=nvc_strp,1,-1
             i = i1 + (ii-1)
             DO ileg=2,1,-1
-              CALL POPINTEGER4(n)
-              CALL POPINTEGER4(n)
+C$BWD-OF II-LOOP 
+              DO n=1,ncontrol
+                dcfx_d = fgam_d(1, n)/sr
+                dcfy_d = fgam_d(2, n)/sr
+                dcfz_d = fgam_d(3, n)/sr
+C  
+C  
+                temp_diff1 = cmz_d_diff(n)/cr
+                dcfy_d_diff = r(1)*temp_diff1
+                r_diff(1) = r_diff(1) + dcfy_d*temp_diff1
+                dcfx_d_diff = -(r(2)*temp_diff1)
+                r_diff(2) = r_diff(2) - dcfx_d*temp_diff1
+                cr_diff = cr_diff - (dcfy_d*r(1)-dcfx_d*r(2))*temp_diff1
+     +            /cr
+                temp_diff1 = cmy_d_diff(n)/cr
+                dcfx_d_diff = dcfx_d_diff + r(3)*temp_diff1 + cfx_d_diff
+     +            (n)
+                r_diff(3) = r_diff(3) + dcfx_d*temp_diff1
+                dcfz_d_diff = -(r(1)*temp_diff1)
+                r_diff(1) = r_diff(1) - dcfz_d*temp_diff1
+                cr_diff = cr_diff - (dcfx_d*r(3)-dcfz_d*r(1))*temp_diff1
+     +            /cr
+                temp_diff1 = cmx_d_diff(n)/cr
+                dcfz_d_diff = dcfz_d_diff + r(2)*temp_diff1 + cfz_d_diff
+     +            (n)
+                r_diff(2) = r_diff(2) + dcfz_d*temp_diff1
+                dcfy_d_diff = dcfy_d_diff + cfy_d_diff(n) - r(3)*
+     +            temp_diff1
+                r_diff(3) = r_diff(3) - dcfy_d*temp_diff1
+                cr_diff = cr_diff - (dcfz_d*r(2)-dcfy_d*r(3))*temp_diff1
+     +            /cr
+                fgam_d_diff(3, n) = fgam_d_diff(3, n) + dcfz_d_diff/sr
+                sr_diff = sr_diff - fgam_d(3, n)*dcfz_d_diff/sr**2 - 
+     +            fgam_d(2, n)*dcfy_d_diff/sr**2 - fgam_d(1, n)*
+     +            dcfx_d_diff/sr**2
+                fgam_d_diff(2, n) = fgam_d_diff(2, n) + dcfy_d_diff/sr
+                fgam_d_diff(1, n) = fgam_d_diff(1, n) + dcfx_d_diff/sr
+              ENDDO
               dcfx = fgam(1)/sr
               dcfy = fgam(2)/sr
               temp_diff0 = cmz_diff/cr
@@ -2089,8 +2515,22 @@ C
      +          dcfy_diff/sr**2 - fgam(1)*dcfx_diff/sr**2
               fgam_diff(2) = fgam_diff(2) + dcfy_diff/sr
               fgam_diff(1) = fgam_diff(1) + dcfx_diff/sr
-              CALL POPINTEGER4(n)
-              CALL POPINTEGER4(n)
+              CALL POPREAL8ARRAY(fgam_d, 3*ndmax)
+C$BWD-OF II-LOOP 
+              DO n=1,ncontrol
+                gam_d_diff(i, n) = gam_d_diff(i, n) + f(3)*2.0*
+     +            fgam_d_diff(3, n) + f(2)*2.0*fgam_d_diff(2, n) + f(1)*
+     +            2.0*fgam_d_diff(1, n)
+                f_diff(3) = f_diff(3) + gam_d(i, n)*2.0*fgam_d_diff(3, n
+     +            )
+                fgam_d_diff(3, n) = 0.D0
+                f_diff(2) = f_diff(2) + gam_d(i, n)*2.0*fgam_d_diff(2, n
+     +            )
+                fgam_d_diff(2, n) = 0.D0
+                f_diff(1) = f_diff(1) + gam_d(i, n)*2.0*fgam_d_diff(1, n
+     +            )
+                fgam_d_diff(1, n) = 0.D0
+              ENDDO
               CALL POPREAL8(fgam(3))
               gam_diff(i) = gam_diff(i) + f(3)*2.0*fgam_diff(3) + f(2)*
      +          2.0*fgam_diff(2) + f(1)*2.0*fgam_diff(1)
@@ -2193,6 +2633,7 @@ C
             CALL POPINTEGER4(i)
           ENDDO
         END IF
+        CALL POPREAL8ARRAY(fgam_d, 3*ndmax)
         CALL POPREAL8ARRAY(rrot, 3)
         CALL POPREAL8ARRAY(fgam, 3)
         CALL POPREAL8(result1)
@@ -2238,9 +2679,12 @@ C
           fgam(2) = 2.0*gam(i)*f(2)
 C$AD II-LOOP
           fgam(3) = 2.0*gam(i)*f(3)
-          CALL PUSHINTEGER4(n)
-          CALL PUSHINTEGER4(n)
-          CALL PUSHINTEGER4(n)
+C$FWD-OF II-LOOP 
+          DO n=1,ncontrol
+            fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+            fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+            fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
+          ENDDO
           CALL PUSHINTEGER4(n)
 C
 C-------- vortex contribution to strip forces
@@ -2255,40 +2699,76 @@ C
 C-------- accumulate strip spanloading = c*CN
 C$AD II-LOOP
           CALL PUSHINTEGER4(n)
-          CALL PUSHINTEGER4(n)
           CALL PUSHINTEGER4(l)
-          CALL PUSHINTEGER4(n)
-          CALL POPINTEGER4(n)
           CALL POPINTEGER4(l)
+C$BWD-OF II-LOOP 
+          DO n=1,ncontrol
+            dcfx_d = fgam_d(1, n)/sr
+            dcfy_d = fgam_d(2, n)/sr
+            dcfz_d = fgam_d(3, n)/sr
+C
+C
+            temp_diff1 = cmz_d_diff(n)/cr
+            dcfy_d_diff = r(1)*temp_diff1
+            r_diff(1) = r_diff(1) + dcfy_d*temp_diff1
+            dcfx_d_diff = -(r(2)*temp_diff1)
+            r_diff(2) = r_diff(2) - dcfx_d*temp_diff1
+            cr_diff = cr_diff - (dcfy_d*r(1)-dcfx_d*r(2))*temp_diff1/cr
+            temp_diff1 = cmy_d_diff(n)/cr
+            dcfx_d_diff = dcfx_d_diff + r(3)*temp_diff1 + cfx_d_diff(n)
+            r_diff(3) = r_diff(3) + dcfx_d*temp_diff1
+            dcfz_d_diff = -(r(1)*temp_diff1)
+            r_diff(1) = r_diff(1) - dcfz_d*temp_diff1
+            cr_diff = cr_diff - (dcfx_d*r(3)-dcfz_d*r(1))*temp_diff1/cr
+            temp_diff1 = cmx_d_diff(n)/cr
+            dcfz_d_diff = dcfz_d_diff + r(2)*temp_diff1 + cfz_d_diff(n)
+            r_diff(2) = r_diff(2) + dcfz_d*temp_diff1
+            dcfy_d_diff = dcfy_d_diff + cfy_d_diff(n) - r(3)*temp_diff1
+            r_diff(3) = r_diff(3) - dcfy_d*temp_diff1
+            cr_diff = cr_diff - (dcfz_d*r(2)-dcfy_d*r(3))*temp_diff1/cr
+            fgam_d_diff(3, n) = fgam_d_diff(3, n) + dcfz_d_diff/sr
+            sr_diff = sr_diff - fgam_d(3, n)*dcfz_d_diff/sr**2 - fgam_d(
+     +        2, n)*dcfy_d_diff/sr**2 - fgam_d(1, n)*dcfx_d_diff/sr**2
+            fgam_d_diff(2, n) = fgam_d_diff(2, n) + dcfy_d_diff/sr
+            fgam_d_diff(1, n) = fgam_d_diff(1, n) + dcfx_d_diff/sr
+          ENDDO
           CALL POPINTEGER4(n)
-          CALL POPINTEGER4(n)
-          temp_diff0 = cmz_diff/cr
-          dcfy_diff = r(1)*temp_diff0
-          r_diff(1) = r_diff(1) + dcfy*temp_diff0
-          dcfx_diff = -(r(2)*temp_diff0)
-          r_diff(2) = r_diff(2) - dcfx*temp_diff0
-          cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff0/cr
-          temp_diff0 = cmy_diff/cr
-          dcfx_diff = dcfx_diff + r(3)*temp_diff0 + cfx_diff
-          r_diff(3) = r_diff(3) + dcfx*temp_diff0
-          dcfz_diff = -(r(1)*temp_diff0)
-          r_diff(1) = r_diff(1) - dcfz*temp_diff0
-          cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff0/cr
-          temp_diff0 = cmx_diff/cr
-          dcfz_diff = dcfz_diff + r(2)*temp_diff0 + cfz_diff
-          r_diff(2) = r_diff(2) + dcfz*temp_diff0
-          dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff0
-          r_diff(3) = r_diff(3) - dcfy*temp_diff0
-          cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff0/cr
+          temp_diff1 = cmz_diff/cr
+          dcfy_diff = r(1)*temp_diff1
+          r_diff(1) = r_diff(1) + dcfy*temp_diff1
+          dcfx_diff = -(r(2)*temp_diff1)
+          r_diff(2) = r_diff(2) - dcfx*temp_diff1
+          cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff1/cr
+          temp_diff1 = cmy_diff/cr
+          dcfx_diff = dcfx_diff + r(3)*temp_diff1 + cfx_diff
+          r_diff(3) = r_diff(3) + dcfx*temp_diff1
+          dcfz_diff = -(r(1)*temp_diff1)
+          r_diff(1) = r_diff(1) - dcfz*temp_diff1
+          cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff1/cr
+          temp_diff1 = cmx_diff/cr
+          dcfz_diff = dcfz_diff + r(2)*temp_diff1 + cfz_diff
+          r_diff(2) = r_diff(2) + dcfz*temp_diff1
+          dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff1
+          r_diff(3) = r_diff(3) - dcfy*temp_diff1
+          cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff1/cr
           fgam_diff(3) = fgam_diff(3) + dcfz_diff/sr
           sr_diff = sr_diff - fgam(3)*dcfz_diff/sr**2 - fgam(2)*
      +      dcfy_diff/sr**2 - fgam(1)*dcfx_diff/sr**2
           fgam_diff(2) = fgam_diff(2) + dcfy_diff/sr
           fgam_diff(1) = fgam_diff(1) + dcfx_diff/sr
           CALL POPINTEGER4(n)
-          CALL POPINTEGER4(n)
-          CALL POPINTEGER4(n)
-          CALL POPINTEGER4(n)
+C$BWD-OF II-LOOP 
+          DO n=1,ncontrol
+            gam_d_diff(i, n) = gam_d_diff(i, n) + f(3)*2.0*fgam_d_diff(3
+     +        , n) + f(2)*2.0*fgam_d_diff(2, n) + f(1)*2.0*fgam_d_diff(1
+     +        , n)
+            f_diff(3) = f_diff(3) + gam_d(i, n)*2.0*fgam_d_diff(3, n)
+            fgam_d_diff(3, n) = 0.D0
+            f_diff(2) = f_diff(2) + gam_d(i, n)*2.0*fgam_d_diff(2, n)
+            fgam_d_diff(2, n) = 0.D0
+            f_diff(1) = f_diff(1) + gam_d(i, n)*2.0*fgam_d_diff(1, n)
+            fgam_d_diff(1, n) = 0.D0
+          ENDDO
           gam_diff(i) = gam_diff(i) + f(3)*2.0*fgam_diff(3) + f(2)*2.0*
      +      fgam_diff(2) + f(1)*2.0*fgam_diff(1)
           f_diff(3) = f_diff(3) + gam(i)*2.0*fgam_diff(3)
@@ -2339,6 +2819,14 @@ C$AD II-LOOP
           r_diff(2) = 0.D0
           xr_diff = xr_diff - r_diff(1)
           r_diff(1) = 0.D0
+        ENDDO
+        DO n=ncontrol,1,-1
+          cmz_d_diff(n) = 0.D0
+          cmy_d_diff(n) = 0.D0
+          cmx_d_diff(n) = 0.D0
+          cfz_d_diff(n) = 0.D0
+          cfy_d_diff(n) = 0.D0
+          cfx_d_diff(n) = 0.D0
         ENDDO
         rle_diff(3, j) = rle_diff(3, j) + zr_diff
         rle_diff(2, j) = rle_diff(2, j) + yr_diff

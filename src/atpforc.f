@@ -97,8 +97,8 @@ C
           GAMS_G(JC,N) = 0.
         ENDDO
 C
-        ISURF = NSURFS(JC)
-        IF(LFLOAD(ISURF)) THEN
+ccc        ISURF = NSURFS(JC)
+ccc        IF(LFLOAD(ISURF)) THEN   !Bug 6/13/14 HHY 
 C------- add circulation of this strip only if it contributes to total load
          I1  = IJFRST(JC)
          DO I = I1, I1+NVSTRP(JC)-1 
@@ -113,7 +113,7 @@ C------- add circulation of this strip only if it contributes to total load
              GAMS_G(JC,N) = GAMS_G(JC,N) + GAM_G(I,N)
            ENDDO
          ENDDO
-        ENDIF
+ccc        ENDIF
       ENDDO
 C
 C---- set x,y,z in wind axes (Y,Z are then in Trefftz plane)

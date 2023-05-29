@@ -4,11 +4,11 @@ C
 C  Differentiation of update_surfaces in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip ess ensy ensz xsref ysref zsref
-C                rv1 rv2 rv rc rs dxv chordv enc env
+C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf rle chord rle1 chord1
 C                rle2 chord2 wstrip ess ensy ensz xsref ysref zsref
-C                rv1 rv2 rv rc rs dxv chordv enc env
+C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
 C   RW status of diff variables: xyzscal:out xyztran:out addinc:out
 C                xyzles:out chords:out aincs:out xasec:out sasec:out
 C                claf:out rle:in-out chord:in-out rle1:in-out chord1:in-out
@@ -16,7 +16,7 @@ C                rle2:in-out chord2:in-out wstrip:in-out ess:in-out
 C                ensy:in-out ensz:in-out xsref:in-out ysref:in-out
 C                zsref:in-out rv1:in-out rv2:in-out rv:in-out rc:in-out
 C                rs:in-out dxv:in-out chordv:in-out enc:in-out
-C                env:in-out
+C                env:in-out enc_d:in-out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_B()
       INCLUDE 'AVL.INC'
@@ -58,6 +58,7 @@ C this surface has already been created
           CALL PUSHCONTROL1B(1)
         END IF
         IF (ldupl(isurf)) THEN
+          CALL PUSHREAL8ARRAY(vrefl, nsmax*ndmax)
           CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
           CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
           CALL PUSHINTEGER4ARRAY(nvs, nfmax)
@@ -138,6 +139,7 @@ C this surface has already been created
             CALL POPINTEGER4ARRAY(nvs, nfmax)
             CALL POPINTEGER4ARRAY(ijfrst, nsmax)
             CALL POPINTEGER4ARRAY(nvstrp, nsmax)
+            CALL POPREAL8ARRAY(vrefl, nsmax*ndmax)
             CALL SDUPL_B(isurf, ydupl(isurf), 'ydup')
           END IF
           CALL POPCONTROL1B(branch)
@@ -168,11 +170,11 @@ C  Differentiation of makesurf in reverse (adjoint) mode (with options i4 dr8 r8
 C   gradient     of useful results: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf rle chord rle1 chord1
 C                rle2 chord2 wstrip ainc ainc_g rv1 rv2 rv rc rs
-C                dxv chordv slopev slopec
+C                dxv chordv slopev slopec dcontrol vhinge
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf rle chord rle1 chord1
 C                rle2 chord2 wstrip ainc ainc_g rv1 rv2 rv rc rs
-C                dxv chordv slopev slopec
+C                dxv chordv slopev slopec dcontrol vhinge
 C***********************************************************************
 C    Module:  amake.f
 C 
@@ -223,6 +225,7 @@ C
      +     ngmax), chcosr_g_diff(ngmax)
       INTEGER isconl(ndmax), isconr(ndmax)
       REAL xled(ndmax), xted(ndmax), gainda(ndmax)
+      REAL xled_diff(ndmax), xted_diff(ndmax), gainda_diff(ndmax)
       INTEGER idx_vor, idx_strip
       INTEGER isec
       REAL dy
@@ -295,11 +298,17 @@ C
       INTEGER icl
       INTEGER icr
       REAL xhd
+      REAL xhd_diff
       REAL vhx
+      REAL vhx_diff
       REAL vhy
+      REAL vhy_diff
       REAL vhz
+      REAL vhz_diff
       REAL vsq
+      REAL vsq_diff
       REAL vmod
+      REAL vmod_diff
       INTEGER l
       INTEGER nsl
       INTEGER nsr
@@ -315,7 +324,9 @@ C
       REAL sloper_diff
       REAL dxoc
       REAL fracle
+      REAL fracle_diff
       REAL fracte
+      REAL fracte_diff
       INTRINSIC MAX
       INTRINSIC MIN
       REAL sum
@@ -326,11 +337,15 @@ C
       INTEGER nst
       EXTERNAL STRIP
       REAL y1
+      REAL y1_diff
       REAL y2
+      REAL y2_diff
       REAL abs0
       REAL abs0_diff
       REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs1_diff
       REAL(kind=avl_real) abs2
+      REAL(kind=avl_real) abs2_diff
       REAL temp_diff
       REAL tmp
       REAL tmp_diff
@@ -344,8 +359,8 @@ C
       INTEGER ad_count
       INTEGER i
       INTEGER branch
-      INTEGER ii2
       INTEGER ii3
+      INTEGER ii2
       INTEGER ad_to1
       INTEGER ad_to2
       INTEGER ad_to3
@@ -362,6 +377,8 @@ C
       INTEGER ad_to8
       INTEGER ad_to9
       INTEGER ad_to10
+      INTEGER ad_to11
+      INTEGER ad_to12
       INTEGER isurf
 C
 C
@@ -622,6 +639,30 @@ C
             CALL PUSHREAL8(chcosr)
             chcosr = chordr*COS(aincr)
 C
+C------ set control-declaration lines for each control variable
+            DO n=1,ncontrol
+              isconl(n) = 0
+              isconr(n) = 0
+              DO iscon=1,nscon(isec, isurf)
+                IF (icontd(iscon, isec, isurf) .EQ. n) THEN
+                  CALL PUSHCONTROL1B(1)
+                  isconl(n) = iscon
+                ELSE
+                  CALL PUSHCONTROL1B(0)
+                END IF
+              ENDDO
+              CALL PUSHINTEGER4(iscon - 1)
+              DO iscon=1,nscon(isec+1, isurf)
+                IF (icontd(iscon, isec+1, isurf) .EQ. n) THEN
+                  CALL PUSHCONTROL1B(1)
+                  isconr(n) = iscon
+                ELSE
+                  CALL PUSHCONTROL1B(0)
+                END IF
+              ENDDO
+              CALL PUSHINTEGER4(iscon - 1)
+            ENDDO
+C
 C------ set design-variable sensitivities of CHSIN and CHCOS
             DO n=1,ndesign
               CALL PUSHREAL8(chsinl_g(n))
@@ -700,6 +741,99 @@ C
               chsin = chsinl + fc*(chsinr-chsinl)
               CALL PUSHREAL8(chcos)
               chcos = chcosl + fc*(chcosr-chcosl)
+C
+              DO n=1,ncontrol
+                CALL PUSHINTEGER4(icl)
+                icl = isconl(n)
+                CALL PUSHINTEGER4(icr)
+                icr = isconr(n)
+C
+                IF (icl .EQ. 0 .OR. icr .EQ. 0) THEN
+C----------- no control effect here
+                  CALL PUSHREAL8(gainda(n))
+                  gainda(n) = 0.
+                  CALL PUSHREAL8(xled(n))
+                  xled(n) = 0.
+                  CALL PUSHREAL8(xted(n))
+                  xted(n) = 0.
+C
+C
+C
+C
+                  CALL PUSHCONTROL1B(1)
+                ELSE
+C----------- control variable # N is active here
+                  CALL PUSHREAL8(gainda(n))
+                  gainda(n) = gaind(icl, isec, isurf)*(1.0-fc) + gaind(
+     +              icr, isec+1, isurf)*fc
+C
+                  xhd = chordl*xhinged(icl, isec, isurf)*(1.0-fc) + 
+     +              chordr*xhinged(icr, isec+1, isurf)*fc
+                  IF (xhd .GE. 0.0) THEN
+C------------ TE control surface, with hinge at XHD
+                    CALL PUSHREAL8(xled(n))
+                    xled(n) = xhd
+                    CALL PUSHREAL8(xted(n))
+                    xted(n) = chord(idx_strip)
+                    CALL PUSHCONTROL1B(0)
+                  ELSE
+C------------ LE control surface, with hinge at -XHD
+                    CALL PUSHREAL8(xled(n))
+                    xled(n) = 0.0
+                    CALL PUSHREAL8(xted(n))
+                    xted(n) = -xhd
+                    CALL PUSHCONTROL1B(1)
+                  END IF
+C
+                  CALL PUSHREAL8(vhx)
+                  vhx = vhinged(1, icl, isec, isurf)*xyzscal(1, isurf)
+                  CALL PUSHREAL8(vhy)
+                  vhy = vhinged(2, icl, isec, isurf)*xyzscal(2, isurf)
+                  CALL PUSHREAL8(vhz)
+                  vhz = vhinged(3, icl, isec, isurf)*xyzscal(3, isurf)
+                  CALL PUSHREAL8(vsq)
+                  vsq = vhx**2 + vhy**2 + vhz**2
+                  IF (vsq .EQ. 0.0) THEN
+                    IF (chordr*xhinged(icr, isec+1, isurf) .GE. 0.) THEN
+                      abs1 = chordr*xhinged(icr, isec+1, isurf)
+                      CALL PUSHCONTROL1B(1)
+                    ELSE
+                      abs1 = -(chordr*xhinged(icr, isec+1, isurf))
+                      CALL PUSHCONTROL1B(0)
+                    END IF
+                    IF (chordl*xhinged(icl, isec, isurf) .GE. 0.) THEN
+                      abs2 = chordl*xhinged(icl, isec, isurf)
+                      CALL PUSHCONTROL1B(0)
+                    ELSE
+                      abs2 = -(chordl*xhinged(icl, isec, isurf))
+                      CALL PUSHCONTROL1B(1)
+                    END IF
+C------------ default: set hinge vector along hingeline
+                    vhx = xyzles(1, isec+1, isurf) + abs1 - xyzles(1, 
+     +                isec, isurf) - abs2
+                    vhy = xyzles(2, isec+1, isurf) - xyzles(2, isec, 
+     +                isurf)
+                    vhz = xyzles(3, isec+1, isurf) - xyzles(3, isec, 
+     +                isurf)
+                    CALL PUSHREAL8(vhx)
+                    vhx = vhx*xyzscal(1, isurf)
+                    CALL PUSHREAL8(vhy)
+                    vhy = vhy*xyzscal(2, isurf)
+                    CALL PUSHREAL8(vhz)
+                    vhz = vhz*xyzscal(3, isurf)
+                    vsq = vhx**2 + vhy**2 + vhz**2
+                    CALL PUSHCONTROL1B(0)
+                  ELSE
+                    CALL PUSHCONTROL1B(1)
+                  END IF
+C
+                  CALL PUSHREAL8(vmod)
+                  vmod = SQRT(vsq)
+C
+C
+                  CALL PUSHCONTROL1B(0)
+                END IF
+              ENDDO
 C--- If the min drag is zero flag the strip as no-viscous data
 C     IJFRST(idx_strip) = NVOR + 1
 C
@@ -761,6 +895,42 @@ C
 C
 C---------- element inherits alpha,beta flag from surface
 C
+                DO n=1,ncontrol
+C------------ scale control gain by factor 0..1, (fraction of element on control surface)
+                  CALL PUSHREAL8(fracle)
+                  fracle = (xled(n)/chordc-xpt(ivc))/dxoc
+                  CALL PUSHREAL8(fracte)
+                  fracte = (xted(n)/chordc-xpt(ivc))/dxoc
+                  IF (0.0 .LT. fracle) THEN
+                    y1 = fracle
+                    CALL PUSHCONTROL1B(0)
+                  ELSE
+                    y1 = 0.0
+                    CALL PUSHCONTROL1B(1)
+                  END IF
+                  IF (1.0 .GT. y1) THEN
+                    fracle = y1
+                    CALL PUSHCONTROL1B(0)
+                  ELSE
+                    fracle = 1.0
+                    CALL PUSHCONTROL1B(1)
+                  END IF
+                  IF (0.0 .LT. fracte) THEN
+                    y2 = fracte
+                    CALL PUSHCONTROL1B(0)
+                  ELSE
+                    y2 = 0.0
+                    CALL PUSHCONTROL1B(1)
+                  END IF
+                  IF (1.0 .GT. y2) THEN
+                    fracte = y2
+                    CALL PUSHCONTROL1B(0)
+                  ELSE
+                    fracte = 1.0
+                    CALL PUSHCONTROL1B(1)
+                  END IF
+                ENDDO
+C
 C---------- TE control point used only if surface sheds a wake
                 CALL PUSHINTEGER4(idx_vor)
                 idx_vor = idx_vor + 1
@@ -784,8 +954,17 @@ C
           DO ii1=1,ngmax
             chsinr_g_diff(ii1) = 0.D0
           ENDDO
+          DO ii1=1,ndmax
+            xted_diff(ii1) = 0.D0
+          ENDDO
+          DO ii1=1,ndmax
+            xled_diff(ii1) = 0.D0
+          ENDDO
           DO ii1=1,ngmax
             chsinl_g_diff(ii1) = 0.D0
+          ENDDO
+          DO ii1=1,ndmax
+            gainda_diff(ii1) = 0.D0
           ENDDO
           DO ii1=1,ksmax
             ycp_diff(ii1) = 0.D0
@@ -813,8 +992,8 @@ C
             chcosl_diff = 0.D0
             clafl_diff = 0.D0
             chcosr_diff = 0.D0
-            CALL POPINTEGER4(ad_to10)
-            DO ispan=ad_to10,1,-1
+            CALL POPINTEGER4(ad_to12)
+            DO ispan=ad_to12,1,-1
               CALL POPINTEGER4(idx_strip)
               ivs = iptl + ispan - 1
               fc = (ycp(ivs)-ypt(iptl))/(ypt(iptr)-ypt(iptl))
@@ -824,6 +1003,45 @@ C
               chordc_diff = 0.D0
               DO ivc=nvc(isurf),1,-1
                 CALL POPINTEGER4(idx_vor)
+                DO n=ncontrol,1,-1
+                  gainda_diff(n) = gainda_diff(n) + (fracte-fracle)*
+     +              dcontrol_diff(idx_vor, n)
+                  fracte_diff = gainda(n)*dcontrol_diff(idx_vor, n)
+                  fracle_diff = -(gainda(n)*dcontrol_diff(idx_vor, n))
+                  dcontrol_diff(idx_vor, n) = 0.D0
+                  CALL POPCONTROL1B(branch)
+                  IF (branch .EQ. 0) THEN
+                    y2_diff = fracte_diff
+                  ELSE
+                    y2_diff = 0.D0
+                  END IF
+                  CALL POPCONTROL1B(branch)
+                  IF (branch .EQ. 0) THEN
+                    fracte_diff = y2_diff
+                  ELSE
+                    fracte_diff = 0.D0
+                  END IF
+                  CALL POPCONTROL1B(branch)
+                  IF (branch .EQ. 0) THEN
+                    y1_diff = fracle_diff
+                  ELSE
+                    y1_diff = 0.D0
+                  END IF
+                  CALL POPCONTROL1B(branch)
+                  IF (branch .EQ. 0) THEN
+                    fracle_diff = y1_diff
+                  ELSE
+                    fracle_diff = 0.D0
+                  END IF
+                  CALL POPREAL8(fracte)
+                  temp_diff1 = fracte_diff/(chordc*dxoc)
+                  xted_diff(n) = xted_diff(n) + temp_diff1
+                  chordc_diff = chordc_diff - xted(n)*temp_diff1/chordc
+                  CALL POPREAL8(fracle)
+                  temp_diff1 = fracle_diff/(chordc*dxoc)
+                  xled_diff(n) = xled_diff(n) + temp_diff1
+                  chordc_diff = chordc_diff - xled(n)*temp_diff1/chordc
+                ENDDO
                 temp_diff0 = fc*chordr*slopev_diff(idx_vor)/chordc
                 temp_diff1 = chordl*slopel*slopev_diff(idx_vor)/chordc
                 temp = sloper/chordc
@@ -946,6 +1164,131 @@ C
               CALL POPREAL8(chordc)
               chord_diff(idx_strip) = chord_diff(idx_strip) + 
      +          chordc_diff
+              DO n=ncontrol,1,-1
+                CALL POPCONTROL1B(branch)
+                IF (branch .EQ. 0) THEN
+                  vhz_diff = vhinge_diff(3, idx_strip, n)/vmod
+                  vmod_diff = -(vhz*vhinge_diff(3, idx_strip, n)/vmod**2
+     +              ) - vhy*vhinge_diff(2, idx_strip, n)/vmod**2 - vhx*
+     +              vhinge_diff(1, idx_strip, n)/vmod**2
+                  vhinge_diff(3, idx_strip, n) = 0.D0
+                  vhy_diff = vhinge_diff(2, idx_strip, n)/vmod
+                  vhinge_diff(2, idx_strip, n) = 0.D0
+                  vhx_diff = vhinge_diff(1, idx_strip, n)/vmod
+                  vhinge_diff(1, idx_strip, n) = 0.D0
+                  CALL POPREAL8(vmod)
+                  IF (vsq .EQ. 0.D0) THEN
+                    vsq_diff = 0.D0
+                  ELSE
+                    vsq_diff = vmod_diff/(2.0*SQRT(vsq))
+                  END IF
+                  CALL POPCONTROL1B(branch)
+                  IF (branch .EQ. 0) THEN
+                    vhx_diff = vhx_diff + 2*vhx*vsq_diff
+                    vhy_diff = vhy_diff + 2*vhy*vsq_diff
+                    vhz_diff = vhz_diff + 2*vhz*vsq_diff
+                    CALL POPREAL8(vhz)
+                    xyzscal_diff(3, isurf) = xyzscal_diff(3, isurf) + 
+     +                vhz*vhz_diff
+                    vhz_diff = xyzscal(3, isurf)*vhz_diff
+                    CALL POPREAL8(vhy)
+                    xyzscal_diff(2, isurf) = xyzscal_diff(2, isurf) + 
+     +                vhy*vhy_diff
+                    vhy_diff = xyzscal(2, isurf)*vhy_diff
+                    CALL POPREAL8(vhx)
+                    xyzscal_diff(1, isurf) = xyzscal_diff(1, isurf) + 
+     +                vhx*vhx_diff
+                    vhx_diff = xyzscal(1, isurf)*vhx_diff
+                    xyzles_diff(3, isec+1, isurf) = xyzles_diff(3, isec+
+     +                1, isurf) + vhz_diff
+                    xyzles_diff(3, isec, isurf) = xyzles_diff(3, isec, 
+     +                isurf) - vhz_diff
+                    xyzles_diff(2, isec+1, isurf) = xyzles_diff(2, isec+
+     +                1, isurf) + vhy_diff
+                    xyzles_diff(2, isec, isurf) = xyzles_diff(2, isec, 
+     +                isurf) - vhy_diff
+                    xyzles_diff(1, isec+1, isurf) = xyzles_diff(1, isec+
+     +                1, isurf) + vhx_diff
+                    abs1_diff = vhx_diff
+                    xyzles_diff(1, isec, isurf) = xyzles_diff(1, isec, 
+     +                isurf) - vhx_diff
+                    abs2_diff = -vhx_diff
+                    vhy = vhinged(2, icl, isec, isurf)*xyzscal(2, isurf)
+                    vhz = vhinged(3, icl, isec, isurf)*xyzscal(3, isurf)
+                    vhx = vhinged(1, icl, isec, isurf)*xyzscal(1, isurf)
+                    CALL POPCONTROL1B(branch)
+                    IF (branch .EQ. 0) THEN
+                      chordl_diff = chordl_diff + xhinged(icl, isec, 
+     +                  isurf)*abs2_diff
+                    ELSE
+                      chordl_diff = chordl_diff - xhinged(icl, isec, 
+     +                  isurf)*abs2_diff
+                    END IF
+                    CALL POPCONTROL1B(branch)
+                    IF (branch .EQ. 0) THEN
+                      chordr_diff = chordr_diff - xhinged(icr, isec+1, 
+     +                  isurf)*abs1_diff
+                    ELSE
+                      chordr_diff = chordr_diff + xhinged(icr, isec+1, 
+     +                  isurf)*abs1_diff
+                    END IF
+                    vhx_diff = 0.D0
+                    vhy_diff = 0.D0
+                    vhz_diff = 0.D0
+                    vsq_diff = 0.D0
+                  END IF
+                  CALL POPREAL8(vsq)
+                  vhx_diff = vhx_diff + 2*vhx*vsq_diff
+                  vhy_diff = vhy_diff + 2*vhy*vsq_diff
+                  vhz_diff = vhz_diff + 2*vhz*vsq_diff
+                  CALL POPREAL8(vhz)
+                  xyzscal_diff(3, isurf) = xyzscal_diff(3, isurf) + 
+     +              vhinged(3, icl, isec, isurf)*vhz_diff
+                  CALL POPREAL8(vhy)
+                  xyzscal_diff(2, isurf) = xyzscal_diff(2, isurf) + 
+     +              vhinged(2, icl, isec, isurf)*vhy_diff
+                  CALL POPREAL8(vhx)
+                  xyzscal_diff(1, isurf) = xyzscal_diff(1, isurf) + 
+     +              vhinged(1, icl, isec, isurf)*vhx_diff
+                  CALL POPCONTROL1B(branch)
+                  IF (branch .EQ. 0) THEN
+                    CALL POPREAL8(xted(n))
+                    chord_diff(idx_strip) = chord_diff(idx_strip) + 
+     +                xted_diff(n)
+                    xted_diff(n) = 0.D0
+                    CALL POPREAL8(xled(n))
+                    xhd_diff = xled_diff(n)
+                    xled_diff(n) = 0.D0
+                  ELSE
+                    CALL POPREAL8(xted(n))
+                    xhd_diff = -xted_diff(n)
+                    xted_diff(n) = 0.D0
+                    CALL POPREAL8(xled(n))
+                    xled_diff(n) = 0.D0
+                  END IF
+                  temp_diff1 = xhinged(icl, isec, isurf)*xhd_diff
+                  temp_diff0 = xhinged(icr, isec+1, isurf)*xhd_diff
+                  chordr_diff = chordr_diff + fc*temp_diff0
+                  fc_diff = fc_diff + chordr*temp_diff0 + (gaind(icr, 
+     +              isec+1, isurf)-gaind(icl, isec, isurf))*gainda_diff(
+     +              n) - chordl*temp_diff1
+                  chordl_diff = chordl_diff + (1.0-fc)*temp_diff1
+                  CALL POPREAL8(gainda(n))
+                  gainda_diff(n) = 0.D0
+                ELSE
+                  vhinge_diff(3, idx_strip, n) = 0.D0
+                  vhinge_diff(2, idx_strip, n) = 0.D0
+                  vhinge_diff(1, idx_strip, n) = 0.D0
+                  CALL POPREAL8(xted(n))
+                  xted_diff(n) = 0.D0
+                  CALL POPREAL8(xled(n))
+                  xled_diff(n) = 0.D0
+                  CALL POPREAL8(gainda(n))
+                  gainda_diff(n) = 0.D0
+                END IF
+                CALL POPINTEGER4(icr)
+                CALL POPINTEGER4(icl)
+              ENDDO
               chsin_diff = 0.D0
               chcos_diff = 0.D0
               DO n=ndesign,1,-1
@@ -1075,8 +1418,8 @@ C
             CALL POPINTEGER4(iptr)
             CALL POPINTEGER4(iptl)
             DO n=ndesign,1,-1
-              CALL POPINTEGER4(ad_to9)
-              DO isdes=ad_to9,1,-1
+              CALL POPINTEGER4(ad_to11)
+              DO isdes=ad_to11,1,-1
                 CALL POPCONTROL1B(branch)
                 IF (branch .NE. 0) THEN
                   chsinr_diff = chsinr_diff - dtr*gaing(isdes, isec+1, 
@@ -1087,8 +1430,8 @@ C
                   chsinr_g_diff(n) = 0.D0
                 END IF
               ENDDO
-              CALL POPINTEGER4(ad_to8)
-              DO isdes=ad_to8,1,-1
+              CALL POPINTEGER4(ad_to10)
+              DO isdes=ad_to10,1,-1
                 CALL POPCONTROL1B(branch)
                 IF (branch .NE. 0) THEN
                   chsinl_diff = chsinl_diff - dtr*gaing(isdes, isec, 
@@ -1107,6 +1450,16 @@ C
               chsinr_g_diff(n) = 0.D0
               CALL POPREAL8(chsinl_g(n))
               chsinl_g_diff(n) = 0.D0
+            ENDDO
+            DO n=ncontrol,1,-1
+              CALL POPINTEGER4(ad_to9)
+              DO iscon=ad_to9,1,-1
+                CALL POPCONTROL1B(branch)
+              ENDDO
+              CALL POPINTEGER4(ad_to8)
+              DO iscon=ad_to8,1,-1
+                CALL POPCONTROL1B(branch)
+              ENDDO
             ENDDO
             aincr = aincs(isec+1, isurf)*dtr + addinc(isurf)*dtr
             CALL POPREAL8(chcosr)
@@ -1323,6 +1676,18 @@ C
                   DO ii1=1,nvmax
                     slopec_diff(ii1) = 0.D0
                   ENDDO
+                  DO ii1=1,ndmax
+                    DO ii2=1,nvmax
+                      dcontrol_diff(ii2, ii1) = 0.D0
+                    ENDDO
+                  ENDDO
+                  DO ii1=1,ndmax
+                    DO ii2=1,nsmax
+                      DO ii3=1,3
+                        vhinge_diff(ii3, ii2, ii1) = 0.D0
+                      ENDDO
+                    ENDDO
+                  ENDDO
                   DO ii1=1,ksmax
                     ycp_diff(ii1) = 0.D0
                   ENDDO
@@ -1487,6 +1852,18 @@ C
                   DO ii1=1,nvmax
                     slopec_diff(ii1) = 0.D0
                   ENDDO
+                  DO ii1=1,ndmax
+                    DO ii2=1,nvmax
+                      dcontrol_diff(ii2, ii1) = 0.D0
+                    ENDDO
+                  ENDDO
+                  DO ii1=1,ndmax
+                    DO ii2=1,nsmax
+                      DO ii3=1,3
+                        vhinge_diff(ii3, ii2, ii1) = 0.D0
+                      ENDDO
+                    ENDDO
+                  ENDDO
                   DO ii1=1,ksmax
                     ycp_diff(ii1) = 0.D0
                   ENDDO
@@ -1618,6 +1995,18 @@ C
                   ENDDO
                   DO ii1=1,nvmax
                     slopec_diff(ii1) = 0.D0
+                  ENDDO
+                  DO ii1=1,ndmax
+                    DO ii2=1,nvmax
+                      dcontrol_diff(ii2, ii1) = 0.D0
+                    ENDDO
+                  ENDDO
+                  DO ii1=1,ndmax
+                    DO ii2=1,nsmax
+                      DO ii3=1,3
+                        vhinge_diff(ii3, ii2, ii1) = 0.D0
+                      ENDDO
+                    ENDDO
                   ENDDO
                   DO ii1=1,ksmax
                     ycp_diff(ii1) = 0.D0
@@ -1755,10 +2144,10 @@ C
 C  Differentiation of sdupl in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
-C                slopev slopec
+C                slopev slopec dcontrol vhinge
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
-C                slopev slopec
+C                slopev slopec dcontrol vhinge
 C MAKEBODY
 C
 C
@@ -1803,41 +2192,48 @@ C
       REAL(kind=avl_real) tmp_diff5
       REAL(kind=avl_real) tmp9
       REAL(kind=avl_real) tmp10
+      REAL(kind=avl_real) tmp_diff6
       REAL(kind=avl_real) tmp11
+      REAL(kind=avl_real) tmp_diff7
       REAL(kind=avl_real) tmp12
+      REAL(kind=avl_real) tmp_diff8
       REAL(kind=avl_real) tmp13
       REAL(kind=avl_real) tmp14
       REAL(kind=avl_real) tmp15
       REAL(kind=avl_real) tmp16
       REAL(kind=avl_real) tmp17
-      REAL(kind=avl_real) tmp_diff6
-      REAL(kind=avl_real) tmp18
-      REAL(kind=avl_real) tmp_diff7
-      REAL(kind=avl_real) tmp19
-      REAL(kind=avl_real) tmp_diff8
-      REAL(kind=avl_real) tmp20
       REAL(kind=avl_real) tmp_diff9
-      REAL(kind=avl_real) tmp21
+      REAL(kind=avl_real) tmp18
       REAL(kind=avl_real) tmp_diff10
-      REAL(kind=avl_real) tmp22
+      REAL(kind=avl_real) tmp19
       REAL(kind=avl_real) tmp_diff11
-      REAL(kind=avl_real) tmp23
+      REAL(kind=avl_real) tmp20
       REAL(kind=avl_real) tmp_diff12
-      REAL(kind=avl_real) tmp24
+      REAL(kind=avl_real) tmp21
       REAL(kind=avl_real) tmp_diff13
-      REAL(kind=avl_real) tmp25
+      REAL(kind=avl_real) tmp22
       REAL(kind=avl_real) tmp_diff14
-      REAL(kind=avl_real) tmp26
+      REAL(kind=avl_real) tmp23
       REAL(kind=avl_real) tmp_diff15
+      REAL(kind=avl_real) tmp24
+      REAL(kind=avl_real) tmp_diff16
+      REAL(kind=avl_real) tmp25
+      REAL(kind=avl_real) tmp_diff17
+      REAL(kind=avl_real) tmp26
+      REAL(kind=avl_real) tmp_diff18
       REAL(kind=avl_real) tmp27
+      REAL(kind=avl_real) tmp_diff19
       INTEGER ad_count
       INTEGER i
       INTEGER branch
       INTEGER ad_to
+      INTEGER ad_to0
+      INTEGER ad_to1
       INTEGER ad_count0
       INTEGER i0
-      INTEGER ii1
+      INTEGER ii3
       INTEGER ii2
+      INTEGER ii1
       INTEGER nn
       REAL ypt
 C
@@ -1902,6 +2298,14 @@ C
 C
             n = ndesign + 1
             CALL PUSHINTEGER4(n - 1)
+C
+            DO n=1,ncontrol
+              tmp9 = vrefl(jj, n)
+              vrefl(jji, n) = tmp9
+C
+C
+            ENDDO
+            CALL PUSHINTEGER4(n - 1)
 C   IJFRST(JJI)  = NVOR + 1
 C   IJFRST(JJI) = IJFRST(NSTRIP - 1) + NVC(NNI)
 C
@@ -1923,6 +2327,13 @@ C
                 iii = ijfrst(jji) + ivc - 1
                 CALL PUSHINTEGER4(ii)
                 ii = ijfrst(jj) + ivc - 1
+C
+                DO n=1,ncontrol
+Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
+                  CALL PUSHREAL8(rsgn)
+                  rsgn = vrefl(jj, n)
+                ENDDO
+                CALL PUSHINTEGER4(n - 1)
                 idx_vor = idx_vor + 1
                 ad_count0 = ad_count0 + 1
               END IF
@@ -2010,38 +2421,58 @@ C
                 DO ii1=1,nvmax
                   slopec_diff(ii1) = 0.D0
                 ENDDO
+                DO ii1=1,ndmax
+                  DO ii2=1,nvmax
+                    dcontrol_diff(ii2, ii1) = 0.D0
+                  ENDDO
+                ENDDO
+                DO ii1=1,ndmax
+                  DO ii2=1,nsmax
+                    DO ii3=1,3
+                      vhinge_diff(ii3, ii2, ii1) = 0.D0
+                    ENDDO
+                  ENDDO
+                ENDDO
               END IF
             ELSE
-              tmp_diff15 = chordv_diff(iii)
+              CALL POPINTEGER4(ad_to1)
+              DO n=ad_to1,1,-1
+                tmp_diff19 = dcontrol_diff(iii, n)
+                dcontrol_diff(iii, n) = 0.D0
+                dcontrol_diff(ii, n) = dcontrol_diff(ii, n) - rsgn*
+     +            tmp_diff19
+                CALL POPREAL8(rsgn)
+              ENDDO
+              tmp_diff18 = chordv_diff(iii)
               chordv_diff(iii) = 0.D0
-              chordv_diff(ii) = chordv_diff(ii) + tmp_diff15
-              tmp_diff14 = dxv_diff(iii)
+              chordv_diff(ii) = chordv_diff(ii) + tmp_diff18
+              tmp_diff17 = dxv_diff(iii)
               dxv_diff(iii) = 0.D0
-              dxv_diff(ii) = dxv_diff(ii) + tmp_diff14
-              tmp_diff13 = slopev_diff(iii)
+              dxv_diff(ii) = dxv_diff(ii) + tmp_diff17
+              tmp_diff16 = slopev_diff(iii)
               slopev_diff(iii) = 0.D0
-              slopev_diff(ii) = slopev_diff(ii) + tmp_diff13
-              tmp_diff12 = slopec_diff(iii)
+              slopev_diff(ii) = slopev_diff(ii) + tmp_diff16
+              tmp_diff15 = slopec_diff(iii)
               slopec_diff(iii) = 0.D0
-              slopec_diff(ii) = slopec_diff(ii) + tmp_diff12
-              tmp_diff11 = rc_diff(3, iii)
+              slopec_diff(ii) = slopec_diff(ii) + tmp_diff15
+              tmp_diff14 = rc_diff(3, iii)
               rc_diff(3, iii) = 0.D0
-              rc_diff(3, ii) = rc_diff(3, ii) + tmp_diff11
-              tmp_diff10 = rc_diff(2, iii)
+              rc_diff(3, ii) = rc_diff(3, ii) + tmp_diff14
+              tmp_diff13 = rc_diff(2, iii)
               rc_diff(2, iii) = 0.D0
-              rc_diff(2, ii) = rc_diff(2, ii) - tmp_diff10
-              tmp_diff9 = rc_diff(1, iii)
+              rc_diff(2, ii) = rc_diff(2, ii) - tmp_diff13
+              tmp_diff12 = rc_diff(1, iii)
               rc_diff(1, iii) = 0.D0
-              rc_diff(1, ii) = rc_diff(1, ii) + tmp_diff9
-              tmp_diff8 = rv_diff(3, iii)
+              rc_diff(1, ii) = rc_diff(1, ii) + tmp_diff12
+              tmp_diff11 = rv_diff(3, iii)
               rv_diff(3, iii) = 0.D0
-              rv_diff(3, ii) = rv_diff(3, ii) + tmp_diff8
-              tmp_diff7 = rv_diff(2, iii)
+              rv_diff(3, ii) = rv_diff(3, ii) + tmp_diff11
+              tmp_diff10 = rv_diff(2, iii)
               rv_diff(2, iii) = 0.D0
-              rv_diff(2, ii) = rv_diff(2, ii) - tmp_diff7
-              tmp_diff6 = rv_diff(1, iii)
+              rv_diff(2, ii) = rv_diff(2, ii) - tmp_diff10
+              tmp_diff9 = rv_diff(1, iii)
               rv_diff(1, iii) = 0.D0
-              rv_diff(1, ii) = rv_diff(1, ii) + tmp_diff6
+              rv_diff(1, ii) = rv_diff(1, ii) + tmp_diff9
               rv1_diff(3, ii) = rv1_diff(3, ii) + rv2_diff(3, iii)
               rv2_diff(3, iii) = 0.D0
               rv1_diff(2, ii) = rv1_diff(2, ii) - rv2_diff(2, iii)
@@ -2057,6 +2488,18 @@ C
               CALL POPINTEGER4(ii)
               CALL POPINTEGER4(iii)
             END IF
+          ENDDO
+          CALL POPINTEGER4(ad_to0)
+          DO n=ad_to0,1,-1
+            tmp_diff8 = vhinge_diff(3, jji, n)
+            vhinge_diff(3, jji, n) = 0.D0
+            vhinge_diff(3, jj, n) = vhinge_diff(3, jj, n) + tmp_diff8
+            tmp_diff7 = vhinge_diff(2, jji, n)
+            vhinge_diff(2, jji, n) = 0.D0
+            vhinge_diff(2, jj, n) = vhinge_diff(2, jj, n) - tmp_diff7
+            tmp_diff6 = vhinge_diff(1, jji, n)
+            vhinge_diff(1, jji, n) = 0.D0
+            vhinge_diff(1, jj, n) = vhinge_diff(1, jj, n) + tmp_diff6
           ENDDO
           CALL POPINTEGER4(ad_to)
           DO n=ad_to,1,-1
@@ -2116,9 +2559,10 @@ C
 
 C  Differentiation of encalc in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: ess ensy ensz xsref ysref zsref
-C                rv1 rv2 rv enc env
+C                rv1 rv2 rv enc env enc_d
 C   with respect to varying inputs: ess ensy ensz xsref ysref zsref
-C                ainc ainc_g rv1 rv2 rv slopev slopec enc env
+C                ainc ainc_g rv1 rv2 rv slopev slopec dcontrol
+C                vhinge enc env enc_d
 C BDUPL
 C
 C
@@ -2129,7 +2573,8 @@ C
       INCLUDE 'AVL_ad_seeds.inc'
 C
       REAL ep(3), eq(3), es(3), eb(3), ec(3), ecxb(3)
-      REAL es_diff(3), eb_diff(3), ec_diff(3), ecxb_diff(3)
+      REAL ep_diff(3), eq_diff(3), es_diff(3), eb_diff(3), ec_diff(3), 
+     +     ecxb_diff(3)
       REAL ec_g(3, ndmax), ecxb_g(3)
       INTEGER j
       INTEGER i
@@ -2186,9 +2631,11 @@ C
       INTRINSIC COS
       REAL emag_g
       REAL ang_ddc
+      REAL ang_ddc_diff
       REAL cosd
       REAL sind
       REAL endot
+      REAL endot_diff
       REAL DOT
       REAL temp
       REAL temp0
@@ -2197,6 +2644,7 @@ C
       INTEGER branch
       INTEGER ad_to
       INTEGER ii1
+      INTEGER ii3
       INTEGER ii2
 C
 C...Calculate the normal vector at control points and bound vortex midpoints
@@ -2291,8 +2739,20 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL PUSHREAL8(emag)
           emag = SQRT(ecxb(1)**2 + ecxb(2)**2 + ecxb(3)**2)
           IF (emag .NE. 0.0) THEN
+            CALL PUSHREAL8(enc(1, i))
+            enc(1, i) = ecxb(1)/emag
+            CALL PUSHREAL8(enc(2, i))
+            enc(2, i) = ecxb(2)/emag
+            CALL PUSHREAL8(enc(3, i))
+            enc(3, i) = ecxb(3)/emag
             CALL PUSHCONTROL1B(0)
           ELSE
+            CALL PUSHREAL8(enc(1, i))
+            enc(1, i) = es(1)
+            CALL PUSHREAL8(enc(2, i))
+            enc(2, i) = es(2)
+            CALL PUSHREAL8(enc(3, i))
+            enc(3, i) = es(3)
             CALL PUSHCONTROL1B(1)
           END IF
 C
@@ -2325,10 +2785,83 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL PUSHREAL8(emag)
           emag = SQRT(ecxb(1)**2 + ecxb(2)**2 + ecxb(3)**2)
           IF (emag .NE. 0.0) THEN
+            CALL PUSHREAL8(env(1, i))
+            env(1, i) = ecxb(1)/emag
+            CALL PUSHREAL8(env(2, i))
+            env(2, i) = ecxb(2)/emag
+            CALL PUSHREAL8(env(3, i))
+            env(3, i) = ecxb(3)/emag
             CALL PUSHCONTROL1B(1)
           ELSE
+            CALL PUSHREAL8(env(1, i))
+            env(1, i) = es(1)
+            CALL PUSHREAL8(env(2, i))
+            env(2, i) = es(2)
+            CALL PUSHREAL8(env(3, i))
+            env(3, i) = es(3)
             CALL PUSHCONTROL1B(0)
           END IF
+C
+C
+Ccc       write(*,*) i, dcontrol(i,1), dcontrol(i,2)
+C
+C=======================================================
+C-------- rotate normal vectors for control surface
+          DO n=1,ncontrol
+C
+C---------- skip everything if this element is unaffected by control variable N
+            IF (dcontrol(i, n) .EQ. 0.0) THEN
+              CALL PUSHCONTROL1B(0)
+            ELSE
+C
+C
+C
+C---------- EP = normal-vector component perpendicular to hinge line
+              CALL PUSHREAL8(endot)
+              endot = DOT(enc(1, i), vhinge(1, j, n))
+              CALL PUSHREAL8(ep(1))
+              ep(1) = enc(1, i) - endot*vhinge(1, j, n)
+              CALL PUSHREAL8(ep(2))
+              ep(2) = enc(2, i) - endot*vhinge(2, j, n)
+              CALL PUSHREAL8(ep(3))
+              ep(3) = enc(3, i) - endot*vhinge(3, j, n)
+C---------- EQ = unit vector perpendicular to both EP and hinge line
+              CALL CROSS(vhinge(1, j, n), ep, eq)
+C
+C---------- rotated vector would consist of sin,cos parts from EP and EQ,
+C-          with hinge-parallel component ENDOT restored 
+Cc          ENC(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
+Cc          ENC(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
+Cc          ENC(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
+C
+C---------- linearize about zero deflection (COSD=1, SIND=0)
+C
+C
+C---------- repeat for ENV vector
+C
+C---------- EP = normal-vector component perpendicular to hinge line
+              CALL PUSHREAL8(endot)
+              endot = DOT(env(1, i), vhinge(1, j, n))
+              CALL PUSHREAL8(ep(1))
+              ep(1) = env(1, i) - endot*vhinge(1, j, n)
+              CALL PUSHREAL8(ep(2))
+              ep(2) = env(2, i) - endot*vhinge(2, j, n)
+              CALL PUSHREAL8(ep(3))
+              ep(3) = env(3, i) - endot*vhinge(3, j, n)
+C---------- EQ = unit vector perpendicular to both EP and hinge line
+              CALL PUSHREAL8ARRAY(eq, 3)
+              CALL CROSS(vhinge(1, j, n), ep, eq)
+C
+C---------- rotated vector would consist of sin,cos parts from EP and EQ,
+C-          with hinge-parallel component ENDOT restored 
+Cc          ENV(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
+Cc          ENV(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
+Cc          ENV(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
+C
+C---------- linearize about zero deflection (COSD=1, SIND=0)
+              CALL PUSHCONTROL1B(1)
+            END IF
+          ENDDO
         ENDDO
         CALL PUSHINTEGER4(ii - 1)
       ENDDO
@@ -2346,11 +2879,29 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
       DO ii1=1,nvmax
         slopec_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvmax
+          dcontrol_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          DO ii3=1,3
+            vhinge_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
       DO ii1=1,3
         eb_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         ec_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        ep_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        eq_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         es_diff(ii1) = 0.D0
@@ -2361,24 +2912,87 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
       DO j=nstrip,1,-1
         CALL POPINTEGER4(ad_to)
         DO ii=ad_to,1,-1
+          i = ijfrst(j) + (ii-1)
+          DO n=ncontrol,1,-1
+            CALL POPCONTROL1B(branch)
+            IF (branch .NE. 0) THEN
+              CALL POPREAL8ARRAY(eq, 3)
+              CALL CROSS_B(vhinge(1, j, n), vhinge_diff(1, j, n), ep, 
+     +                     ep_diff, eq, eq_diff)
+              CALL POPREAL8(ep(3))
+              env_diff(3, i) = env_diff(3, i) + ep_diff(3)
+              endot_diff = -(vhinge(3, j, n)*ep_diff(3)) - vhinge(2, j, 
+     +          n)*ep_diff(2) - vhinge(1, j, n)*ep_diff(1)
+              vhinge_diff(3, j, n) = vhinge_diff(3, j, n) - endot*
+     +          ep_diff(3)
+              ep_diff(3) = 0.D0
+              CALL POPREAL8(ep(2))
+              env_diff(2, i) = env_diff(2, i) + ep_diff(2)
+              vhinge_diff(2, j, n) = vhinge_diff(2, j, n) - endot*
+     +          ep_diff(2)
+              ep_diff(2) = 0.D0
+              CALL POPREAL8(ep(1))
+              env_diff(1, i) = env_diff(1, i) + ep_diff(1)
+              vhinge_diff(1, j, n) = vhinge_diff(1, j, n) - endot*
+     +          ep_diff(1)
+              ep_diff(1) = 0.D0
+              CALL POPREAL8(endot)
+              CALL DOT_B(env(1, i), env_diff(1, i), vhinge(1, j, n), 
+     +                   vhinge_diff(1, j, n), endot_diff)
+              ang_ddc = dtr*dcontrol(i, n)
+              eq_diff(3) = eq_diff(3) + ang_ddc*enc_d_diff(3, i, n)
+              ang_ddc_diff = eq(3)*enc_d_diff(3, i, n) + eq(2)*
+     +          enc_d_diff(2, i, n) + eq(1)*enc_d_diff(1, i, n)
+              eq_diff(2) = eq_diff(2) + ang_ddc*enc_d_diff(2, i, n)
+              eq_diff(1) = eq_diff(1) + ang_ddc*enc_d_diff(1, i, n)
+              CALL CROSS_B(vhinge(1, j, n), vhinge_diff(1, j, n), ep, 
+     +                     ep_diff, eq, eq_diff)
+              CALL POPREAL8(ep(3))
+              enc_diff(3, i) = enc_diff(3, i) + ep_diff(3)
+              endot_diff = -(vhinge(3, j, n)*ep_diff(3)) - vhinge(2, j, 
+     +          n)*ep_diff(2) - vhinge(1, j, n)*ep_diff(1)
+              vhinge_diff(3, j, n) = vhinge_diff(3, j, n) - endot*
+     +          ep_diff(3)
+              ep_diff(3) = 0.D0
+              CALL POPREAL8(ep(2))
+              enc_diff(2, i) = enc_diff(2, i) + ep_diff(2)
+              vhinge_diff(2, j, n) = vhinge_diff(2, j, n) - endot*
+     +          ep_diff(2)
+              ep_diff(2) = 0.D0
+              CALL POPREAL8(ep(1))
+              enc_diff(1, i) = enc_diff(1, i) + ep_diff(1)
+              vhinge_diff(1, j, n) = vhinge_diff(1, j, n) - endot*
+     +          ep_diff(1)
+              ep_diff(1) = 0.D0
+              CALL POPREAL8(endot)
+              CALL DOT_B(enc(1, i), enc_diff(1, i), vhinge(1, j, n), 
+     +                   vhinge_diff(1, j, n), endot_diff)
+              dcontrol_diff(i, n) = dcontrol_diff(i, n) + dtr*
+     +          ang_ddc_diff
+            END IF
+          ENDDO
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
-            i = ijfrst(j) + (ii-1)
+            CALL POPREAL8(env(3, i))
             es_diff(3) = es_diff(3) + env_diff(3, i)
             env_diff(3, i) = 0.D0
+            CALL POPREAL8(env(2, i))
             es_diff(2) = es_diff(2) + env_diff(2, i)
             env_diff(2, i) = 0.D0
+            CALL POPREAL8(env(1, i))
             es_diff(1) = es_diff(1) + env_diff(1, i)
             env_diff(1, i) = 0.D0
             emag_diff = 0.D0
           ELSE
-            i = ijfrst(j) + (ii-1)
+            CALL POPREAL8(env(3, i))
             ecxb_diff(3) = ecxb_diff(3) + env_diff(3, i)/emag
             emag_diff = -(ecxb(3)*env_diff(3, i)/emag**2) - ecxb(2)*
      +        env_diff(2, i)/emag**2 - ecxb(1)*env_diff(1, i)/emag**2
             env_diff(3, i) = 0.D0
+            CALL POPREAL8(env(2, i))
             ecxb_diff(2) = ecxb_diff(2) + env_diff(2, i)/emag
             env_diff(2, i) = 0.D0
+            CALL POPREAL8(env(1, i))
             ecxb_diff(1) = ecxb_diff(1) + env_diff(1, i)/emag
             env_diff(1, i) = 0.D0
           END IF
@@ -2414,19 +3028,25 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
           slopev_diff(i) = slopev_diff(i) - ang_diff/(1.0+slopev(i)**2)
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
+            CALL POPREAL8(enc(3, i))
             ecxb_diff(3) = ecxb_diff(3) + enc_diff(3, i)/emag
             emag_diff = -(ecxb(3)*enc_diff(3, i)/emag**2) - ecxb(2)*
      +        enc_diff(2, i)/emag**2 - ecxb(1)*enc_diff(1, i)/emag**2
             enc_diff(3, i) = 0.D0
+            CALL POPREAL8(enc(2, i))
             ecxb_diff(2) = ecxb_diff(2) + enc_diff(2, i)/emag
             enc_diff(2, i) = 0.D0
+            CALL POPREAL8(enc(1, i))
             ecxb_diff(1) = ecxb_diff(1) + enc_diff(1, i)/emag
             enc_diff(1, i) = 0.D0
           ELSE
+            CALL POPREAL8(enc(3, i))
             es_diff(3) = es_diff(3) + enc_diff(3, i)
             enc_diff(3, i) = 0.D0
+            CALL POPREAL8(enc(2, i))
             es_diff(2) = es_diff(2) + enc_diff(2, i)
             enc_diff(2, i) = 0.D0
+            CALL POPREAL8(enc(1, i))
             es_diff(1) = es_diff(1) + enc_diff(1, i)
             enc_diff(1, i) = 0.D0
             emag_diff = 0.D0
@@ -2487,6 +3107,11 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
           rv1_diff(2, i) = rv1_diff(2, i) - dyb_diff
           rv2_diff(1, i) = rv2_diff(1, i) + dxb_diff
           rv1_diff(1, i) = rv1_diff(1, i) - dxb_diff
+          DO n=ncontrol,1,-1
+            enc_d_diff(3, i, n) = 0.D0
+            enc_d_diff(2, i, n) = 0.D0
+            enc_d_diff(1, i, n) = 0.D0
+          ENDDO
           CALL POPINTEGER4(i)
         ENDDO
         CALL POPREAL8(es(3))

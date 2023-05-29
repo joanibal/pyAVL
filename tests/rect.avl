@@ -6,7 +6,7 @@ MACH MDAO AVL
 # SI Used: m, kg, etc
 
 #Mach
-0.1
+0.0
 #IYsym   IZsym   Zsym
  0       0       0
 #Sref    Cref    b_wing
@@ -34,9 +34,15 @@ ANGLE
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.00    0.0    0     1.0     0.0
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.5 0 1 0 1.00
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.00    1.0    0.0     1.0     0.0
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.5 0 1 0 1.00
 
 # -- END OF FILE --

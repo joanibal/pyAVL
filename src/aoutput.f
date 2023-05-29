@@ -711,13 +711,13 @@ C
       WRITE(LU,8120) (' ',K,CYTOT_D(K), K=1, NCONTROL)
  8120 FORMAT(' y force     |',20(A,'  CYd',I1,' =',F11.6))
 C
-      WRITE(LU,8140) (' ',K,DIR*CRTOT_D(K), K=1, NCONTROL)
+      WRITE(LU,8140) (' ',K,CRTOT_D(K), K=1, NCONTROL)
  8140 FORMAT(' roll  x mom.|',20(A,'  Cld',I1,' =',F11.6))
 C
       WRITE(LU,8150) (' ',K,    CMTOT_D(K), K=1, NCONTROL)
  8150 FORMAT(' pitch y mom.|',20(A,'  Cmd',I1,' =',F11.6))
 C
-      WRITE(LU,8160) (' ',K,DIR*CNTOT_D(K), K=1, NCONTROL)
+      WRITE(LU,8160) (' ',K,CNTOT_D(K), K=1, NCONTROL)
  8160 FORMAT(' yaw   z mom.|',20(A,'  Cnd',I1,' =',F11.6))
 C
       WRITE(LU,8170) (' ',K,    CDFF_D(K), K=1, NCONTROL)
@@ -988,13 +988,13 @@ C
       WRITE(LU,8120) (' ',K,CYTOT_D(K), K=1, NCONTROL)
  8120 FORMAT(' y  force CY |'  ,20(A,'  CYd',I1,' =',F11.6))
 C
-      WRITE(LU,8140) (' ',K,DIR*CRTOT_D(K), K=1, NCONTROL)
+      WRITE(LU,8140) (' ',K,CRTOT_D(K), K=1, NCONTROL)
  8140 FORMAT(' x'' mom.  Cl''|',20(A,'  Cld',I1,' =',F11.6))
 C
       WRITE(LU,8150) (' ',K,    CMTOT_D(K), K=1, NCONTROL)
  8150 FORMAT(' y  mom.  Cm |'  ,20(A,'  Cmd',I1,' =',F11.6))
 C
-      WRITE(LU,8160) (' ',K,DIR*CNTOT_D(K), K=1, NCONTROL)
+      WRITE(LU,8160) (' ',K,CNTOT_D(K), K=1, NCONTROL)
  8160 FORMAT(' z'' mom.  Cn''|',20(A,'  Cnd',I1,' =',F11.6))
 C
       WRITE(LU,8170) (' ',K,    CDFF_D(K), K=1, NCONTROL)
