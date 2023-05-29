@@ -123,6 +123,18 @@ class AVLSolver(object):
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
     }
+    
+    case_derivs_to_fort_var = {
+        # derivative of coefficents wrt control surface deflections
+        "CL": ["CASE_R", "CLTOT_D"],
+        "CD": ["CASE_R", "CDTOT_D"],
+        "CX": ["CASE_R", "CXTOT_D"],
+        "CY": ["CASE_R", "CYTOT_D"],
+        "CZ": ["CASE_R", "CZTOT_D"],
+        "CR": ["CASE_R", "CRTOT_D"],
+        "CM": ["CASE_R", "CMTOT_D"],
+        "CN": ["CASE_R", "CNTOT_D"],
+    }
     # fmt: on
     
     # fmt: off
@@ -384,6 +396,12 @@ class AVLSolver(object):
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
     def get_case_total_data(self) -> Dict[str, float]:
+        """Get the aerodynamic data for the last run case and return it as a dictionary.
+
+        Returns:
+            Dict[str, float]: Dictionary of aerodynamic data. The keys the aerodyanmic coefficients.
+        """
+
         total_data = {}
 
         for key, avl_key in self.case_var_to_fort_var.items():
@@ -394,6 +412,21 @@ class AVLSolver(object):
             total_data[key] = val[()]
 
         return total_data
+
+    def get_case_coef_derivs(self) -> Dict[str, Dict[str, float]]:
+        deriv_data = {}
+
+        control_names = self.get_control_names()
+
+        for key, avl_key in self.case_derivs_to_fort_var.items():
+            slicer = slice(0, len(control_names))
+            val_arr = self.get_avl_fort_arr(*avl_key, slicer=slicer)
+            deriv_data[key] = {}
+            for idx_control, val in enumerate(val_arr):
+                control = control_names[idx_control]
+                deriv_data[key][control] = val[()]
+
+        return deriv_data
 
     def get_avl_fort_arr(self, common_block, variable, slicer=None):
         # this had to be split up into two steps to work
@@ -527,7 +560,7 @@ class AVLSolver(object):
         hinge_moments = {}
 
         control_surfaces = self.get_control_names()
-        mom_array = self.get_avl_fort_var("CASE_R", "CHINGE")
+        mom_array = self.get_avl_fort_arr("CASE_R", "CHINGE")
 
         for idx_con, con_surf in enumerate(control_surfaces):
             hinge_moments[con_surf] = mom_array[idx_con]
@@ -960,6 +993,9 @@ class AVLSolver(object):
         """Get the number of strips in the mesh"""
         return self.get_avl_fort_arr("CASE_I", "NSTRIP")
 
+    def get_num_control_surfs(self) -> int:
+        return self.get_avl_fort_arr("CASE_I", "NCONTROL")
+
     def get_mesh_size(self) -> int:
         """Get the number of panels in the mesh"""
         return self.get_avl_fort_arr("CASE_I", "NVOR")
@@ -1070,6 +1106,14 @@ class AVLSolver(object):
         gamma_seeds = copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=slicer))
         return gamma_seeds
 
+    def get_gamma_d_ad_seeds(self) -> np.ndarray:
+        slicer = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
+        blk = "VRTX_R_DIFF"
+        var = "GAM_d_DIFF"
+
+        gamma_d_seeds = copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=slicer))
+        return gamma_d_seeds
+
     def set_gamma_ad_seeds(self, gamma_seeds: np.ndarray, mode: str = "AD", scale=1.0) -> None:
         slicer = (slice(0, self.get_mesh_size()),)
         if mode == "AD":
@@ -1081,6 +1125,20 @@ class AVLSolver(object):
             var = "GAM"
             val = self.get_avl_fort_arr(blk, var, slicer=slicer)
             val += gamma_seeds * scale
+
+        self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+
+    def set_gamma_d_ad_seeds(self, gamma_d_seeds: np.ndarray, mode: str = "AD", scale=1.0) -> None:
+        slicer = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
+        if mode == "AD":
+            blk = "VRTX_R_DIFF"
+            var = "GAM_D_DIFF"
+            val = gamma_d_seeds * scale
+        elif mode == "FD":
+            blk = "VRTX_R"
+            var = "GAM_D"
+            val = self.get_avl_fort_arr(blk, var, slicer=slicer)
+            val += gamma_d_seeds * scale
 
         self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
@@ -1103,6 +1161,43 @@ class AVLSolver(object):
             val = func_seeds[_var] * scale
             self.set_avl_fort_arr(blk, var, val)
 
+    def get_consurf_derivs_ad_seeds(self):
+        cs_deriv_seeds = {}
+        consurf_names = self.get_control_names()
+        num_consurf = len(consurf_names)
+
+        for _var in self.case_derivs_to_fort_var:
+            blk, var = self.case_derivs_to_fort_var[_var]
+            slicer = (slice(0, num_consurf),)
+            blk += self.ad_suffix
+            var += self.ad_suffix
+            val_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
+            cs_deriv_seeds[_var] = {}
+
+            for idx_control, val in enumerate(val_arr):
+                control = consurf_names[idx_control]
+                cs_deriv_seeds[_var][control] = val[()]
+
+        return cs_deriv_seeds
+
+    def set_consurf_derivs_ad_seeds(self, cs_deriv_seeds: Dict[str, float], scale=1.0):
+        consurf_names = self.get_control_names()
+        num_consurf = len(consurf_names)
+
+        for _var in cs_deriv_seeds:
+            val_arr = np.zeros((num_consurf))
+            for cs_name in cs_deriv_seeds[_var]:
+                idx_cs = consurf_names.index(cs_name)
+                val_arr[idx_cs] = cs_deriv_seeds[_var][cs_name] * scale
+
+            blk, var = self.case_derivs_to_fort_var[_var]
+            slicer = (slice(0, num_consurf),)
+
+            blk += self.ad_suffix
+            var += self.ad_suffix
+
+            self.set_avl_fort_arr(blk, var, val_arr, slicer=slicer)
+
     def get_residual_ad_seeds(self) -> np.ndarray:
         res_slice = (slice(0, self.get_mesh_size()),)
         res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", slicer=res_slice))
@@ -1110,8 +1205,19 @@ class AVLSolver(object):
 
     def set_residual_ad_seeds(self, res_seeds: np.ndarray, scale=1.0) -> None:
         res_slice = (slice(0, self.get_mesh_size()),)
-        res_seeds = self.set_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", res_seeds * scale, slicer=res_slice)
+        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", res_seeds * scale, slicer=res_slice)
+        return
+
+    def get_residual_d_ad_seeds(self) -> np.ndarray:
+        res_slice = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
+        res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_D_DIFF", slicer=res_slice))
         return res_seeds
+
+    def set_residual_d_ad_seeds(self, res_d_seeds: np.ndarray, scale=1.0) -> None:
+        res_slice = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
+
+        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_D_DIFF", res_d_seeds * scale, slicer=res_slice)
+        return
 
     def clear_ad_seeds(self):
         for att in dir(self.avl):
@@ -1137,22 +1243,22 @@ class AVLSolver(object):
 
                         print(att, _var, norm)
 
-    # def set_geom_ad_seeds(surf_seeds: Dict[str, Dict[str, any]]) -> None:
-    #     pass
-    #     # set the seeds as you would the surface data
-
     def execute_jac_vec_prod_fwd(
         self,
         con_seeds: Optional[Dict[str, float]] = None,
         geom_seeds: Optional[Dict[str, Dict[str, any]]] = None,
         gamma_seeds: Optional[np.ndarray] = None,
+        gamma_d_seeds: Optional[np.ndarray] = None,
         mode="AD",
         step=1e-7,
     ) -> Tuple[Dict[str, float], np.ndarray]:
+        # TODO: add better name for gamma_d, it is too confusing
+
         # TODO: add error if data is not initailzed properly
         #   The easiest fix is to run an analysis before hand
 
         mesh_size = self.get_mesh_size()
+        num_control_surfs = self.get_num_control_surfs()
 
         if con_seeds is None:
             con_seeds = {}
@@ -1163,7 +1269,11 @@ class AVLSolver(object):
         if gamma_seeds is None:
             gamma_seeds = np.zeros(mesh_size)
 
+        if gamma_d_seeds is None:
+            gamma_d_seeds = np.zeros((num_control_surfs, mesh_size))
+
         res_slice = (slice(0, mesh_size),)
+        res_d_slice = (slice(0, num_control_surfs), slice(0, mesh_size))
 
         if mode == "AD":
             # set derivative seeds
@@ -1171,6 +1281,7 @@ class AVLSolver(object):
             self.set_constraint_ad_seeds(con_seeds)
             self.set_geom_ad_seeds(geom_seeds)
             self.set_gamma_ad_seeds(gamma_seeds)
+            self.set_gamma_d_ad_seeds(gamma_d_seeds)
 
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
@@ -1180,6 +1291,8 @@ class AVLSolver(object):
             # extract derivatives seeds and set the output dict of functions
             func_seeds = self.get_function_ad_seeds()
             res_seeds = self.get_residual_ad_seeds()
+            consurf_derivs_seeds = self.get_consurf_derivs_ad_seeds()
+            res_d_seeds = self.get_residual_d_ad_seeds()
 
             self.set_constraint_ad_seeds(con_seeds, scale=0.0)
             self.set_geom_ad_seeds(geom_seeds, scale=0.0)
@@ -1191,6 +1304,7 @@ class AVLSolver(object):
             self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
+            self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=step)
 
             # propogate the seeds through without resolving
             self.avl.update_surfaces()
@@ -1199,12 +1313,14 @@ class AVLSolver(object):
             self.avl.aero()
 
             coef_data_peturb = self.get_case_total_data()
-            # strp_data_petrub = self.get_strip_data()
-            res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+            consurf_derivs_petrub = self.get_case_coef_derivs()
 
+            res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+            res_d_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
             self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
+            self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=-1 * step)
 
             self.avl.update_surfaces()
             self.avl.get_res()
@@ -1212,24 +1328,38 @@ class AVLSolver(object):
             self.avl.aero()
 
             coef_data = self.get_case_total_data()
-            # strp_data = self.get_strip_data()
+            consurf_derivs = self.get_case_coef_derivs()
             res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+            res_d = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
 
             func_seeds = {}
             for func_key in coef_data:
                 func_seeds[func_key] = (coef_data_peturb[func_key] - coef_data[func_key]) / step
 
-            res_seeds = (res_peturbed - res) / step
+            consurf_derivs_seeds = {}
+            for func_key in consurf_derivs:
+                consurf_derivs_seeds[func_key] = {}
+                for surf_key in consurf_derivs[func_key]:
+                    consurf_derivs_seeds[func_key][surf_key] = (
+                        consurf_derivs_petrub[func_key][surf_key] - consurf_derivs[func_key][surf_key]
+                    ) / step
 
-        return func_seeds, res_seeds
+            res_seeds = (res_peturbed - res) / step
+            res_d_seeds = (res_d_peturbed - res_d) / step
+
+        return func_seeds, res_seeds, consurf_derivs_seeds, res_d_seeds
 
     def execute_jac_vec_prod_rev(
         self,
         func_seeds: Optional[Dict[str, float]] = None,
         res_seeds: Optional[np.ndarray] = None,
+        consurf_derivs_seeds: Optional[Dict[str, Dict[str, float]]] = None,
+        res_d_seeds: Optional[np.ndarray] = None,
+        print_timings=False
     ) -> Tuple[Dict[str, float], Dict[str, Dict[str, any]], np.ndarray]:
         # extract derivatives seeds and set the output dict of functions
         mesh_size = self.get_mesh_size()
+        num_surf = self.get_num_control_surfs()
 
         if func_seeds is None:
             func_seeds = {}
@@ -1237,25 +1367,50 @@ class AVLSolver(object):
         if res_seeds is None:
             res_seeds = np.zeros(mesh_size)
 
+        if res_d_seeds is None:
+            res_d_seeds = np.zeros((num_surf,mesh_size))
+
+        if consurf_derivs_seeds is None:
+            consurf_derivs_seeds = {}
+
         # set derivative seeds
         # self.clear_ad_seeds()
+        time_last = time.time()
         self.set_function_ad_seeds(func_seeds)
         self.set_residual_ad_seeds(res_seeds)
+        self.set_residual_d_ad_seeds(res_d_seeds)
+        self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds)
+        if print_timings:
+            print(f"Time to set seeds: {time.time() - time_last}")
+            time_last = time.time()
+
         # propogate the seeds through without resolveing
         self.avl.aero_b()
         self.avl.velsum_b()
         self.avl.get_res_b()
         self.avl.update_surfaces_b()
+        if print_timings:
+            print(f"Time to propogate seeds: {time.time() - time_last}")
+            time_last = time.time()
 
         # extract derivatives seeds and set the output dict of functions
         con_seeds = self.get_constraint_ad_seeds()
         geom_seeds = self.get_geom_ad_seeds()
         gamma_seeds = self.get_gamma_ad_seeds()
+        gamma_d_seeds = self.get_gamma_d_ad_seeds()
+        if print_timings:
+            print(f"Time to extract seeds: {time.time() - time_last}")
+            time_last = time.time()
 
         self.set_function_ad_seeds(func_seeds, scale=0.0)
         self.set_residual_ad_seeds(res_seeds, scale=0.0)
+        self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
+        self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds, scale=0.0)
+        if print_timings:
+            print(f"Time to clear seeds: {time.time() - time_last}")
+            time_last = time.time()
 
-        return con_seeds, geom_seeds, gamma_seeds
+        return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds
 
     def scipy_solve():
         """
@@ -1272,6 +1427,8 @@ class AVLSolver(object):
     def execute_run_sensitivies(
         self,
         funcs,
+        consurf_derivs=None,
+        print_timings=False
     ):
         """
         only runs in adjoint mode
@@ -1284,18 +1441,79 @@ class AVLSolver(object):
             # get the RHS of the adjiont equation (pFpU)
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
-            _, _, pfpU = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            time_last = time.time()
+            _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            if print_timings:
+                print(f"Time to get RHS: {time.time() - time_last}")
+                time_last = time.time()
 
             # self.clear_ad_seeds()
             # u solver adjoint equation with RHS
             self.set_gamma_ad_seeds(-1 * pfpU)
+            self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
             self.avl.solve_adjoint()
+            if print_timings:
+                print(f"Time to solve adjoint: {time.time() - time_last}")
+                time_last = time.time()
             # get the resulting adjoint vector (dfunc/dRes) from fortran
             dfdR = self.get_residual_ad_seeds()
+            dfdR_d = self.get_residual_d_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0}, res_seeds=dfdR)
+            con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
+                func_seeds={func: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
+            )
+            if print_timings:
+                print(f"Time to combine derivs: {time.time() - time_last}")
+                time_last = time.time()
 
             sens[func].update(con_seeds)
             sens[func].update(geom_seeds)
+
+        if consurf_derivs is not None:
+            if print_timings:
+                print("Running consurf derivs")
+                time_last = time.time()
+
+            
+            cs_deriv_seeds = {}
+            for func_key in consurf_derivs:
+                cs_deriv_seeds[func_key] = {}
+                if func_key not in sens:
+                    sens[func_key] = {}
+                for cs_key in consurf_derivs[func_key]:
+                    cs_deriv_seeds[func_key][cs_key] = 1.0
+                    sens[func_key][cs_key] = {}
+
+                    # get the RHS of the adjiont equation (pFpU)
+                    # TODO: remove seeds if it doesn't effect accuracy
+                    _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+                    if print_timings:
+                        print(f"Time to get RHS: {time.time() - time_last}")
+                        time_last = time.time()
+
+
+                    # self.clear_ad_seeds()
+                    # u solver adjoint equation with RHS
+                    self.set_gamma_ad_seeds(-1 * pfpU)
+                    self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
+                    self.avl.solve_adjoint()
+                    if print_timings:
+                        print(f"Time to solve adjoint: {time.time() - time_last}")
+                        time_last = time.time()
+
+                    # get the resulting adjoint vector (dfunc/dRes) from fortran
+                    dfdR = self.get_residual_ad_seeds()
+                    dfdR_d = self.get_residual_d_ad_seeds()
+                    # self.clear_ad_seeds()
+                    con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
+                        consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
+                    )
+                    if print_timings:
+                        print(f"Time to combine : {time.time() - time_last}")
+                        time_last = time.time()
+
+                    sens[func_key][cs_key].update(con_seeds)
+                    sens[func_key][cs_key].update(geom_seeds)
+                    cs_deriv_seeds[func_key][cs_key] = 0.0
 
         return sens

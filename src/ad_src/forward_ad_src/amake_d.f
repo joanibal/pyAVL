@@ -4,7 +4,7 @@ C
 C  Differentiation of update_surfaces in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip ess ensy ensz xsref ysref zsref
-C                rv1 rv2 rv rc rs dxv chordv enc env
+C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf
 C   RW status of diff variables: xyzscal:in xyztran:in addinc:in
@@ -13,14 +13,15 @@ C                claf:in rle:out chord:out rle1:out chord1:out
 C                rle2:out chord2:out wstrip:out ess:out ensy:out
 C                ensz:out xsref:out ysref:out zsref:out rv1:out
 C                rv2:out rv:out rc:out rs:out dxv:out chordv:out
-C                enc:out env:out
+C                enc:out env:out enc_d:out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_D()
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       INTEGER isurf
-      INTEGER ii1
+      INTEGER ii3
       INTEGER ii2
+      INTEGER ii1
       nstrip = 0
       nvor = 0
       DO ii1=1,nsmax
@@ -95,6 +96,18 @@ C MAKESURF
       DO ii1=1,nvmax
         slopec_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvmax
+          dcontrol_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          DO ii3=1,3
+            vhinge_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
       DO 100 isurf=1,nsurf
         IF (lverbose) WRITE(*, *) 'Updating surface ', isurf
         IF (isurf .NE. 1) THEN
@@ -120,11 +133,11 @@ C this surface has already been created
 C  Differentiation of makesurf in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc rs dxv
-C                chordv slopev slopec
+C                chordv slopev slopec dcontrol vhinge
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
 C                chords aincs xasec sasec claf rle chord rle1 chord1
 C                rle2 chord2 wstrip ainc ainc_g rv1 rv2 rv rc rs
-C                dxv chordv slopev slopec
+C                dxv chordv slopev slopec dcontrol vhinge
 C***********************************************************************
 C    Module:  amake.f
 C 
@@ -175,6 +188,7 @@ C
      +     ngmax), chcosr_g_diff(ngmax)
       INTEGER isconl(ndmax), isconr(ndmax)
       REAL xled(ndmax), xted(ndmax), gainda(ndmax)
+      REAL xled_diff(ndmax), xted_diff(ndmax), gainda_diff(ndmax)
       INTEGER idx_vor, idx_strip
       INTEGER isec
       REAL dy
@@ -247,11 +261,17 @@ C
       INTEGER icl
       INTEGER icr
       REAL xhd
+      REAL xhd_diff
       REAL vhx
+      REAL vhx_diff
       REAL vhy
+      REAL vhy_diff
       REAL vhz
+      REAL vhz_diff
       REAL vsq
+      REAL vsq_diff
       REAL vmod
+      REAL vmod_diff
       INTEGER l
       INTEGER nsl
       INTEGER nsr
@@ -267,7 +287,9 @@ C
       REAL sloper_diff
       REAL dxoc
       REAL fracle
+      REAL fracle_diff
       REAL fracte
+      REAL fracte_diff
       INTRINSIC MAX
       INTRINSIC MIN
       REAL sum
@@ -278,11 +300,15 @@ C
       INTEGER nst
       EXTERNAL STRIP
       REAL y1
+      REAL y1_diff
       REAL y2
+      REAL y2_diff
       REAL abs0
       REAL abs0_diff
       REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs1_diff
       REAL(kind=avl_real) abs2
+      REAL(kind=avl_real) abs2_diff
       REAL arg1
       REAL arg1_diff
       REAL result1
@@ -560,8 +586,17 @@ C
           DO ii1=1,ngmax
             chsinr_g_diff(ii1) = 0.D0
           ENDDO
+          DO ii1=1,ndmax
+            xted_diff(ii1) = 0.D0
+          ENDDO
+          DO ii1=1,ndmax
+            xled_diff(ii1) = 0.D0
+          ENDDO
           DO ii1=1,ngmax
             chsinl_g_diff(ii1) = 0.D0
+          ENDDO
+          DO ii1=1,ndmax
+            gainda_diff(ii1) = 0.D0
           ENDDO
           DO ii1=1,ngmax
             chcosr_g_diff(ii1) = 0.D0
@@ -816,12 +851,18 @@ C
 C
                 IF (icl .EQ. 0 .OR. icr .EQ. 0) THEN
 C----------- no control effect here
+                  gainda_diff(n) = 0.D0
                   gainda(n) = 0.
+                  xled_diff(n) = 0.D0
                   xled(n) = 0.
+                  xted_diff(n) = 0.D0
                   xted(n) = 0.
 C
+                  vhinge_diff(1, idx_strip, n) = 0.D0
                   vhinge(1, idx_strip, n) = 0.
+                  vhinge_diff(2, idx_strip, n) = 0.D0
                   vhinge(2, idx_strip, n) = 0.
+                  vhinge_diff(3, idx_strip, n) = 0.D0
                   vhinge(3, idx_strip, n) = 0.
 C
                   vrefl(idx_strip, n) = 0.
@@ -832,52 +873,102 @@ C
 C
                 ELSE
 C----------- control variable # N is active here
+                  gainda_diff(n) = (gaind(icr, isec+1, isurf)-gaind(icl
+     +              , isec, isurf))*fc_diff
                   gainda(n) = gaind(icl, isec, isurf)*(1.0-fc) + gaind(
      +              icr, isec+1, isurf)*fc
 C
+                  xhd_diff = xhinged(icl, isec, isurf)*((1.0-fc)*
+     +              chordl_diff-chordl*fc_diff) + xhinged(icr, isec+1, 
+     +              isurf)*(fc*chordr_diff+chordr*fc_diff)
                   xhd = chordl*xhinged(icl, isec, isurf)*(1.0-fc) + 
      +              chordr*xhinged(icr, isec+1, isurf)*fc
                   IF (xhd .GE. 0.0) THEN
 C------------ TE control surface, with hinge at XHD
+                    xled_diff(n) = xhd_diff
                     xled(n) = xhd
+                    xted_diff(n) = chord_diff(idx_strip)
                     xted(n) = chord(idx_strip)
                   ELSE
 C------------ LE control surface, with hinge at -XHD
+                    xled_diff(n) = 0.D0
                     xled(n) = 0.0
+                    xted_diff(n) = -xhd_diff
                     xted(n) = -xhd
                   END IF
 C
+                  vhx_diff = vhinged(1, icl, isec, isurf)*xyzscal_diff(1
+     +              , isurf)
                   vhx = vhinged(1, icl, isec, isurf)*xyzscal(1, isurf)
+                  vhy_diff = vhinged(2, icl, isec, isurf)*xyzscal_diff(2
+     +              , isurf)
                   vhy = vhinged(2, icl, isec, isurf)*xyzscal(2, isurf)
+                  vhz_diff = vhinged(3, icl, isec, isurf)*xyzscal_diff(3
+     +              , isurf)
                   vhz = vhinged(3, icl, isec, isurf)*xyzscal(3, isurf)
+                  vsq_diff = 2*vhx*vhx_diff + 2*vhy*vhy_diff + 2*vhz*
+     +              vhz_diff
                   vsq = vhx**2 + vhy**2 + vhz**2
                   IF (vsq .EQ. 0.0) THEN
                     IF (chordr*xhinged(icr, isec+1, isurf) .GE. 0.) THEN
+                      abs1_diff = xhinged(icr, isec+1, isurf)*
+     +                  chordr_diff
                       abs1 = chordr*xhinged(icr, isec+1, isurf)
                     ELSE
+                      abs1_diff = -(xhinged(icr, isec+1, isurf)*
+     +                  chordr_diff)
                       abs1 = -(chordr*xhinged(icr, isec+1, isurf))
                     END IF
                     IF (chordl*xhinged(icl, isec, isurf) .GE. 0.) THEN
+                      abs2_diff = xhinged(icl, isec, isurf)*chordl_diff
                       abs2 = chordl*xhinged(icl, isec, isurf)
                     ELSE
+                      abs2_diff = -(xhinged(icl, isec, isurf)*
+     +                  chordl_diff)
                       abs2 = -(chordl*xhinged(icl, isec, isurf))
                     END IF
 C------------ default: set hinge vector along hingeline
+                    vhx_diff = xyzles_diff(1, isec+1, isurf) + abs1_diff
+     +                - xyzles_diff(1, isec, isurf) - abs2_diff
                     vhx = xyzles(1, isec+1, isurf) + abs1 - xyzles(1, 
      +                isec, isurf) - abs2
+                    vhy_diff = xyzles_diff(2, isec+1, isurf) - 
+     +                xyzles_diff(2, isec, isurf)
                     vhy = xyzles(2, isec+1, isurf) - xyzles(2, isec, 
      +                isurf)
+                    vhz_diff = xyzles_diff(3, isec+1, isurf) - 
+     +                xyzles_diff(3, isec, isurf)
                     vhz = xyzles(3, isec+1, isurf) - xyzles(3, isec, 
      +                isurf)
+                    vhx_diff = xyzscal(1, isurf)*vhx_diff + vhx*
+     +                xyzscal_diff(1, isurf)
                     vhx = vhx*xyzscal(1, isurf)
+                    vhy_diff = xyzscal(2, isurf)*vhy_diff + vhy*
+     +                xyzscal_diff(2, isurf)
                     vhy = vhy*xyzscal(2, isurf)
+                    vhz_diff = xyzscal(3, isurf)*vhz_diff + vhz*
+     +                xyzscal_diff(3, isurf)
                     vhz = vhz*xyzscal(3, isurf)
+                    vsq_diff = 2*vhx*vhx_diff + 2*vhy*vhy_diff + 2*vhz*
+     +                vhz_diff
                     vsq = vhx**2 + vhy**2 + vhz**2
                   END IF
 C
-                  vmod = SQRT(vsq)
+                  temp0 = SQRT(vsq)
+                  IF (vsq .EQ. 0.D0) THEN
+                    vmod_diff = 0.D0
+                  ELSE
+                    vmod_diff = vsq_diff/(2.0*temp0)
+                  END IF
+                  vmod = temp0
+                  vhinge_diff(1, idx_strip, n) = (vhx_diff-vhx*vmod_diff
+     +              /vmod)/vmod
                   vhinge(1, idx_strip, n) = vhx/vmod
+                  vhinge_diff(2, idx_strip, n) = (vhy_diff-vhy*vmod_diff
+     +              /vmod)/vmod
                   vhinge(2, idx_strip, n) = vhy/vmod
+                  vhinge_diff(3, idx_strip, n) = (vhz_diff-vhz*vmod_diff
+     +              /vmod)/vmod
                   vhinge(3, idx_strip, n) = vhz/vmod
 C
                   vrefl(idx_strip, n) = refld(icl, isec, isurf)
@@ -1034,29 +1125,45 @@ C---------- element inherits alpha,beta flag from surface
 C
                 DO n=1,ncontrol
 C------------ scale control gain by factor 0..1, (fraction of element on control surface)
-                  fracle = (xled(n)/chordc-xpt(ivc))/dxoc
-                  fracte = (xted(n)/chordc-xpt(ivc))/dxoc
+                  temp0 = xled(n)/chordc
+                  fracle_diff = (xled_diff(n)-temp0*chordc_diff)/(dxoc*
+     +              chordc)
+                  fracle = (temp0-xpt(ivc))/dxoc
+                  temp0 = xted(n)/chordc
+                  fracte_diff = (xted_diff(n)-temp0*chordc_diff)/(dxoc*
+     +              chordc)
+                  fracte = (temp0-xpt(ivc))/dxoc
                   IF (0.0 .LT. fracle) THEN
+                    y1_diff = fracle_diff
                     y1 = fracle
                   ELSE
                     y1 = 0.0
+                    y1_diff = 0.D0
                   END IF
                   IF (1.0 .GT. y1) THEN
+                    fracle_diff = y1_diff
                     fracle = y1
                   ELSE
                     fracle = 1.0
+                    fracle_diff = 0.D0
                   END IF
                   IF (0.0 .LT. fracte) THEN
+                    y2_diff = fracte_diff
                     y2 = fracte
                   ELSE
                     y2 = 0.0
+                    y2_diff = 0.D0
                   END IF
                   IF (1.0 .GT. y2) THEN
+                    fracte_diff = y2_diff
                     fracte = y2
                   ELSE
                     fracte = 1.0
+                    fracte_diff = 0.D0
                   END IF
 C
+                  dcontrol_diff(idx_vor, n) = (fracte-fracle)*
+     +              gainda_diff(n) + gainda(n)*(fracte_diff-fracle_diff)
                   dcontrol(idx_vor, n) = gainda(n)*(fracte-fracle)
                 ENDDO
 C
@@ -1105,10 +1212,10 @@ C
 C  Differentiation of sdupl in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
-C                slopev slopec
+C                slopev slopec dcontrol vhinge
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
-C                slopev slopec
+C                slopev slopec dcontrol vhinge
 C MAKEBODY
 C
 C
@@ -1236,8 +1343,11 @@ C
             DO n=1,ncontrol
               vrefl(jji, n) = vrefl(jj, n)
 C
+              vhinge_diff(1, jji, n) = vhinge_diff(1, jj, n)
               vhinge(1, jji, n) = vhinge(1, jj, n)
+              vhinge_diff(2, jji, n) = -vhinge_diff(2, jj, n)
               vhinge(2, jji, n) = -vhinge(2, jj, n)
+              vhinge_diff(3, jji, n) = vhinge_diff(3, jj, n)
               vhinge(3, jji, n) = vhinge(3, jj, n)
 C
               phinge(1, jji, n) = phinge(1, jj, n)
@@ -1305,6 +1415,7 @@ C
                 DO n=1,ncontrol
 Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
                   rsgn = vrefl(jj, n)
+                  dcontrol_diff(iii, n) = -(rsgn*dcontrol_diff(ii, n))
                   dcontrol(iii, n) = -(dcontrol(ii, n)*rsgn)
                 ENDDO
                 idx_vor = idx_vor + 1
@@ -1330,9 +1441,9 @@ C
 
 C  Differentiation of encalc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: ess ensy ensz xsref ysref zsref
-C                enc env
+C                enc env enc_d
 C   with respect to varying inputs: ainc ainc_g rv1 rv2 rv slopev
-C                slopec
+C                slopec dcontrol vhinge
 C BDUPL
 C
 C
@@ -1343,7 +1454,8 @@ C
       INCLUDE 'AVL_ad_seeds.inc'
 C
       REAL ep(3), eq(3), es(3), eb(3), ec(3), ecxb(3)
-      REAL es_diff(3), eb_diff(3), ec_diff(3), ecxb_diff(3)
+      REAL ep_diff(3), eq_diff(3), es_diff(3), eb_diff(3), ec_diff(3), 
+     +     ecxb_diff(3)
       REAL ec_g(3, ndmax), ecxb_g(3)
       INTEGER j
       INTEGER i
@@ -1400,16 +1512,20 @@ C
       INTRINSIC COS
       REAL emag_g
       REAL ang_ddc
+      REAL ang_ddc_diff
       REAL cosd
       REAL sind
       REAL endot
+      REAL endot_diff
       REAL DOT
+      REAL DOT_D
       REAL arg1
       REAL arg1_diff
       REAL result1
       REAL result1_diff
       REAL temp
       INTEGER ii1
+      INTEGER ii3
       INTEGER ii2
       DO ii1=1,nsmax
         DO ii2=1,3
@@ -1441,11 +1557,24 @@ C
           env_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvmax
+          DO ii3=1,3
+            enc_d_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
       DO ii1=1,3
         eb_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         ec_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        ep_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        eq_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         es_diff(ii1) = 0.D0
@@ -1583,8 +1712,11 @@ C
             env_d(1, i, n) = 0.
             env_d(2, i, n) = 0.
             env_d(3, i, n) = 0.
+            enc_d_diff(1, i, n) = 0.D0
             enc_d(1, i, n) = 0.
+            enc_d_diff(2, i, n) = 0.D0
             enc_d(2, i, n) = 0.
+            enc_d_diff(3, i, n) = 0.D0
             enc_d(3, i, n) = 0.
           ENDDO
 C
@@ -1770,18 +1902,27 @@ C---------- skip everything if this element is unaffected by control variable N
             IF (dcontrol(i, n) .NE. 0.0) THEN
 C
               ang = dtr*dcontrol(i, n)*delcon(n)
+              ang_ddc_diff = dtr*dcontrol_diff(i, n)
               ang_ddc = dtr*dcontrol(i, n)
 C
               cosd = COS(ang)
               sind = SIN(ang)
 C
 C---------- EP = normal-vector component perpendicular to hinge line
-              endot = DOT(enc(1, i), vhinge(1, j, n))
+              endot_diff = DOT_D(enc(1, i), enc_diff(1, i), vhinge(1, j
+     +          , n), vhinge_diff(1, j, n), endot)
+              ep_diff(1) = enc_diff(1, i) - vhinge(1, j, n)*endot_diff -
+     +          endot*vhinge_diff(1, j, n)
               ep(1) = enc(1, i) - endot*vhinge(1, j, n)
+              ep_diff(2) = enc_diff(2, i) - vhinge(2, j, n)*endot_diff -
+     +          endot*vhinge_diff(2, j, n)
               ep(2) = enc(2, i) - endot*vhinge(2, j, n)
+              ep_diff(3) = enc_diff(3, i) - vhinge(3, j, n)*endot_diff -
+     +          endot*vhinge_diff(3, j, n)
               ep(3) = enc(3, i) - endot*vhinge(3, j, n)
 C---------- EQ = unit vector perpendicular to both EP and hinge line
-              CALL CROSS(vhinge(1, j, n), ep, eq)
+              CALL CROSS_D(vhinge(1, j, n), vhinge_diff(1, j, n), ep, 
+     +                     ep_diff, eq, eq_diff)
 C
 C---------- rotated vector would consist of sin,cos parts from EP and EQ,
 C-          with hinge-parallel component ENDOT restored 
@@ -1790,20 +1931,34 @@ Cc          ENC(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
 Cc          ENC(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
 C
 C---------- linearize about zero deflection (COSD=1, SIND=0)
+              enc_d_diff(1, i, n) = enc_d_diff(1, i, n) + ang_ddc*
+     +          eq_diff(1) + eq(1)*ang_ddc_diff
               enc_d(1, i, n) = enc_d(1, i, n) + eq(1)*ang_ddc
+              enc_d_diff(2, i, n) = enc_d_diff(2, i, n) + ang_ddc*
+     +          eq_diff(2) + eq(2)*ang_ddc_diff
               enc_d(2, i, n) = enc_d(2, i, n) + eq(2)*ang_ddc
+              enc_d_diff(3, i, n) = enc_d_diff(3, i, n) + ang_ddc*
+     +          eq_diff(3) + eq(3)*ang_ddc_diff
               enc_d(3, i, n) = enc_d(3, i, n) + eq(3)*ang_ddc
 C
 C
 C---------- repeat for ENV vector
 C
 C---------- EP = normal-vector component perpendicular to hinge line
-              endot = DOT(env(1, i), vhinge(1, j, n))
+              endot_diff = DOT_D(env(1, i), env_diff(1, i), vhinge(1, j
+     +          , n), vhinge_diff(1, j, n), endot)
+              ep_diff(1) = env_diff(1, i) - vhinge(1, j, n)*endot_diff -
+     +          endot*vhinge_diff(1, j, n)
               ep(1) = env(1, i) - endot*vhinge(1, j, n)
+              ep_diff(2) = env_diff(2, i) - vhinge(2, j, n)*endot_diff -
+     +          endot*vhinge_diff(2, j, n)
               ep(2) = env(2, i) - endot*vhinge(2, j, n)
+              ep_diff(3) = env_diff(3, i) - vhinge(3, j, n)*endot_diff -
+     +          endot*vhinge_diff(3, j, n)
               ep(3) = env(3, i) - endot*vhinge(3, j, n)
 C---------- EQ = unit vector perpendicular to both EP and hinge line
-              CALL CROSS(vhinge(1, j, n), ep, eq)
+              CALL CROSS_D(vhinge(1, j, n), vhinge_diff(1, j, n), ep, 
+     +                     ep_diff, eq, eq_diff)
 C
 C---------- rotated vector would consist of sin,cos parts from EP and EQ,
 C-          with hinge-parallel component ENDOT restored 

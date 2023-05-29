@@ -554,6 +554,7 @@ C
       REAL(kind=avl_real) WVSRD_U
       REAL(kind=avl_real) RHS
       REAL(kind=avl_real) RES
+      REAL(kind=avl_real) RES_D
       COMMON /VRTX_R/
      & RV1(3,NVMAX),    ! h.v. vortex left  points
      & RV2(3,NVMAX),    ! h.v. vortex right points
@@ -593,7 +594,8 @@ C
      & WCSRD_U(3,NVMAX,NUMAX),
      & WVSRD_U(3,NVMAX,NUMAX),
      & RHS(NVMAX),             ! RHS (flow normal to surface) for linear system
-     & RES(NVMAX)             ! residual for linear system res = Ax-b
+     & RES(NVMAX),             ! residual for linear system res = Ax-b
+     & RES_D(NVMAX,NDMAX)             ! residual for gamma_d lin. sys 
 C
       COMMON /BODY_I/
      & NL(NBMAX),       ! number of source-line nodes in body

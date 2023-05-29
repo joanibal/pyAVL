@@ -220,7 +220,7 @@ C$AD-II-loop
       END
 
 C  Differentiation of set_vel_rhs in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: vinf xyzref rc rhs
+C   gradient     of useful results: vinf wrot xyzref rc rhs
 C   with respect to varying inputs: vinf wrot xyzref rc enc
       SUBROUTINE SET_VEL_RHS_B()
 C
@@ -279,7 +279,6 @@ C
           CALL PUSHCONTROL1B(0)
         END IF
       ENDDO
-      wrot_diff = 0.D0
       enc_diff = 0.D0
       vunit_diff = 0.D0
       wunit_diff = 0.D0
@@ -347,10 +346,134 @@ C
       ENDDO
       END
 
-C  Differentiation of mat_prod in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: vec out_vec
-C   with respect to varying inputs: vec mat
+C  Differentiation of set_gam_d_rhs in reverse (adjoint) mode (with options i4 dr8 r8):
+C   gradient     of useful results: vinf wrot xyzref rc rhs_vec
+C                enc_q
+C   with respect to varying inputs: vinf wrot xyzref rc rhs_vec
+C                enc_q
 Cset_vel_rhs
+      SUBROUTINE SET_GAM_D_RHS_B(iq, enc_q, enc_q_diff, rhs_vec, 
+     +                           rhs_vec_diff)
+      INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_ad_seeds.inc'
+      REAL enc_q(3, nvmax, *), rhs_vec(nvmax)
+      REAL enc_q_diff(3, nvmax, *), rhs_vec_diff(nvmax)
+C
+C
+      REAL rrot(3), vrot(3), vc(3)
+      REAL rrot_diff(3), vrot_diff(3), vc_diff(3)
+      INTEGER i
+      INTEGER k
+      REAL DOT
+      REAL result1
+      REAL result1_diff
+      INTEGER branch
+      INTEGER ii1
+      INTEGER iq
+C
+C
+      DO i=1,nvor
+        IF (lvnc(i)) THEN
+          IF (lvalbe(i)) THEN
+            CALL PUSHREAL8(rrot(1))
+            rrot(1) = rc(1, i) - xyzref(1)
+            CALL PUSHREAL8(rrot(2))
+            rrot(2) = rc(2, i) - xyzref(2)
+            CALL PUSHREAL8(rrot(3))
+            rrot(3) = rc(3, i) - xyzref(3)
+            CALL CROSS(rrot, wrot, vrot)
+            DO k=1,3
+              CALL PUSHREAL8(vc(k))
+              vc(k) = vinf(k) + vrot(k)
+            ENDDO
+            CALL PUSHCONTROL1B(1)
+          ELSE
+            CALL PUSHREAL8(vc(1))
+            vc(1) = 0.
+            CALL PUSHREAL8(vc(2))
+            vc(2) = 0.
+            CALL PUSHREAL8(vc(3))
+            vc(3) = 0.
+            CALL PUSHCONTROL1B(0)
+          END IF
+C
+          DO k=1,3
+            CALL PUSHREAL8(vc(k))
+            vc(k) = vc(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
+     +        vinf(2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot
+     +        (1) + wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
+          ENDDO
+          CALL PUSHCONTROL1B(1)
+        ELSE
+          CALL PUSHCONTROL1B(0)
+        END IF
+      ENDDO
+      DO ii1=1,3
+        vrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        vc_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        rrot_diff(ii1) = 0.D0
+      ENDDO
+      DO i=nvor,1,-1
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          rhs_vec_diff(i) = 0.D0
+        ELSE
+          result1_diff = -rhs_vec_diff(i)
+          rhs_vec_diff(i) = 0.D0
+          CALL DOT_B(enc_q(1, i, iq), enc_q_diff(1, i, iq), vc, vc_diff
+     +               , result1_diff)
+          DO k=3,1,-1
+            CALL POPREAL8(vc(k))
+            vinf_diff(1) = vinf_diff(1) + wcsrd_u(k, i, 1)*vc_diff(k)
+            vinf_diff(2) = vinf_diff(2) + wcsrd_u(k, i, 2)*vc_diff(k)
+            vinf_diff(3) = vinf_diff(3) + wcsrd_u(k, i, 3)*vc_diff(k)
+            wrot_diff(1) = wrot_diff(1) + wcsrd_u(k, i, 4)*vc_diff(k)
+            wrot_diff(2) = wrot_diff(2) + wcsrd_u(k, i, 5)*vc_diff(k)
+            wrot_diff(3) = wrot_diff(3) + wcsrd_u(k, i, 6)*vc_diff(k)
+          ENDDO
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(vc(3))
+            vc_diff(3) = 0.D0
+            CALL POPREAL8(vc(2))
+            vc_diff(2) = 0.D0
+            CALL POPREAL8(vc(1))
+            vc_diff(1) = 0.D0
+          ELSE
+            DO k=3,1,-1
+              CALL POPREAL8(vc(k))
+              vinf_diff(k) = vinf_diff(k) + vc_diff(k)
+              vrot_diff(k) = vrot_diff(k) + vc_diff(k)
+              vc_diff(k) = 0.D0
+            ENDDO
+            CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, 
+     +                   vrot_diff)
+            CALL POPREAL8(rrot(3))
+            rc_diff(3, i) = rc_diff(3, i) + rrot_diff(3)
+            xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
+            rrot_diff(3) = 0.D0
+            CALL POPREAL8(rrot(2))
+            rc_diff(2, i) = rc_diff(2, i) + rrot_diff(2)
+            xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
+            rrot_diff(2) = 0.D0
+            CALL POPREAL8(rrot(1))
+            rc_diff(1, i) = rc_diff(1, i) + rrot_diff(1)
+            xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
+            rrot_diff(1) = 0.D0
+          END IF
+        END IF
+      ENDDO
+      END
+
+C  Differentiation of mat_prod in reverse (adjoint) mode (with options i4 dr8 r8):
+C   gradient     of useful results: vec out_vec mat
+C   with respect to varying inputs: vec mat
+C set_gam_d_rhs
+C
       SUBROUTINE MAT_PROD_B(mat, mat_diff, vec, vec_diff, n, out_vec, 
      +                      out_vec_diff)
       INCLUDE 'AVL.INC'
@@ -361,7 +484,6 @@ Cset_vel_rhs
       INTEGER i
 C$AD II-LOOP
       INTEGER n
-      mat_diff = 0.D0
 C$BWD-OF II-LOOP 
       DO j=1,n
         DO i=n,1,-1

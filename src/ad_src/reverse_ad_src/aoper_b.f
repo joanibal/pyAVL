@@ -3,27 +3,40 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of get_res in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: alfa beta vinf xyzref rv1 rv2
-C                rv rc gam res wv_gam
+C                rv rc gam gam_d res res_d wv_gam
 C   with respect to varying inputs: ysym zsym alfa beta vinf conval
-C                xyzref mach rv1 rv2 rv rc chordv enc gam res wv_gam
+C                xyzref mach rv1 rv2 rv rc chordv enc enc_d gam
+C                gam_d res res_d wv_gam
 C   RW status of diff variables: ysym:out zsym:out alfa:in-out
 C                beta:in-out vinf:in-out conval:out xyzref:in-out
 C                mach:zero rv1:incr rv2:incr rv:incr rc:incr chordv:out
-C                enc:out gam:incr res:in-zero wv_gam:in-out
-Csubroutine solve_rhs
+C                enc:out enc_d:out gam:incr gam_d:incr res:in-zero
+C                res_d:in-out wv_gam:in-out
+C
+C ======================== res and Adjoint for GAM ========      
       SUBROUTINE GET_RES_B()
+C
+C     
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INTEGER i, ic
+      REAL rhs_d(nvor)
+      REAL rhs_d_diff(nvor)
       REAL betm
       INTRINSIC SQRT
-      INTEGER i
       INTEGER ii1
+      INTEGER ii2
+      INTEGER ii3
+      
+      real t0, t1, t2, t3, t4, t5
+      
+      call cpu_time(t0)
+      
       CALL SET_PAR_AND_CONS(nitmax, irun)
 C Do not use this routine in the sovler
 C IF(.NOT.LAIC) THEN
 C      CALL build_AIC
 C end if
-C CALL SETUP
 C---  
       ! CALL PUSHREAL8ARRAY(wc_gam, 3*nvmax**2)
       ! CALL BUILD_AIC()
@@ -31,7 +44,47 @@ C---
       betm = SQRT(1.0 - amach**2)
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
+      
+      call cpu_time(t1)
+      write(*,*) '  set vars time: ', t1 - t0
 C
+      DO ii1=1,3
+        wrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvmax
+          DO ii3=1,3
+            enc_d_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,nvmax
+        DO ii2=1,nvmax
+          aicn_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        rhs_d_diff(ii1) = 0.D0
+      ENDDO
+C$BWD-OF II-LOOP 
+      DO ic=1,ncontrol
+C------ don't bother if this control variable is undefined
+        IF (lcondef(ic)) THEN
+C$BWD-OF II-LOOP 
+          DO i=1,nvor
+            rhs_d_diff(i) = rhs_d_diff(i) - res_d_diff(i, ic)
+          ENDDO
+          CALL SET_GAM_D_RHS_B(ic, enc_d, enc_d_diff, rhs_d, rhs_d_diff)
+          CALL MAT_PROD_B(aicn, aicn_diff, gam_d(:, ic), gam_d_diff(:, 
+     +                    ic), nvor, res_d(:, ic), res_d_diff(:, ic))
+          DO ii1=1,6000
+            res_d_diff(ii1, ic) = 0.D0
+          ENDDO
+        END IF
+      ENDDO
+      call cpu_time(t2)
+      write(*,*) '  gamma_d time: ', t2 - t1
+        
       DO ii1=1,nvmax
         rhs_diff(ii1) = 0.D0
       ENDDO
@@ -51,13 +104,21 @@ C$BWD-OF II-LOOP
       DO ii1=1,nvmax
         chordv_diff(ii1) = 0.D0
       ENDDO
+      call cpu_time(t3)
+      write(*,*) '  gamma time: ', t3 - t2
+
       CALL VVOR_B(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
      +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
      +            chordv, chordv_diff, nvor, rv, rv_diff, nsurfv, .true.
      +            , wv_gam, wv_gam_diff, nvmax)
       ! CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
+      call cpu_time(t4)
+      write(*,*) '  VVOR_B time: ', t4 - t3
       CALL BUILD_AIC_B()
       CALL SET_PAR_AND_CONS_B(nitmax, irun)
       mach_diff = 0.D0
+      call cpu_time(t5)
+      write(*,*) '  aic_b time: ', t5 - t4
+      
       END
 

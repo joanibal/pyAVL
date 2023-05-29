@@ -691,6 +691,48 @@ C----- might as well directly set operating variables if they are known
         
       end !set_vel_rhs
       
+      SUBROUTINE set_gam_d_rhs(IQ,ENC_Q, rhs_vec)
+      INCLUDE 'AVL.INC'
+      REAL ENC_Q(3,NVMAX,*), rhs_vec(NVMAX)
+      REAL RROT(3), VROT(3), VC(3)
+C
+      DO I = 1, NVOR
+        IF(LVNC(I)) THEN
+          IF(LVALBE(I)) THEN
+          RROT(1) = RC(1,I) - XYZREF(1)
+          RROT(2) = RC(2,I) - XYZREF(2)
+          RROT(3) = RC(3,I) - XYZREF(3)
+          CALL CROSS(RROT,WROT,VROT)
+          DO K = 1, 3
+            VC(K) = VINF(K)
+     &              + VROT(K)
+          ENDDO
+          ELSE
+          VC(1) = 0.
+          VC(2) = 0.
+          VC(3) = 0.
+          ENDIF
+
+          DO K = 1, 3
+            VC(K) = VC(K)
+     &             + WCSRD_U(K,I,1)*VINF(1)
+     &             + WCSRD_U(K,I,2)*VINF(2)
+     &             + WCSRD_U(K,I,3)*VINF(3)
+     &             + WCSRD_U(K,I,4)*WROT(1)
+     &             + WCSRD_U(K,I,5)*WROT(2)
+     &             + WCSRD_U(K,I,6)*WROT(3)
+          ENDDO
+C 
+          rhs_vec(I) = -DOT(ENC_Q(1,I,IQ),VC)
+        ELSE
+          rhs_vec(I) = 0.
+        ENDIF
+      ENDDO
+C
+      RETURN
+      END ! set_gam_d_rhs
+
+      
       subroutine mat_prod(mat, vec, n, out_vec)
         include 'AVL.INC'
         real mat(NVMAX,NVMAX), vec(NVMAX), out_vec(NVMAX)

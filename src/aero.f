@@ -93,6 +93,13 @@ C     calculate stability axis based values
       CRSAX = DIR*(CRTOT*COSA + CNTOT*SINA)
       CNSAX = DIR*(CNTOT*COSA - CRTOT*SINA)
       
+      DO K = 1, NCONTROL
+        ! do the sign change here so that it included in the derivative
+        ! routnis         
+        CRTOT_D(K) = DIR*CRTOT_D(K)
+        CNTOT_D(K) = DIR*CNTOT_D(K)
+      ENDDO
+      
 C---------------------------------------------------------
 C---- add baseline reference CD
 C

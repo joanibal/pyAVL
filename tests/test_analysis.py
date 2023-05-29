@@ -143,6 +143,20 @@ class TestHingeMom(unittest.TestCase):
         np.testing.assert_allclose(mom_data["Rudder"], -1.0957068091302286e-3, rtol=1e-8)
         np.testing.assert_allclose(mom_data["Elevator"], -1.065702741142345e-2, rtol=1e-8)
 
+class TestCaseDerivs(unittest.TestCase):
+    def setUp(self) -> None:
+        # self.avl_solver = AVLSolver(geo_file=geom_file)
+        # self.avl_solver = AVLSolver(geo_file="rect.avl")
+        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
+        
+    def test_coefs_wrt_con_surfs(self):
+        self.avl_solver.add_constraint("alpha", 45.00)
+        self.avl_solver.execute_run()
+        run_data = self.avl_solver.get_case_total_data()
+        coef_derivs = self.avl_solver.get_case_coef_derivs()
+        #TODO: test againast values from AVL
+
+
 class TestVariableSetting(unittest.TestCase):
     def setUp(self) -> None:
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
@@ -170,7 +184,7 @@ class TestVariableSetting(unittest.TestCase):
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
         def_dict = self.avl_solver.get_control_deflections()
         np.testing.assert_allclose(def_dict['Elevator'], 10.00, rtol=1e-15)
-
+        
         
 
 if __name__ == "__main__":

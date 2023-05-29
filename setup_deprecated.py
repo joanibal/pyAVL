@@ -32,7 +32,8 @@ def make_avl_lib():
 
 
 if __name__ == "__main__":
-    # to install locally use `python setup_deprecated.py develop`
+    # to install locally use...
+    # `python setup_deprecated.py develop`
 
     setup(
         name="pyavl-wrapper",

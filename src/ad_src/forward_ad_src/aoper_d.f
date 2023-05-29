@@ -3,27 +3,33 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of get_res in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: alfa beta vinf xyzref mach
-C                res wv_gam
+C                res res_d wv_gam
 C   with respect to varying inputs: ysym zsym conval xyzref rv1
-C                rv2 rv rc chordv enc gam
+C                rv2 rv rc chordv enc enc_d gam gam_d
 C   RW status of diff variables: ysym:in zsym:in alfa:out beta:out
 C                vinf:out conval:in xyzref:in-out mach:out rv1:in
-C                rv2:in rv:in rc:in chordv:in enc:in gam:in res:out
-C                wv_gam:out
-Csubroutine solve_rhs
+C                rv2:in rv:in rc:in chordv:in enc:in enc_d:in gam:in
+C                gam_d:in res:out res_d:out wv_gam:out
+C
+C ======================== res and Adjoint for GAM ========      
       SUBROUTINE GET_RES_D()
+C
+C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INTEGER i, ic
+      REAL rhs_d(nvor)
+      REAL rhs_d_diff(nvor)
       REAL betm
       INTRINSIC SQRT
-      INTEGER i
       REAL(kind=8) arg1
+      INTEGER ii1
+      INTEGER ii2
       CALL SET_PAR_AND_CONS_D(nitmax, irun)
 C Do not use this routine in the sovler
 C IF(.NOT.LAIC) THEN
 C      CALL build_AIC
 C end if
-C CALL SETUP
 C---  
       CALL BUILD_AIC_D()
       amach = mach
@@ -43,6 +49,28 @@ C---- add the RHS vector to the residual
       DO i=1,nvor
         res_diff(i) = res_diff(i) - rhs_diff(i)
         res(i) = res(i) - rhs(i)
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvmax
+          res_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        rhs_d_diff(ii1) = 0.D0
+      ENDDO
+C---- Setup variational BC's at the control points
+      DO ic=1,ncontrol
+C------ don't bother if this control variable is undefined
+        IF (lcondef(ic)) THEN
+          CALL MAT_PROD_D(aicn, aicn_diff, gam_d(:, ic), gam_d_diff(:, 
+     +                    ic), nvor, res_d(:, ic), res_d_diff(:, ic))
+C  RHS_D(:) = 0.D0
+          CALL SET_GAM_D_RHS_D(ic, enc_d, enc_d_diff, rhs_d, rhs_d_diff)
+          DO i=1,nvor
+            res_d_diff(i, ic) = res_d_diff(i, ic) - rhs_d_diff(i)
+            res_d(i, ic) = res_d(i, ic) - rhs_d(i)
+          ENDDO
+        END IF
       ENDDO
       mach_diff = 0.D0
       END

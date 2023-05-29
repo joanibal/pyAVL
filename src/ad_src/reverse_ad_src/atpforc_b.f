@@ -44,7 +44,6 @@ C
       REAL zoff
       INTEGER n
       INTEGER jc
-      INTEGER isurf
       INTEGER i1
       INTEGER i
       INTEGER ic
@@ -113,21 +112,18 @@ C
       DO jc=1,nstrip
         gams(jc) = 0.
 C
-        isurf = nsurfs(jc)
-        IF (lfload(isurf)) THEN
+Ccc        ISURF = NSURFS(JC)
+Ccc        IF(LFLOAD(ISURF)) THEN   !Bug 6/13/14 HHY 
 C------- add circulation of this strip only if it contributes to total load
-          i1 = ijfrst(jc)
-          ad_from = i1
-          DO i=ad_from,i1+nvstrp(jc)-1
-            gams(jc) = gams(jc) + gam(i)
-          ENDDO
-          CALL PUSHINTEGER4(i - 1)
-          CALL PUSHINTEGER4(ad_from)
-          CALL PUSHCONTROL1B(1)
-        ELSE
-          CALL PUSHCONTROL1B(0)
-        END IF
+        i1 = ijfrst(jc)
+        ad_from = i1
+        DO i=ad_from,i1+nvstrp(jc)-1
+          gams(jc) = gams(jc) + gam(i)
+        ENDDO
+        CALL PUSHINTEGER4(i - 1)
+        CALL PUSHINTEGER4(ad_from)
       ENDDO
+Ccc        ENDIF
 C
 C---- set x,y,z in wind axes (Y,Z are then in Trefftz plane)
       DO jc=1,nstrip
@@ -464,14 +460,11 @@ C---- span efficiency
         gam_diff(ii1) = 0.D0
       ENDDO
       DO jc=nstrip,1,-1
-        CALL POPCONTROL1B(branch)
-        IF (branch .NE. 0) THEN
-          CALL POPINTEGER4(ad_from)
-          CALL POPINTEGER4(ad_to)
-          DO i=ad_to,ad_from,-1
-            gam_diff(i) = gam_diff(i) + gams_diff(jc)
-          ENDDO
-        END IF
+        CALL POPINTEGER4(ad_from)
+        CALL POPINTEGER4(ad_to)
+        DO i=ad_to,ad_from,-1
+          gam_diff(i) = gam_diff(i) + gams_diff(jc)
+        ENDDO
         gams_diff(jc) = 0.D0
       ENDDO
       END

@@ -44,7 +44,6 @@ C
       REAL zoff
       INTEGER n
       INTEGER jc
-      INTEGER isurf
       INTEGER i1
       INTEGER i
       INTEGER ic
@@ -139,24 +138,23 @@ C
           gams_g(jc, n) = 0.
         ENDDO
 C
-        isurf = nsurfs(jc)
-        IF (lfload(isurf)) THEN
+Ccc        ISURF = NSURFS(JC)
+Ccc        IF(LFLOAD(ISURF)) THEN   !Bug 6/13/14 HHY 
 C------- add circulation of this strip only if it contributes to total load
-          i1 = ijfrst(jc)
-          DO i=i1,i1+nvstrp(jc)-1
-            gams_diff(jc) = gams_diff(jc) + gam_diff(i)
-            gams(jc) = gams(jc) + gam(i)
-            DO n=1,numax
-              gams_u(jc, n) = gams_u(jc, n) + gam_u(i, n)
-            ENDDO
-            DO n=1,ncontrol
-              gams_d(jc, n) = gams_d(jc, n) + gam_d(i, n)
-            ENDDO
-            DO n=1,ndesign
-              gams_g(jc, n) = gams_g(jc, n) + gam_g(i, n)
-            ENDDO
+        i1 = ijfrst(jc)
+        DO i=i1,i1+nvstrp(jc)-1
+          gams_diff(jc) = gams_diff(jc) + gam_diff(i)
+          gams(jc) = gams(jc) + gam(i)
+          DO n=1,numax
+            gams_u(jc, n) = gams_u(jc, n) + gam_u(i, n)
           ENDDO
-        END IF
+          DO n=1,ncontrol
+            gams_d(jc, n) = gams_d(jc, n) + gam_d(i, n)
+          ENDDO
+          DO n=1,ndesign
+            gams_g(jc, n) = gams_g(jc, n) + gam_g(i, n)
+          ENDDO
+        ENDDO
       ENDDO
       DO ii1=1,nsmax
         DO ii2=1,3
@@ -173,6 +171,7 @@ C------- add circulation of this strip only if it contributes to total load
           rt1_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+Ccc        ENDIF
 C
 C---- set x,y,z in wind axes (Y,Z are then in Trefftz plane)
       DO jc=1,nstrip

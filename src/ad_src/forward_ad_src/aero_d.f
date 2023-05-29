@@ -4,18 +4,22 @@ C
 C  Differentiation of aero in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: clff cyff cdff spanef cdtot
 C                cltot cxtot cytot cztot crtot cmtot cntot crsax
-C                cnsax cdvtot cystrp
+C                cnsax cdvtot cdtot_d cltot_d cxtot_d cytot_d cztot_d
+C                crtot_d cmtot_d cntot_d
 C   with respect to varying inputs: alfa vinf sref xyzref mach
 C                rle chord rle1 chord1 rle2 chord2 wstrip ensy
-C                ensz xsref ysref zsref rv1 rv2 rv rc gam wv
+C                ensz xsref ysref zsref rv1 rv2 rv rc gam gam_d
+C                wv
 C   RW status of diff variables: alfa:in vinf:in sref:in xyzref:in
 C                mach:in clff:out cyff:out cdff:out spanef:out
 C                cdtot:out cltot:out cxtot:out cytot:out cztot:out
 C                crtot:out cmtot:out cntot:out crsax:out cnsax:out
-C                cdvtot:out rle:in chord:in rle1:in chord1:in rle2:in
-C                chord2:in wstrip:in ensy:in ensz:in xsref:in ysref:in
-C                zsref:in cystrp:out rv1:in rv2:in rv:in rc:in
-C                gam:in wv:in
+C                cdvtot:out cdtot_d:out cltot_d:out cxtot_d:out
+C                cytot_d:out cztot_d:out crtot_d:out cmtot_d:out
+C                cntot_d:out rle:in chord:in rle1:in chord1:in
+C                rle2:in chord2:in wstrip:in ensy:in ensz:in xsref:in
+C                ysref:in zsref:in rv1:in rv2:in rv:in rc:in gam:in
+C                gam_d:in wv:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -50,6 +54,7 @@ C
       INTRINSIC COS
       REAL dir
       EXTERNAL GETSA
+      INTEGER k
       REAL vsq
       REAL vsq_diff
       REAL vmag
@@ -134,6 +139,12 @@ C     calculate stability axis based values
       cnsax_diff = dir*(cosa*cntot_diff+cntot*cosa_diff-sina*crtot_diff-
      +  crtot*sina_diff)
       cnsax = dir*(cntot*cosa-crtot*sina)
+      DO k=1,ncontrol
+        crtot_d_diff(k) = dir*crtot_d_diff(k)
+        crtot_d(k) = dir*crtot_d(k)
+        cntot_d_diff(k) = dir*cntot_d_diff(k)
+        cntot_d(k) = dir*cntot_d(k)
+      ENDDO
 C---------------------------------------------------------
 C---- add baseline reference CD
 C
@@ -178,10 +189,11 @@ C
 
 C  Differentiation of sfforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cltot cxtot cytot cztot
-C                crtot cmtot cntot cdvtot cystrp
+C                crtot cmtot cntot cdvtot cdtot_d cltot_d cxtot_d
+C                cytot_d cztot_d crtot_d cmtot_d cntot_d
 C   with respect to varying inputs: alfa vinf sref xyzref rle chord
 C                rle1 chord1 rle2 chord2 wstrip ensy ensz xsref
-C                ysref zsref rv1 rv2 rv gam wv
+C                ysref zsref rv1 rv2 rv gam gam_d wv
 C AERO
 C
 C
@@ -200,7 +212,7 @@ C
       REAL f(3), f_u(3, 6)
       REAL f_diff(3)
       REAL fgam(3), fgam_u(3, 6), fgam_d(3, ndmax), fgam_g(3, ngmax)
-      REAL fgam_diff(3)
+      REAL fgam_diff(3), fgam_d_diff(3, ndmax)
       REAL enave(3), spn(3), udrag(3), ulift(3)
       REAL spn_diff(3), udrag_diff(3), ulift_diff(3)
 C
@@ -209,6 +221,9 @@ C
      +     ndmax), cmx_d(ndmax), cmy_d(ndmax), cmz_d(ndmax), cfx_g(ngmax
      +     ), cfy_g(ngmax), cfz_g(ngmax), cmx_g(ngmax), cmy_g(ngmax), 
      +     cmz_g(ngmax), clv_u(numax), clv_d(ndmax), clv_g(ngmax)
+      REAL cfx_d_diff(ndmax), cfy_d_diff(ndmax), cfz_d_diff(ndmax), 
+     +     cmx_d_diff(ndmax), cmy_d_diff(ndmax), cmz_d_diff(ndmax), 
+     +     clv_d_diff(ndmax)
       REAL sina
       REAL sina_diff
       INTRINSIC SIN
@@ -267,8 +282,11 @@ C
       REAL dcfy_u
       REAL dcfz_u
       REAL dcfx_d
+      REAL dcfx_d_diff
       REAL dcfy_d
+      REAL dcfy_d_diff
       REAL dcfz_d
+      REAL dcfz_d_diff
       REAL dcfx_g
       REAL dcfy_g
       REAL dcfz_g
@@ -282,6 +300,7 @@ C
       REAL cdv
       REAL cdv_diff
       REAL cdv_clv
+      REAL cdv_clv_diff
       REAL dcvfx
       REAL dcvfx_diff
       REAL dcvfy
@@ -292,8 +311,11 @@ C
       REAL dcvfy_u
       REAL dcvfz_u
       REAL dcvfx_d
+      REAL dcvfx_d_diff
       REAL dcvfy_d
+      REAL dcvfy_d_diff
       REAL dcvfz_d
+      REAL dcvfz_d_diff
       REAL dcvfx_g
       REAL dcvfy_g
       REAL dcvfz_g
@@ -322,6 +344,7 @@ C
       REAL temp
       INTEGER ii1
       REAL(kind=8) temp0
+      INTEGER ii2
 C
 C
       sina_diff = COS(alfa)*alfa_diff
@@ -352,6 +375,46 @@ C
       DO ii1=1,nsmax
         cmstrp_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cdst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          clst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cxst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cyst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          czst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          crst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cnst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nsmax
+          cmst_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii1=1,nsmax
         cdv_lstrp_diff(ii1) = 0.D0
       ENDDO
@@ -367,8 +430,23 @@ C
       DO ii1=1,3
         udrag_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        cmy_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cfx_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cfz_d_diff(ii1) = 0.D0
+      ENDDO
       DO ii1=1,3
         vrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        clv_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cmx_d_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         veff_diff(ii1) = 0.D0
@@ -379,8 +457,19 @@ C
       DO ii1=1,3
         fgam_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,ndmax
+        cmz_d_diff(ii1) = 0.D0
+      ENDDO
       DO ii1=1,3
         rrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cfy_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,3
+          fgam_d_diff(ii2, ii1) = 0.D0
+        ENDDO
       ENDDO
       DO ii1=1,3
         spn_diff(ii1) = 0.D0
@@ -476,11 +565,17 @@ C
         ENDDO
 C
         DO n=1,ncontrol
+          cfx_d_diff(n) = 0.D0
           cfx_d(n) = 0.
+          cfy_d_diff(n) = 0.D0
           cfy_d(n) = 0.
+          cfz_d_diff(n) = 0.D0
           cfz_d(n) = 0.
+          cmx_d_diff(n) = 0.D0
           cmx_d(n) = 0.
+          cmy_d_diff(n) = 0.D0
           cmy_d(n) = 0.
+          cmz_d_diff(n) = 0.D0
           cmz_d(n) = 0.
           cnc_d(j, n) = 0.
         ENDDO
@@ -585,8 +680,14 @@ C$AD II-LOOP
             fgam_u(3, n) = 2.0*gam_u(i, n)*f(3) + 2.0*gam(i)*f_u(3, n)
           ENDDO
           DO n=1,ncontrol
+            fgam_d_diff(1, n) = 2.0*(f(1)*gam_d_diff(i, n)+gam_d(i, n)*
+     +        f_diff(1))
             fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+            fgam_d_diff(2, n) = 2.0*(f(2)*gam_d_diff(i, n)+gam_d(i, n)*
+     +        f_diff(2))
             fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+            fgam_d_diff(3, n) = 2.0*(f(3)*gam_d_diff(i, n)+gam_d(i, n)*
+     +        f_diff(3))
             fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
           ENDDO
           DO n=1,ndesign
@@ -676,16 +777,37 @@ C
 C
 C-------- control derivatives
           DO n=1,ncontrol
-            dcfx_d = fgam_d(1, n)/sr
-            dcfy_d = fgam_d(2, n)/sr
-            dcfz_d = fgam_d(3, n)/sr
+            temp = fgam_d(1, n)/sr
+            dcfx_d_diff = (fgam_d_diff(1, n)-temp*sr_diff)/sr
+            dcfx_d = temp
+            temp = fgam_d(2, n)/sr
+            dcfy_d_diff = (fgam_d_diff(2, n)-temp*sr_diff)/sr
+            dcfy_d = temp
+            temp = fgam_d(3, n)/sr
+            dcfz_d_diff = (fgam_d_diff(3, n)-temp*sr_diff)/sr
+            dcfz_d = temp
 C
+            cfx_d_diff(n) = cfx_d_diff(n) + dcfx_d_diff
             cfx_d(n) = cfx_d(n) + dcfx_d
+            cfy_d_diff(n) = cfy_d_diff(n) + dcfy_d_diff
             cfy_d(n) = cfy_d(n) + dcfy_d
+            cfz_d_diff(n) = cfz_d_diff(n) + dcfz_d_diff
             cfz_d(n) = cfz_d(n) + dcfz_d
-            cmx_d(n) = cmx_d(n) + (dcfz_d*r(2)-dcfy_d*r(3))/cr
-            cmy_d(n) = cmy_d(n) + (dcfx_d*r(3)-dcfz_d*r(1))/cr
-            cmz_d(n) = cmz_d(n) + (dcfy_d*r(1)-dcfx_d*r(2))/cr
+            temp = (dcfz_d*r(2)-dcfy_d*r(3))/cr
+            cmx_d_diff(n) = cmx_d_diff(n) + (r(2)*dcfz_d_diff+dcfz_d*
+     +        r_diff(2)-r(3)*dcfy_d_diff-dcfy_d*r_diff(3)-temp*cr_diff)/
+     +        cr
+            cmx_d(n) = cmx_d(n) + temp
+            temp = (dcfx_d*r(3)-dcfz_d*r(1))/cr
+            cmy_d_diff(n) = cmy_d_diff(n) + (r(3)*dcfx_d_diff+dcfx_d*
+     +        r_diff(3)-r(1)*dcfz_d_diff-dcfz_d*r_diff(1)-temp*cr_diff)/
+     +        cr
+            cmy_d(n) = cmy_d(n) + temp
+            temp = (dcfy_d*r(1)-dcfx_d*r(2))/cr
+            cmz_d_diff(n) = cmz_d_diff(n) + (r(1)*dcfy_d_diff+dcfy_d*
+     +        r_diff(1)-r(2)*dcfx_d_diff-dcfx_d*r_diff(2)-temp*cr_diff)/
+     +        cr
+            cmz_d(n) = cmz_d(n) + temp
 C
             cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcfy_d+ensz(j)*
      +        dcfz_d)
@@ -856,8 +978,14 @@ C$AD II-LOOP
      +            n)
               ENDDO
               DO n=1,ncontrol
+                fgam_d_diff(1, n) = 2.0*(f(1)*gam_d_diff(i, n)+gam_d(i, 
+     +            n)*f_diff(1))
                 fgam_d(1, n) = 2.0*gam_d(i, n)*f(1)
+                fgam_d_diff(2, n) = 2.0*(f(2)*gam_d_diff(i, n)+gam_d(i, 
+     +            n)*f_diff(2))
                 fgam_d(2, n) = 2.0*gam_d(i, n)*f(2)
+                fgam_d_diff(3, n) = 2.0*(f(3)*gam_d_diff(i, n)+gam_d(i, 
+     +            n)*f_diff(3))
                 fgam_d(3, n) = 2.0*gam_d(i, n)*f(3)
               ENDDO
               DO n=1,ndesign
@@ -941,16 +1069,37 @@ C
 C
 C---------- control derivatives
               DO n=1,ncontrol
-                dcfx_d = fgam_d(1, n)/sr
-                dcfy_d = fgam_d(2, n)/sr
-                dcfz_d = fgam_d(3, n)/sr
+                temp = fgam_d(1, n)/sr
+                dcfx_d_diff = (fgam_d_diff(1, n)-temp*sr_diff)/sr
+                dcfx_d = temp
+                temp = fgam_d(2, n)/sr
+                dcfy_d_diff = (fgam_d_diff(2, n)-temp*sr_diff)/sr
+                dcfy_d = temp
+                temp = fgam_d(3, n)/sr
+                dcfz_d_diff = (fgam_d_diff(3, n)-temp*sr_diff)/sr
+                dcfz_d = temp
 C  
+                cfx_d_diff(n) = cfx_d_diff(n) + dcfx_d_diff
                 cfx_d(n) = cfx_d(n) + dcfx_d
+                cfy_d_diff(n) = cfy_d_diff(n) + dcfy_d_diff
                 cfy_d(n) = cfy_d(n) + dcfy_d
+                cfz_d_diff(n) = cfz_d_diff(n) + dcfz_d_diff
                 cfz_d(n) = cfz_d(n) + dcfz_d
-                cmx_d(n) = cmx_d(n) + (dcfz_d*r(2)-dcfy_d*r(3))/cr
-                cmy_d(n) = cmy_d(n) + (dcfx_d*r(3)-dcfz_d*r(1))/cr
-                cmz_d(n) = cmz_d(n) + (dcfy_d*r(1)-dcfx_d*r(2))/cr
+                temp = (dcfz_d*r(2)-dcfy_d*r(3))/cr
+                cmx_d_diff(n) = cmx_d_diff(n) + (r(2)*dcfz_d_diff+dcfz_d
+     +            *r_diff(2)-r(3)*dcfy_d_diff-dcfy_d*r_diff(3)-temp*
+     +            cr_diff)/cr
+                cmx_d(n) = cmx_d(n) + temp
+                temp = (dcfx_d*r(3)-dcfz_d*r(1))/cr
+                cmy_d_diff(n) = cmy_d_diff(n) + (r(3)*dcfx_d_diff+dcfx_d
+     +            *r_diff(3)-r(1)*dcfz_d_diff-dcfz_d*r_diff(1)-temp*
+     +            cr_diff)/cr
+                cmy_d(n) = cmy_d(n) + temp
+                temp = (dcfy_d*r(1)-dcfx_d*r(2))/cr
+                cmz_d_diff(n) = cmz_d_diff(n) + (r(1)*dcfy_d_diff+dcfy_d
+     +            *r_diff(1)-r(2)*dcfx_d_diff-dcfx_d*r_diff(2)-temp*
+     +            cr_diff)/cr
+                cmz_d(n) = cmz_d(n) + temp
 C  
                 cnc_d(j, n) = cnc_d(j, n) + cr*(ensy(j)*dcfy_d+ensz(j)*
      +            dcfz_d)
@@ -1079,8 +1228,11 @@ C--- Generate CD from stored function using strip CL as parameter
           ENDDO
 C
           DO n=1,ncontrol
-            clv_d(n) = ensy(j)*cfy_d(n) + ensz(j)*(cfz_d(n)*cosa-cfx_d(n
-     +        )*sina)
+            temp = cfz_d(n)*cosa - cfx_d(n)*sina
+            clv_d_diff(n) = cfy_d(n)*ensy_diff(j) + ensy(j)*cfy_d_diff(n
+     +        ) + temp*ensz_diff(j) + ensz(j)*(cosa*cfz_d_diff(n)+cfz_d(
+     +        n)*cosa_diff-sina*cfx_d_diff(n)-cfx_d(n)*sina_diff)
+            clv_d(n) = ensy(j)*cfy_d(n) + ensz(j)*temp
           ENDDO
 C
           DO n=1,ndesign
@@ -1088,7 +1240,8 @@ C
      +        )*sina)
           ENDDO
 C
-          CALL CDCL_D(j, clv, clv_diff, cdv, cdv_diff, cdv_clv)
+          CALL CDCL_D(j, clv, clv_diff, cdv, cdv_diff, cdv_clv, 
+     +                cdv_clv_diff)
 C
 C--- Strip viscous force contribution (per unit strip area)
           dcvfx_diff = veffmag*cdv*veff_diff(1) + veff(1)*(cdv*
@@ -1142,12 +1295,27 @@ C
           ENDDO
 C
           DO n=1,ncontrol
-            dcvfx_d = veff(1)*veffmag*cdv_clv*clv_d(n)
-            dcvfy_d = veff(2)*veffmag*cdv_clv*clv_d(n)
-            dcvfz_d = veff(3)*veffmag*cdv_clv*clv_d(n)
+            temp = veff(1)*clv_d(n)
+            dcvfx_d_diff = temp*(cdv_clv*veffmag_diff+veffmag*
+     +        cdv_clv_diff) + veffmag*cdv_clv*(clv_d(n)*veff_diff(1)+
+     +        veff(1)*clv_d_diff(n))
+            dcvfx_d = veffmag*cdv_clv*temp
+            temp = veff(2)*clv_d(n)
+            dcvfy_d_diff = temp*(cdv_clv*veffmag_diff+veffmag*
+     +        cdv_clv_diff) + veffmag*cdv_clv*(clv_d(n)*veff_diff(2)+
+     +        veff(2)*clv_d_diff(n))
+            dcvfy_d = veffmag*cdv_clv*temp
+            temp = veff(3)*clv_d(n)
+            dcvfz_d_diff = temp*(cdv_clv*veffmag_diff+veffmag*
+     +        cdv_clv_diff) + veffmag*cdv_clv*(clv_d(n)*veff_diff(3)+
+     +        veff(3)*clv_d_diff(n))
+            dcvfz_d = veffmag*cdv_clv*temp
 C
+            cfx_d_diff(n) = cfx_d_diff(n) + dcvfx_d_diff
             cfx_d(n) = cfx_d(n) + dcvfx_d
+            cfy_d_diff(n) = cfy_d_diff(n) + dcvfy_d_diff
             cfy_d(n) = cfy_d(n) + dcvfy_d
+            cfz_d_diff(n) = cfz_d_diff(n) + dcvfz_d_diff
             cfz_d(n) = cfz_d(n) + dcvfz_d
 C--- Viscous forces acting at c/4 have no effect on moments at c/4 pt.
 C           CMX_D(N) = CMX_D(N) + (DCVFZ_D*R(2) - DCVFY_D*R(3))/CR
@@ -1215,10 +1383,17 @@ C
         ENDDO
 C
         DO n=1,ncontrol
+          cdst_d_diff(j, n) = cosa*cfx_d_diff(n) + cfx_d(n)*cosa_diff + 
+     +      sina*cfz_d_diff(n) + cfz_d(n)*sina_diff
           cdst_d(j, n) = cfx_d(n)*cosa + cfz_d(n)*sina
+          clst_d_diff(j, n) = cosa*cfz_d_diff(n) + cfz_d(n)*cosa_diff - 
+     +      sina*cfx_d_diff(n) - cfx_d(n)*sina_diff
           clst_d(j, n) = -(cfx_d(n)*sina) + cfz_d(n)*cosa
+          cxst_d_diff(j, n) = cfx_d_diff(n)
           cxst_d(j, n) = cfx_d(n)
+          cyst_d_diff(j, n) = cfy_d_diff(n)
           cyst_d(j, n) = cfy_d(n)
+          czst_d_diff(j, n) = cfz_d_diff(n)
           czst_d(j, n) = cfz_d(n)
         ENDDO
 C
@@ -1258,9 +1433,21 @@ C
         ENDDO
 C
         DO n=1,ncontrol
-          crst_d(j, n) = cmx_d(n) + (cfz_d(n)*r(2)-cfy_d(n)*r(3))/cr
-          cmst_d(j, n) = cmy_d(n) + (cfx_d(n)*r(3)-cfz_d(n)*r(1))/cr
-          cnst_d(j, n) = cmz_d(n) + (cfy_d(n)*r(1)-cfx_d(n)*r(2))/cr
+          temp = (cfz_d(n)*r(2)-cfy_d(n)*r(3))/cr
+          crst_d_diff(j, n) = cmx_d_diff(n) + (r(2)*cfz_d_diff(n)+cfz_d(
+     +      n)*r_diff(2)-r(3)*cfy_d_diff(n)-cfy_d(n)*r_diff(3)-temp*
+     +      cr_diff)/cr
+          crst_d(j, n) = cmx_d(n) + temp
+          temp = (cfx_d(n)*r(3)-cfz_d(n)*r(1))/cr
+          cmst_d_diff(j, n) = cmy_d_diff(n) + (r(3)*cfx_d_diff(n)+cfx_d(
+     +      n)*r_diff(3)-r(1)*cfz_d_diff(n)-cfz_d(n)*r_diff(1)-temp*
+     +      cr_diff)/cr
+          cmst_d(j, n) = cmy_d(n) + temp
+          temp = (cfy_d(n)*r(1)-cfx_d(n)*r(2))/cr
+          cnst_d_diff(j, n) = cmz_d_diff(n) + (r(1)*cfy_d_diff(n)+cfy_d(
+     +      n)*r_diff(1)-r(2)*cfx_d_diff(n)-cfx_d(n)*r_diff(2)-temp*
+     +      cr_diff)/cr
+          cnst_d(j, n) = cmz_d(n) + temp
         ENDDO
 C
         DO n=1,ndesign
@@ -1354,6 +1541,30 @@ C
       cmtot_diff = 0.D0
       cntot_diff = 0.D0
       cdvtot_diff = 0.D0
+      DO ii1=1,ndmax
+        cdtot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cltot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cxtot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cytot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cztot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        crtot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cmtot_d_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        cntot_d_diff(ii1) = 0.D0
+      ENDDO
       DO ii1=1,nfmax
         cdsurf_diff(ii1) = 0.D0
       ENDDO
@@ -1380,6 +1591,46 @@ C
       ENDDO
       DO ii1=1,nfmax
         cdvsurf_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cds_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cls_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cxs_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cys_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          czs_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          crs_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cns_d_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nfmax
+          cms_d_diff(ii2, ii1) = 0.D0
+        ENDDO
       ENDDO
 C
 C
@@ -1421,13 +1672,21 @@ C
           cns_u(is, n) = 0.
         ENDDO
         DO n=1,ncontrol
+          cds_d_diff(is, n) = 0.D0
           cds_d(is, n) = 0.
+          cls_d_diff(is, n) = 0.D0
           cls_d(is, n) = 0.
+          cxs_d_diff(is, n) = 0.D0
           cxs_d(is, n) = 0.
+          cys_d_diff(is, n) = 0.D0
           cys_d(is, n) = 0.
+          czs_d_diff(is, n) = 0.D0
           czs_d(is, n) = 0.
+          crs_d_diff(is, n) = 0.D0
           crs_d(is, n) = 0.
+          cms_d_diff(is, n) = 0.D0
           cms_d(is, n) = 0.
+          cns_d_diff(is, n) = 0.D0
           cns_d(is, n) = 0.
         ENDDO
         DO n=1,ndesign
@@ -1527,19 +1786,43 @@ C
           ENDDO
 C
           DO n=1,ncontrol
-            cds_d(is, n) = cds_d(is, n) + cdst_d(j, n)*sr/sref
-            cls_d(is, n) = cls_d(is, n) + clst_d(j, n)*sr/sref
+            temp0 = sr/sref
+            cds_d_diff(is, n) = cds_d_diff(is, n) + temp0*cdst_d_diff(j
+     +        , n) + cdst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cds_d(is, n) = cds_d(is, n) + cdst_d(j, n)*temp0
+            temp0 = sr/sref
+            cls_d_diff(is, n) = cls_d_diff(is, n) + temp0*clst_d_diff(j
+     +        , n) + clst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cls_d(is, n) = cls_d(is, n) + clst_d(j, n)*temp0
 C
-            cxs_d(is, n) = cxs_d(is, n) + cxst_d(j, n)*sr/sref
-            cys_d(is, n) = cys_d(is, n) + cyst_d(j, n)*sr/sref
-            czs_d(is, n) = czs_d(is, n) + czst_d(j, n)*sr/sref
+            temp0 = sr/sref
+            cxs_d_diff(is, n) = cxs_d_diff(is, n) + temp0*cxst_d_diff(j
+     +        , n) + cxst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cxs_d(is, n) = cxs_d(is, n) + cxst_d(j, n)*temp0
+            temp0 = sr/sref
+            cys_d_diff(is, n) = cys_d_diff(is, n) + temp0*cyst_d_diff(j
+     +        , n) + cyst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cys_d(is, n) = cys_d(is, n) + cyst_d(j, n)*temp0
+            temp0 = sr/sref
+            czs_d_diff(is, n) = czs_d_diff(is, n) + temp0*czst_d_diff(j
+     +        , n) + czst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            czs_d(is, n) = czs_d(is, n) + czst_d(j, n)*temp0
 C
-            crs_d(is, n) = crs_d(is, n) + crst_d(j, n)*(sr/sref)*(cr/
-     +        bref)
-            cms_d(is, n) = cms_d(is, n) + cmst_d(j, n)*(sr/sref)*(cr/
-     +        cref)
-            cns_d(is, n) = cns_d(is, n) + cnst_d(j, n)*(sr/sref)*(cr/
-     +        bref)
+            temp0 = crst_d(j, n)*sr*cr/(bref*sref)
+            crs_d_diff(is, n) = crs_d_diff(is, n) + (sr*cr*crst_d_diff(j
+     +        , n)+crst_d(j, n)*(cr*sr_diff+sr*cr_diff)-temp0*bref*
+     +        sref_diff)/(bref*sref)
+            crs_d(is, n) = crs_d(is, n) + temp0
+            temp0 = cmst_d(j, n)*sr*cr/(cref*sref)
+            cms_d_diff(is, n) = cms_d_diff(is, n) + (sr*cr*cmst_d_diff(j
+     +        , n)+cmst_d(j, n)*(cr*sr_diff+sr*cr_diff)-temp0*cref*
+     +        sref_diff)/(cref*sref)
+            cms_d(is, n) = cms_d(is, n) + temp0
+            temp0 = cnst_d(j, n)*sr*cr/(bref*sref)
+            cns_d_diff(is, n) = cns_d_diff(is, n) + (sr*cr*cnst_d_diff(j
+     +        , n)+cnst_d(j, n)*(cr*sr_diff+sr*cr_diff)-temp0*bref*
+     +        sref_diff)/(bref*sref)
+            cns_d(is, n) = cns_d(is, n) + temp0
           ENDDO
 C
           DO n=1,ndesign
@@ -1662,13 +1945,21 @@ C
           ENDDO
 C
           DO n=1,ncontrol
+            cdtot_d_diff(n) = cdtot_d_diff(n) + cds_d_diff(is, n)
             cdtot_d(n) = cdtot_d(n) + cds_d(is, n)
+            cltot_d_diff(n) = cltot_d_diff(n) + cls_d_diff(is, n)
             cltot_d(n) = cltot_d(n) + cls_d(is, n)
+            cxtot_d_diff(n) = cxtot_d_diff(n) + cxs_d_diff(is, n)
             cxtot_d(n) = cxtot_d(n) + cxs_d(is, n)
+            cytot_d_diff(n) = cytot_d_diff(n) + cys_d_diff(is, n)
             cytot_d(n) = cytot_d(n) + cys_d(is, n)
+            cztot_d_diff(n) = cztot_d_diff(n) + czs_d_diff(is, n)
             cztot_d(n) = cztot_d(n) + czs_d(is, n)
+            crtot_d_diff(n) = crtot_d_diff(n) + crs_d_diff(is, n)
             crtot_d(n) = crtot_d(n) + crs_d(is, n)
+            cmtot_d_diff(n) = cmtot_d_diff(n) + cms_d_diff(is, n)
             cmtot_d(n) = cmtot_d(n) + cms_d(is, n)
+            cntot_d_diff(n) = cntot_d_diff(n) + cns_d_diff(is, n)
             cntot_d(n) = cntot_d(n) + cns_d(is, n)
           ENDDO
 C
@@ -1721,13 +2012,21 @@ C
         ENDDO
 C
         DO n=1,ncontrol
+          cdtot_d_diff(n) = 2.0*cdtot_d_diff(n)
           cdtot_d(n) = 2.0*cdtot_d(n)
+          cltot_d_diff(n) = 2.0*cltot_d_diff(n)
           cltot_d(n) = 2.0*cltot_d(n)
+          cxtot_d_diff(n) = 2.0*cxtot_d_diff(n)
           cxtot_d(n) = 2.0*cxtot_d(n)
+          cytot_d_diff(n) = 0.D0
           cytot_d(n) = 0.
+          cztot_d_diff(n) = 2.0*cztot_d_diff(n)
           cztot_d(n) = 2.0*cztot_d(n)
+          crtot_d_diff(n) = 0.D0
           crtot_d(n) = 0.
+          cmtot_d_diff(n) = 2.0*cmtot_d_diff(n)
           cmtot_d(n) = 2.0*cmtot_d(n)
+          cntot_d_diff(n) = 0.D0
           cntot_d(n) = 0.
         ENDDO
 C

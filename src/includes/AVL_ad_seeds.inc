@@ -512,6 +512,7 @@ C
       real(kind=avl_real) WVSRD_U_DIFF
       real(kind=avl_real) RHS_DIFF
       real(kind=avl_real) RES_DIFF
+      real(kind=avl_real) RES_D_DIFF
       COMMON /VRTX_R_DIFF/
      & RV1_DIFF(3,NVMAX),
      & RV2_DIFF(3,NVMAX),
@@ -552,7 +553,8 @@ C
      & WCSRD_U_DIFF(3,NVMAX,NUMAX),
      & WVSRD_U_DIFF(3,NVMAX,NUMAX),
      & RHS_DIFF(NVMAX),
-     & RES_DIFF(NVMAX)
+     & RES_DIFF(NVMAX),
+     & RES_D_DIFF(NVMAX,NDMAX)
 C
       real(kind=avl_real) ELBDY_DIFF
       real(kind=avl_real) SRFBDY_DIFF

@@ -1940,18 +1940,33 @@ C ============= Added to AVL ===============
       ENDIF
       
       CALL VINFAB
-      
       call set_vel_rhs
       
 C---- copy RHS vector into GAM that will be used for soluiton
       GAM = RHS
 
       CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
-
+      
+      CAll exec_GDCALC
+            
       end !subroutine solve_rhs
+      
+      subroutine exec_GDCALC
+      INCLUDE "AVL.INC"
+      
+      IF(NCONTROL.GT.0) THEN
+C------- set new GAM_D
+            CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
+      ENDIF
+      
+      end subroutine
+
+C ======================== res and Adjoint for GAM ========      
       
       subroutine get_res
       INCLUDE "AVL.INC"
+      integer I, IC
+      real RHS_D(NVOR)
       call set_par_and_cons(NITMAX, IRUN)
 C---  
       ! Do not use this routine in the sovler
@@ -1976,9 +1991,24 @@ C---- add the RHS vector to the residual
       !$AD II-LOOP
       do I = 1, NVOR
             res(I) = res(I) - RHS(I)
-      enddo      
+      enddo 
       
-      
+C---- Setup variational BC's at the control points
+      !$AD II-LOOP
+      DO IC = 1, NCONTROL
+C------ don't bother if this control variable is undefined
+            IF (lcondef(ic)) THEN
+            
+                  call mat_prod(AICN, GAM_D(:,IC), NVOR, res_D(:, IC))
+                  !  RHS_D(:) = 0.D0
+                  call set_gam_d_rhs(IC, ENC_D, RHS_D)
+                  !$AD II-LOOP
+                  do I = 1, NVOR
+                        res_D(I, IC) = res_D(I, IC) - RHS_D(I)
+                  enddo      
+            endif 
+      ENDDO
+
       end !get_res
 
       
@@ -1992,7 +2022,13 @@ C---- add the RHS vector to the residual
       ENDIF
       
       RES_diff = GAM_diff
+      RES_D_diff = GAM_D_diff
       
       CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
+      
+      
+      DO IC = 1, NCONTROL
+            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
+      enddo
       
       end !subroutine solve_adjoint

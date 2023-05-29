@@ -303,10 +303,93 @@ C
       ENDDO
       END
 
+C  Differentiation of set_gam_d_rhs in forward (tangent) mode (with options i4 dr8 r8):
+C   variations   of useful results: rhs_vec
+C   with respect to varying inputs: vinf wrot xyzref rc rhs_vec
+C                enc_q
+Cset_vel_rhs
+      SUBROUTINE SET_GAM_D_RHS_D(iq, enc_q, enc_q_diff, rhs_vec, 
+     +                           rhs_vec_diff)
+      INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_ad_seeds.inc'
+      REAL enc_q(3, nvmax, *), rhs_vec(nvmax)
+      REAL enc_q_diff(3, nvmax, *), rhs_vec_diff(nvmax)
+C
+C
+      REAL rrot(3), vrot(3), vc(3)
+      REAL rrot_diff(3), vrot_diff(3), vc_diff(3)
+      INTEGER i
+      INTEGER k
+      REAL DOT
+      REAL DOT_D
+      REAL result1
+      REAL result1_diff
+      INTEGER ii1
+      INTEGER iq
+      DO ii1=1,3
+        vrot_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        vc_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        rrot_diff(ii1) = 0.D0
+      ENDDO
+C
+C
+      DO i=1,nvor
+        IF (lvnc(i)) THEN
+          IF (lvalbe(i)) THEN
+            rrot_diff(1) = rc_diff(1, i) - xyzref_diff(1)
+            rrot(1) = rc(1, i) - xyzref(1)
+            rrot_diff(2) = rc_diff(2, i) - xyzref_diff(2)
+            rrot(2) = rc(2, i) - xyzref(2)
+            rrot_diff(3) = rc_diff(3, i) - xyzref_diff(3)
+            rrot(3) = rc(3, i) - xyzref(3)
+            CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, 
+     +                   vrot_diff)
+            DO k=1,3
+              vc_diff(k) = vinf_diff(k) + vrot_diff(k)
+              vc(k) = vinf(k) + vrot(k)
+            ENDDO
+          ELSE
+            vc_diff(1) = 0.D0
+            vc(1) = 0.
+            vc_diff(2) = 0.D0
+            vc(2) = 0.
+            vc_diff(3) = 0.D0
+            vc(3) = 0.
+          END IF
+C
+          DO k=1,3
+            vc_diff(k) = vc_diff(k) + wcsrd_u(k, i, 1)*vinf_diff(1) + 
+     +        wcsrd_u(k, i, 2)*vinf_diff(2) + wcsrd_u(k, i, 3)*vinf_diff
+     +        (3) + wcsrd_u(k, i, 4)*wrot_diff(1) + wcsrd_u(k, i, 5)*
+     +        wrot_diff(2) + wcsrd_u(k, i, 6)*wrot_diff(3)
+            vc(k) = vc(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
+     +        vinf(2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot
+     +        (1) + wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
+          ENDDO
+C 
+          result1_diff = DOT_D(enc_q(1, i, iq), enc_q_diff(1, i, iq), vc
+     +      , vc_diff, result1)
+          rhs_vec_diff(i) = -result1_diff
+          rhs_vec(i) = -result1
+        ELSE
+          rhs_vec_diff(i) = 0.D0
+          rhs_vec(i) = 0.
+        END IF
+      ENDDO
+C
+C
+      RETURN
+      END
+
 C  Differentiation of mat_prod in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: out_vec
 C   with respect to varying inputs: vec mat
-Cset_vel_rhs
+C set_gam_d_rhs
+C
       SUBROUTINE MAT_PROD_D(mat, mat_diff, vec, vec_diff, n, out_vec, 
      +                      out_vec_diff)
       INCLUDE 'AVL.INC'
