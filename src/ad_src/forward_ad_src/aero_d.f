@@ -139,6 +139,9 @@ C     calculate stability axis based values
       cnsax_diff = dir*(cosa*cntot_diff+cntot*cosa_diff-sina*crtot_diff-
      +  crtot*sina_diff)
       cnsax = dir*(cntot*cosa-crtot*sina)
+C   do the sign change here so that it included in the derivative
+C   routnis         
+
       DO k=1,ncontrol
         crtot_d_diff(k) = dir*crtot_d_diff(k)
         crtot_d(k) = dir*crtot_d(k)

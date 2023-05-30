@@ -1931,6 +1931,7 @@ C ============= Added to AVL ===============
 
       subroutine exec_rhs
       include "AVL.INC"
+      integer i 
       ! CALL EXEC(10,1,1)
       call set_par_and_cons(NITMAX, IRUN)
       
@@ -1943,7 +1944,9 @@ C ============= Added to AVL ===============
       call set_vel_rhs
       
 C---- copy RHS vector into GAM that will be used for soluiton
-      GAM = RHS
+      do i = 1,NVOR
+            GAM(i) = RHS(i)
+      enddo
 
       CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
       
@@ -2016,18 +2019,24 @@ C------ don't bother if this control variable is undefined
       subroutine solve_adjoint()
       include "AVL.INC"
       include "AVL_ad_seeds.inc"
+      integer i 
       CALL SETUP
       IF(.NOT.LAIC) THEN
             call factor_AIC
       ENDIF
       
-      RES_diff = GAM_diff
-      RES_D_diff = GAM_D_diff
-      
+
+      do i =1,NVOR
+            RES_diff(i) = GAM_diff(i)
+      enddo
+
       CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
       
       
       DO IC = 1, NCONTROL
+            do i =1,NVOR
+                  RES_D_diff(i,IC) = GAM_D_diff(i,IC)
+            enddo
             CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
       enddo
       

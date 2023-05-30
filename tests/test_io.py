@@ -27,9 +27,6 @@ geom_output_file = os.path.join(base_dir, "aircraft_out.avl")
 class TestInput(unittest.TestCase):
     def test_read_geom(self):
         avl_solver = AVLSolver(geo_file=geom_file)
-        print('JFRST', avl_solver.get_avl_fort_arr("SURF_I", "JFRST"))
-        print('NJ', avl_solver.get_avl_fort_arr("SURF_I", "NJ"))
-        print(avl_solver.get_num_strips())
         assert avl_solver.get_num_surfaces() == 5
         assert avl_solver.get_num_strips() == 90
         assert avl_solver.get_mesh_size() == 780
@@ -52,7 +49,6 @@ class TestOutput(unittest.TestCase):
 
         for surf in baseline_data:
             for key in baseline_data[surf]:
-                print(new_data[surf][key])
                 data = new_data[surf][key]
                 # check if it is a list of strings
                 if isinstance(data, list) and isinstance(data[0], str):

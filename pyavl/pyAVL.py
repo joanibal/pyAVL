@@ -1228,6 +1228,35 @@ class AVLSolver(object):
                     if not (_var.startswith("__") and _var.endswith("__")):
                         val = getattr(diff_blk, _var)
                         setattr(diff_blk, _var, val * 0.0)
+    
+    def clear_ad_seeds_fast(self):
+        # Only clear the seeds that are used in Make_tapenade file
+        num_vor = self.get_mesh_size()
+        num_vor_max = 6000 #HACK: hardcoded value from AVL.inc
+        # import pdb; pdb.set_trace()
+        
+        for att in dir(self.avl):
+            if att.endswith(self.ad_suffix):
+                # loop over the attributes of the common block
+                diff_blk = getattr(self.avl, att)
+                for _var in dir(diff_blk):
+                    if not (_var.startswith("__") and _var.endswith("__")):
+                        
+                        val = getattr(diff_blk, _var)
+                        
+                        # trim sizes set to NVMAX to NVOR
+                        shape = val.shape
+                        slices =  []
+                        for idx_dim in range(len(shape)):
+                            dim_size = shape[idx_dim]
+                            if dim_size == num_vor_max:
+                                dim_size = num_vor
+                            
+                            slices.append(slice(0, dim_size))
+                        slicer = tuple(slices)
+                        val[slicer] = 0.0
+                        
+                        setattr(diff_blk, _var, val )
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):
@@ -1368,7 +1397,7 @@ class AVLSolver(object):
             res_seeds = np.zeros(mesh_size)
 
         if res_d_seeds is None:
-            res_d_seeds = np.zeros((num_surf,mesh_size))
+            res_d_seeds = np.zeros((num_surf, mesh_size))
 
         if consurf_derivs_seeds is None:
             consurf_derivs_seeds = {}
@@ -1424,12 +1453,8 @@ class AVLSolver(object):
     def execute_direct_solve():
         pass
 
-    def execute_run_sensitivies(
-        self,
-        funcs,
-        consurf_derivs=None,
-        print_timings=False
-    ):
+    def execute_run_sensitivies(self, funcs, consurf_derivs=None, print_timings=False):
+
         """
         only runs in adjoint mode
         funcs: list of functions that need derivatives
@@ -1474,7 +1499,6 @@ class AVLSolver(object):
                 print("Running consurf derivs")
                 time_last = time.time()
 
-            
             cs_deriv_seeds = {}
             for func_key in consurf_derivs:
                 cs_deriv_seeds[func_key] = {}
@@ -1490,7 +1514,6 @@ class AVLSolver(object):
                     if print_timings:
                         print(f"Time to get RHS: {time.time() - time_last}")
                         time_last = time.time()
-
 
                     # self.clear_ad_seeds()
                     # u solver adjoint equation with RHS

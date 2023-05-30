@@ -32,8 +32,8 @@ C
      +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
      +            chordv, chordv_diff, nvor, rc, rc_diff, nsurfv, 
      +            .false., wc_gam, wc_gam_diff, nvmax)
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
@@ -314,8 +314,6 @@ Cset_vel_rhs
       INCLUDE 'AVL_ad_seeds.inc'
       REAL enc_q(3, nvmax, *), rhs_vec(nvmax)
       REAL enc_q_diff(3, nvmax, *), rhs_vec_diff(nvmax)
-C
-C
       REAL rrot(3), vrot(3), vc(3)
       REAL rrot_diff(3), vrot_diff(3), vc_diff(3)
       INTEGER i
@@ -335,7 +333,6 @@ C
       DO ii1=1,3
         rrot_diff(ii1) = 0.D0
       ENDDO
-C
 C
       DO i=1,nvor
         IF (lvnc(i)) THEN
@@ -380,7 +377,6 @@ C
           rhs_vec(i) = 0.
         END IF
       ENDDO
-C
 C
       RETURN
       END
