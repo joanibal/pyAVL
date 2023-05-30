@@ -38,6 +38,9 @@ C---
       betm = SQRT(1.0 - amach**2)
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
+      
+      call cpu_time(t1)
+      write(*,*) '  set vars time: ', t1 - t0
 C
       DO ii1=1,3
         wrot_diff(ii1) = 0.D0
@@ -92,13 +95,21 @@ C$BWD-OF II-LOOP
       DO ii1=1,nvor
         chordv_diff(ii1) = 0.D0
       ENDDO
+      call cpu_time(t3)
+      write(*,*) '  gamma time: ', t3 - t2
+
       CALL VVOR_B(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
      +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
      +            chordv, chordv_diff, nvor, rv, rv_diff, nsurfv, .true.
      +            , wv_gam, wv_gam_diff, nvmax)
       ! CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
+      call cpu_time(t4)
+      write(*,*) '  VVOR_B time: ', t4 - t3
       CALL BUILD_AIC_B()
       CALL SET_PAR_AND_CONS_B(nitmax, irun)
       mach_diff = 0.D0
+      call cpu_time(t5)
+      write(*,*) '  aic_b time: ', t5 - t4
+      
       END
 

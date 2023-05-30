@@ -2025,10 +2025,11 @@ C------ don't bother if this control variable is undefined
             call factor_AIC
       ENDIF
       
+
       do i =1,NVOR
             RES_diff(i) = GAM_diff(i)
       enddo
-            
+
       CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
       
       
