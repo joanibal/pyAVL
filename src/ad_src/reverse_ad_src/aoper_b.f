@@ -16,7 +16,6 @@ C
 C ======================== res and Adjoint for GAM ========      
       SUBROUTINE GET_RES_B()
 C
-C     
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       INTEGER i, ic
@@ -27,11 +26,6 @@ C
       INTEGER ii1
       INTEGER ii2
       INTEGER ii3
-      
-      real t0, t1, t2, t3, t4, t5
-      
-      call cpu_time(t0)
-      
       CALL SET_PAR_AND_CONS(nitmax, irun)
 C Do not use this routine in the sovler
 C IF(.NOT.LAIC) THEN
@@ -44,22 +38,19 @@ C---
       betm = SQRT(1.0 - amach**2)
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
-      
-      call cpu_time(t1)
-      write(*,*) '  set vars time: ', t1 - t0
 C
       DO ii1=1,3
         wrot_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,ndmax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           DO ii3=1,3
             enc_d_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
@@ -77,15 +68,12 @@ C$BWD-OF II-LOOP
           CALL SET_GAM_D_RHS_B(ic, enc_d, enc_d_diff, rhs_d, rhs_d_diff)
           CALL MAT_PROD_B(aicn, aicn_diff, gam_d(:, ic), gam_d_diff(:, 
      +                    ic), nvor, res_d(:, ic), res_d_diff(:, ic))
-          DO ii1=1,6000
+          DO ii1=1,novor
             res_d_diff(ii1, ic) = 0.D0
           ENDDO
         END IF
       ENDDO
-      call cpu_time(t2)
-      write(*,*) '  gamma_d time: ', t2 - t1
-        
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         rhs_diff(ii1) = 0.D0
       ENDDO
 C$BWD-OF II-LOOP 
@@ -94,31 +82,23 @@ C$BWD-OF II-LOOP
       ENDDO
       CALL MAT_PROD_B(aicn, aicn_diff, gam, gam_diff, nvor, res, 
      +                res_diff)
-      DO ii1=1,6000
+      DO ii1=1,nvor
         res_diff(ii1) = 0.D0
       ENDDO
       CALL SET_VEL_RHS_B()
       CALL VINFAB_B()
       ysym_diff = 0.D0
       zsym_diff = 0.D0
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         chordv_diff(ii1) = 0.D0
       ENDDO
-      call cpu_time(t3)
-      write(*,*) '  gamma time: ', t3 - t2
-
       CALL VVOR_B(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
      +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
      +            chordv, chordv_diff, nvor, rv, rv_diff, nsurfv, .true.
      +            , wv_gam, wv_gam_diff, nvmax)
       ! CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
-      call cpu_time(t4)
-      write(*,*) '  VVOR_B time: ', t4 - t3
       CALL BUILD_AIC_B()
       CALL SET_PAR_AND_CONS_B(nitmax, irun)
       mach_diff = 0.D0
-      call cpu_time(t5)
-      write(*,*) '  aic_b time: ', t5 - t4
-      
       END
 

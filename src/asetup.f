@@ -181,11 +181,16 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
       SUBROUTINE factor_AIC
        INCLUDE 'AVL.INC'
        REAL WORK(NVMAX)
+       integer i, j
        
        if(lverbose) then
         WRITE(*,*) ' Factoring normalwash AIC matrix...'
        end if 
-       AICN_LU = AICN
+       do j = 1, NVOR
+         do i = 1, NVOR
+            AICN_LU(i,j) = AICN(i,j)
+         enddo 
+        ENDDO
        CALL LUDCMP(NVMAX,NVOR,AICN_LU,IAPIV,WORK)
 C
        LAIC = .TRUE.

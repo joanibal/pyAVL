@@ -113,8 +113,6 @@ SURFACE
 Vertical Tail
 # Nchordwise Cspace Nspanwise Sspace
 10 1.00 10 -2.0
-# YDUPLICATE
-# 0.0
 #Xscale Yscale Zscale
 SCALE
 1.0 1.0 1.0

@@ -52,8 +52,8 @@ C$BWD-OF II-LOOP
           ENDDO
         END IF
       ENDDO
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           DO ii3=1,3
             wc_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -101,8 +101,8 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           DO ii3=1,3
             wv_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -358,8 +358,6 @@ Cset_vel_rhs
       INCLUDE 'AVL_ad_seeds.inc'
       REAL enc_q(3, nvmax, *), rhs_vec(nvmax)
       REAL enc_q_diff(3, nvmax, *), rhs_vec_diff(nvmax)
-C
-C
       REAL rrot(3), vrot(3), vc(3)
       REAL rrot_diff(3), vrot_diff(3), vc_diff(3)
       INTEGER i
@@ -370,7 +368,6 @@ C
       INTEGER branch
       INTEGER ii1
       INTEGER iq
-C
 C
       DO i=1,nvor
         IF (lvnc(i)) THEN
