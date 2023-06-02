@@ -1030,7 +1030,7 @@ class AVLSolver(object):
     # Derivative routines
     def get_constraint_ad_seeds(self) -> Dict[str, float]:
         con_seeds = {}
-        for con in self.con_var_to_fort_var:
+        for con in self.conval_idx_dict:
             idx_con = self.conval_idx_dict[con]
             blk = "CASE_R" + self.ad_suffix
             var = "CONVAL" + self.ad_suffix

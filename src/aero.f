@@ -158,10 +158,10 @@ C
 C
       REAL RROT(3)
       REAL VEFF(3)    , VROT(3)  ,
-     &     VEFF_U(3,6), VROT_U(3), WROT_U(3)
+     &     VEFF_U(3,6), VROT_U(3), WROT_U(3), VEFF_D(3, NDMAX)
       REAL VPERP(3)
       REAL G(3), R(3), RH(3), MH(3)
-      REAL F(3), F_U(3,6)
+      REAL F(3), F_U(3,6), F_D(3,NDMAX)
       REAL FGAM(3), FGAM_U(3,6), FGAM_D(3,NDMAX), FGAM_G(3,NGMAX)
       REAL ENAVE(3), SPN(3), UDRAG(3), ULIFT(3)
 C
@@ -289,6 +289,11 @@ C-------- set total effective velocity = freestream + rotation + induced
           VEFF(3) = VINF(3) + VROT(3) + WV(3,I)
 C
 C-------- set VEFF sensitivities to freestream,rotation components
+          DO N = 1, NCONTROL
+            VEFF_D(1,N) = WV_D(1,I,N) 
+            VEFF_D(2,N) = WV_D(2,I,N) 
+            VEFF_D(3,N) = WV_D(3,I,N) 
+          ENDDO
           !$AD II-LOOP
           DO K = 1, 3
             VEFF_U(1,K) = WV_U(1,I,K)
@@ -316,6 +321,9 @@ C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
           DO N = 1, NUMAX
             CALL CROSS(VEFF_U(1,N), G, F_U(1,N))
           ENDDO
+          DO N = 1, NCONTROL
+            CALL CROSS(VEFF_D(1,N), G, F_D(1,N))
+          ENDDO
 C
           FGAM(1) = 2.0*GAM(I)*F(1)
           FGAM(2) = 2.0*GAM(I)*F(2)
@@ -328,9 +336,9 @@ C
           ENDDO
           !$AD II-LOOP
           DO N = 1, NCONTROL
-            FGAM_D(1,N) = 2.0*GAM_D(I,N)*F(1)
-            FGAM_D(2,N) = 2.0*GAM_D(I,N)*F(2)
-            FGAM_D(3,N) = 2.0*GAM_D(I,N)*F(3)
+            FGAM_D(1,N) = 2.0*GAM_D(I,N)*F(1) + 2.0*GAM(I)*F_D(1,N)
+            FGAM_D(2,N) = 2.0*GAM_D(I,N)*F(2) + 2.0*GAM(I)*F_D(2,N) 
+            FGAM_D(3,N) = 2.0*GAM_D(I,N)*F(3) + 2.0*GAM(I)*F_D(3,N)
           ENDDO
           !$AD II-LOOP
           DO N = 1, NDESIGN

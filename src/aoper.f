@@ -1006,6 +1006,7 @@ C---- sum AIC matrices to get GAM,SRC,DBL
 C
 C---- sum AIC matrices to get WC,WV
       CALL VELSUM
+      CALL WSENS
       if (ltiming) then 
             call cpu_time(t7)  
             write(*,*) ' VELSUM time: ', t7 - t6
@@ -1319,6 +1320,7 @@ C------ sum AIC matrices to get GAM,SRC,DBL
 C
 C------ sum AIC matrices to get WC,WV
         CALL VELSUM
+        CALL WSENS
         if (ltiming) then 
             call cpu_time(t12)  
             write(*,*) ITER, ' VELSUM time: ', t12 - t11
@@ -1961,6 +1963,8 @@ C---- copy RHS vector into GAM that will be used for soluiton
 C------- set new GAM_D
             CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
       ENDIF
+      
+      call WSENS
       
       end subroutine
 

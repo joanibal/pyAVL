@@ -687,6 +687,9 @@ C----- might as well directly set operating variables if they are known
            VUNIT = VUNIT + VUNIT_W_term
            
            RHS(I) = -DOT(ENC(1,I),VUNIT)
+           DO N = 1, NCONTROL
+            RHS(I) = RHS(I)- DOT(ENC_D(1,I,N),VUNIT)*DELCON(N)
+          ENDDO
         ELSE
           RHS(I) = 0
         endif
