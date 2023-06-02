@@ -7,7 +7,7 @@ from pyavl import AVLSolver
 # Standard Python Modules
 # =============================================================================
 import os
-
+import copy
 # =============================================================================
 # External Python modules
 # =============================================================================
@@ -147,14 +147,131 @@ class TestCaseDerivs(unittest.TestCase):
     def setUp(self) -> None:
         # self.avl_solver = AVLSolver(geo_file=geom_file)
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
+        self.avl_solver = AVLSolver(geo_file="rect.avl", debug=False)
         
     def test_coefs_wrt_con_surfs(self):
-        self.avl_solver.add_constraint("alpha", 45.00)
-        self.avl_solver.execute_run()
+        var = "CD"
+        cs = "Elevator"
+        
+        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.add_constraint("Elevator", 0.00)
+        # self.avl_solver.execute_run()
+        self.avl_solver.avl.exec_rhs()
+        self.avl_solver.avl.velsum()
+        self.avl_solver.avl.aero()
+
+        
+        
         run_data = self.avl_solver.get_case_total_data()
         coef_derivs = self.avl_solver.get_case_coef_derivs()
-        #TODO: test againast values from AVL
+        var_base = run_data[var]
+        
+        dvar_dcs = coef_derivs[var][cs]
+        
+        h = 1e-0
+        self.avl_solver.add_constraint("Elevator", h)
+        # self.avl_solver.execute_run( )
+        self.avl_solver.avl.exec_rhs( )
+        self.avl_solver.avl.velsum()
+        self.avl_solver.avl.aero()
+
+        run_data = self.avl_solver.get_case_total_data()
+        var_perturb = run_data[var]
+        
+        dvar_dcs_fd = (var_perturb - var_base)/h
+        
+        print(f"h:{h} AD:{dvar_dcs} FD:{dvar_dcs_fd}")
+        
+class TestGamD(unittest.TestCase):
+    def setUp(self) -> None:
+        # self.avl_solver = AVLSolver(geo_file=geom_file)
+        # self.avl_solver = AVLSolver(geo_file="rect.avl")
+        self.avl_solver = AVLSolver(geo_file="rect.avl", debug=False)
+
+    def test_gam_d(self):
+        var = "CD"
+        cs = "Elevator"
+        
+        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.add_constraint("Elevator", 0.00)
+        # self.avl_solver.execute_run()
+        self.avl_solver.avl.exec_rhs()
+        self.avl_solver.avl.velsum()
+        self.avl_solver.avl.aero()
+        
+        run_data = self.avl_solver.get_case_total_data()
+        coef_derivs = self.avl_solver.get_case_coef_derivs()
+        var_base = run_data[var]
+        
+        dvar_dcs = coef_derivs[var][cs]
+
+        
+        num_gam = self.avl_solver.get_mesh_size()
+        slicer_gam = (slice(0, self.avl_solver.get_mesh_size()))
+        num_cs = self.avl_solver.get_num_control_surfs()
+        slicer_gam_d = (slice(0, self.avl_solver.get_num_control_surfs()), slice(0, self.avl_solver.get_mesh_size()))
+        
+        gam_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("VRTX_R", "GAM", slicer=slicer_gam))
+        dcp_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("VRTX_R", "DCP", slicer=slicer_gam))
+        gam_d = self.avl_solver.get_avl_fort_arr("VRTX_R", "GAM_D", slicer=slicer_gam_d)
+        dcp_d = self.avl_solver.get_avl_fort_arr("VRTX_R", "DCP_D", slicer=slicer_gam_d)
+        cdstrp_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CDSTRP"))
+        cxstrp_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CXSTRP"))
+        czstrp_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CZSTRP"))
+        cdstrp_d = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CDST_D"))
+        cxstrp_d = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CXST_D"))
+        czstrp_d = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CZST_D"))
+        
+        wv_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("SOLV_R", "wv", slicer=slicer_gam))
+        wc_base = copy.deepcopy(self.avl_solver.get_avl_fort_arr("SOLV_R", "wc", slicer=slicer_gam))
+        
+        wv_d = self.avl_solver.get_avl_fort_arr("SOLV_R", "WV_D", slicer=slicer_gam_d)
+        wc_d = self.avl_solver.get_avl_fort_arr("SOLV_R", "WC_D", slicer=slicer_gam_d)
+        
+        
+        h = 1e-3
+        self.avl_solver.add_constraint("Elevator", h)
+        # self.avl_solver.execute_run( )
+        self.avl_solver.avl.exec_rhs( )
+        self.avl_solver.avl.velsum()
+        self.avl_solver.avl.aero()
+        
+        gam_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("VRTX_R", "GAM", slicer=slicer_gam))
+        dcp_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("VRTX_R", "DCP", slicer=slicer_gam))
+        wv_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("SOLV_R", "wv", slicer=slicer_gam))
+        wc_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("SOLV_R", "wc", slicer=slicer_gam))
+        cdstrp_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CDSTRP"))
+        cxstrp_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CXSTRP"))
+        czstrp_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CZSTRP"))
+        # cdstrp_perturb = copy.deepcopy(self.avl_solver.get_avl_fort_arr("STRP_R", "CDSTRP"))
+        
+        
+        gam_d_fd = (gam_perturb - gam_base)/h
+        wv_d_fd = (wv_perturb - wv_base)/h
+        wc_d_fd = (wc_perturb - wc_base)/h
+        dcp_d_fd = (dcp_perturb - dcp_base)/h
+        run_data = self.avl_solver.get_case_total_data()
+        var_perturb = run_data[var]
+        
+        dvar_dcs_fd = (var_perturb - var_base)/h
+        
+        dcdstrp_d_fd = (cdstrp_perturb - cdstrp_base)/h
+        dcxstrp_d_fd = (cxstrp_perturb - cxstrp_base)/h
+        dczstrp_d_fd = (czstrp_perturb - czstrp_base)/h
+        
+        
+        print(f"gam AD:{gam_d} FD:{gam_d_fd}")
+        
+        print(f"wv AD:{wv_d} FD:{wv_d_fd}")
+        print(f"wc AD:{wc_d} FD:{wc_d_fd}")
+        
+        print(f"dcp AD:{dcp_d} FD:{dcp_d_fd}")
+        print(f"cdstrp AD:{cdstrp_d[0,0]} FD:{dcdstrp_d_fd[0]}" )
+        print(f"cxstrp AD:{cxstrp_d[0,0]} FD:{dcxstrp_d_fd[0]}" )
+        print(f"czstrp AD:{czstrp_d[0,0]} FD:{dczstrp_d_fd[0]}" )
+        
+        print(f"{var} AD:{dvar_dcs} FD:{dvar_dcs_fd}")
+
 
 
 class TestVariableSetting(unittest.TestCase):
