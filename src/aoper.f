@@ -1137,7 +1137,7 @@ C------------------------------------
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             VSYS(IV,NV) = (CRTOT_D(N)*CA + CNTOT_D(N)*SA)*DIR
+             VSYS(IV,NV) = (CRTOT_D(N)*CA + CNTOT_D(N)*SA)
            ENDDO
 C
 C------------------------------------
@@ -1180,7 +1180,7 @@ C------------------------------------
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             VSYS(IV,NV) = (CNTOT_D(N)*CA - CRTOT_D(N)*SA)*DIR
+             VSYS(IV,NV) = (CNTOT_D(N)*CA - CRTOT_D(N)*SA)
            ENDDO
 C
 C------------------------------------

@@ -102,9 +102,9 @@ class TestFunctionPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
-            func_seeds, _,_,_ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})
+            func_seeds, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})
 
-            func_seeds_FD, _,_,_ = self.avl_solver.execute_jac_vec_prod_fwd(
+            func_seeds_FD, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, geom_seeds={}, mode="FD", step=1e-7
             )
 
@@ -201,7 +201,7 @@ class TestFunctionPartials(unittest.TestCase):
 
         sens_dict_rev = {}
         for func_key in self.avl_solver.case_var_to_fort_var:
-            _, sens_dict_rev[func_key], _,_ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
+            _, sens_dict_rev[func_key], _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
         self.avl_solver.clear_ad_seeds_fast()
 
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -209,8 +209,7 @@ class TestFunctionPartials(unittest.TestCase):
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                func_seeds_fwd, _, _,_ = self.avl_solver.execute_jac_vec_prod_fwd(
-
+                func_seeds_fwd, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
                 )
                 for func_key in func_seeds_fwd:
@@ -321,7 +320,7 @@ class TestResidualPartials(unittest.TestCase):
         self.avl_solver.clear_ad_seeds_fast()
 
         for con_key in self.avl_solver.con_var_to_fort_var:
-            _, res_seeds_fwd,_,_ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            _, res_seeds_fwd, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
 
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
@@ -392,8 +391,8 @@ class TestResidualPartials(unittest.TestCase):
         np.random.seed(111)
         gamma_seeds = np.random.rand(num_gamma)
 
-        _, res_seeds,_,_ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds)
-        _, res_seeds_FD,_,_ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds, mode="FD", step=1e-7)
+        _, res_seeds, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds)
+        _, res_seeds_FD, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds, mode="FD", step=1e-7)
 
         np.testing.assert_allclose(
             res_seeds,
@@ -469,7 +468,6 @@ class TestResidualDPartials(unittest.TestCase):
 
                 _, _, _, res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-
                 )
                 abs_error = np.abs(res_d_seeds.flatten() - res_d_seeds_FD.flatten())
                 rel_error = np.abs((res_d_seeds.flatten() - res_d_seeds_FD.flatten()) / (res_d_seeds.flatten() + 1e-15))
@@ -483,7 +481,6 @@ class TestResidualDPartials(unittest.TestCase):
                     res_d_seeds,
                     res_d_seeds_FD,
                     atol=1e-4,
-
                     err_msg=f"func_key res w.r.t. {surf_key}:{geom_key}",
                 )
 
@@ -522,7 +519,6 @@ class TestResidualDPartials(unittest.TestCase):
                 )
         self.avl_solver.clear_ad_seeds_fast()
 
-
     def test_fwd_gamma_d(self):
         num_gamma = self.avl_solver.get_mesh_size()
         num_consurf = self.avl_solver.get_num_control_surfs()
@@ -531,14 +527,11 @@ class TestResidualDPartials(unittest.TestCase):
 
         _, _, _, res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)
 
-
-
         _, _, _, res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
             gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-0
         )
         # print("res_d_seeds", res_d_seeds)
         # print("res_d_seeds_FD", res_d_seeds_FD)
-
 
         np.testing.assert_allclose(
             res_d_seeds,
@@ -580,7 +573,6 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         self.avl_solver.execute_run()
         self.avl_solver.clear_ad_seeds_fast()
 
-
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
             _, _, cs_d, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
@@ -609,7 +601,6 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         con_seeds_rev, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
 
         self.avl_solver.clear_ad_seeds_fast()
-
 
         for con_key in self.avl_solver.con_var_to_fort_var:
             _, _, cs_deriv_seeds_fwd, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
@@ -674,7 +665,6 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         _, geom_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
         self.avl_solver.clear_ad_seeds_fast()
 
-
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
             for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
@@ -719,7 +709,6 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         num_consurf = self.avl_solver.get_num_control_surfs()
         gamma_d_seeds = np.random.rand(num_consurf, num_gamma)
 
-
         _, _, cs_d, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)
         _, _, cs_d_fd, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-7)
 
@@ -741,7 +730,6 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
         _, _, cs_d_fwd, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)
         self.avl_solver.clear_ad_seeds_fast()
-
 
         for func_key in cs_d_fwd:
             for cs_key in cs_d_fwd[func_key]:
@@ -828,14 +816,13 @@ class TestTotals(unittest.TestCase):
         for con_key in self.avl_solver.con_var_to_fort_var:
             # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds = self.finite_dif([con_key], {}, step=1.0e-5)
-            
-            
+
             for func_key in func_vars:
                 ad_dot = sens[func_key][con_key]
                 fd_dot = func_seeds[func_key]
 
                 # print(f"{func_key} wrt {con_key}", "AD", ad_dot, "FD", fd_dot)
-                rel_err = np.abs((ad_dot - fd_dot) / fd_dot)
+                rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
 
                 print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
@@ -887,7 +874,7 @@ class TestTotals(unittest.TestCase):
                     geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
                     func_dot = func_seeds[func_key]
 
-                    rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot)
+                    rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
                     print(
                         f"{func_key:5} wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
@@ -898,7 +885,7 @@ class TestTotals(unittest.TestCase):
                         geom_dot = np.sum(sens[func_key][cs_key][surf_key][geom_key] * rand_arr)
                         func_dot = consurf_deriv_seeds[func_key][cs_key]
 
-                        rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot)
+                        rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
                         print(
                             f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
