@@ -177,50 +177,48 @@ fortranobject_dep = declare_dependency(
 )
 
 
-# c = run_command('source' / 'grab-all-fortran-files.py', check: true)
-# snopt_source_files = c.stdout().strip().split('\n')
-avl_source_files = files(
-        # 'src/AINDEX.INC',
-        # 'src/AVL.INC',
-        'src/aero.f',
-        'src/aic.f',
-        'src/ainput.f',
-        'src/airutil.f',
-        'src/amake.f',
-        'src/amass.f',
-        'src/amode.f',
-        'src/aoper.f',
-        'src/aoutput.f',
-        'src/asetup.f',
-        'src/atpforc.f',
-        'src/atrim.f',
-        'src/autil.f',
-        'src/avl.f',
-        'src/cdcl.f',
-        'src/getvm.f',
-        'src/hidden.f',
-        'src/matrix-lapackdp.f',
-        'src/second.f',
-        # 'src/second_g77.f', #TODO: patch back in as needed
-        # 'src/second_ifc.f', #TODO: patch back in as needed
-        'src/sgutil.f',
-        'src/spline.f',
-        'src/userio.f',
-        'src/eispack.f',
-)
+c = run_command('src' / 'grab-all-fortran-files.py', check: true)
+avl_source_files = c.stdout().strip().split('\n')
+avl_inc = include_directories('src/includes')
+# avl_source_files = files(
+#         'src/aero.f',
+#         # 'src/aic.f',
+#         # 'src/ainput.f',
+#         # 'src/airutil.f',
+#         # 'src/amake.f',
+#         # 'src/amass.f',
+#         # 'src/amode.f',
+#         # 'src/aoper.f',
+#         # 'src/aoutput.f',
+#         # 'src/asetup.f',
+#         # 'src/atpforc.f',
+#         # 'src/atrim.f',
+#         # 'src/autil.f',
+#         # 'src/avl.f',
+#         # 'src/cdcl.f',
+#         # 'src/getvm.f',
+#         # 'src/hidden.f',
+#         # 'src/matrix-lapackdp.f',
+#         # 'src/second.f',
+#         # # 'src/second_g77.f', #TODO: patch back in as needed
+#         # # 'src/second_ifc.f', #TODO: patch back in as needed
+#         # 'src/sgutil.f',
+#         # 'src/spline.f',
+#         # 'src/userio.f',
+#         # 'src/eispack.f',
+# )
 
 avl_c_wrapper = custom_target('libavlmodule.c',
 input : ['src/f2py/libavl.pyf'],
 output : ['libavlmodule.c', 'libavl-f2pywrappers.f'],
-command: [py3, '-m', 'numpy.f2py',  '@INPUT@',
-'--lower', ]
+command: [py3, '-m', 'numpy.f2py',  '@INPUT@', ]
 )
 
 py3.extension_module('libavl',
     avl_source_files,
     avl_c_wrapper,
     fortranobject_c,
-    include_directories: [inc_np, inc_f2py],
+    include_directories: [inc_np, inc_f2py, avl_inc],
     dependencies: [lapack, blas, fortranobject_dep],
     subdir: 'pyavl',
     link_args: link_args,
@@ -235,6 +233,7 @@ py3.install_sources([
   'pyavl/__init__.py',
   'pyavl/pyAVL.py',
   'pyavl/MExt.py',
+  'pyavl/om_wrapper.py',
 ],
   subdir: 'pyavl'
 )

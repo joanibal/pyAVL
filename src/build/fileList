@@ -1,6 +1,7 @@
 fortranFiles =
 
-f77Files =	aero.f\
+f77Files =\
+	    aero.f\
 		aic.f\
 		ainput.f\
 		airutil.f\
@@ -19,8 +20,8 @@ f77Files =	aero.f\
 		hidden.f\
 		matrix-lapackdp.f\
 		second.f\
-		second_g77.f\
-		second_ifc.f\
+		# second_g77.f\
+		# second_ifc.f\
 		sgutil.f\
 		spline.f\
 		userio.f\
@@ -30,9 +31,9 @@ f77Files =	aero.f\
 		ad_src/forward_ad_src/cdcl_d.f\
 		ad_src/forward_ad_src/amake_d.f\
 		ad_src/forward_ad_src/aoper_d.f\
-		ad_src/reverse_ad_src/atpforc_d.f\
+		ad_src/forward_ad_src/atpforc_d.f\
 		ad_src/forward_ad_src/asetup_d.f\
-		ad_src/reverse_ad_src/sgutil_d.f\
+		ad_src/forward_ad_src/sgutil_d.f\
 		ad_src/reverse_ad_src/aero_b.f\
 		ad_src/reverse_ad_src/aic_b.f\
 		ad_src/reverse_ad_src/cdcl_b.f\
@@ -45,6 +46,7 @@ f77Files =	aero.f\
 		# ad_src/ADFirstAidKit/debugAD.f\
 
 
-cFiles = ad_src/ADFirstAidKit/adStack.c\
+cFiles = \
+		ad_src/ADFirstAidKit/adStack.c\
 		#  ad_src/ADFirstAidKit/dpStack.c\
 
