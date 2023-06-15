@@ -39,6 +39,8 @@ import numpy as np
 # =============================================================================
 from . import MExt
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+
 
 class AVLSolver(object):
     con_var_to_fort_var = {
@@ -169,14 +171,31 @@ class AVLSolver(object):
     ad_suffix = "_DIFF"
 
     def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
-        # TODO: fix MExt to work with pyavl.lib packages
-        #   - copy dependecies to the temp directory
-        # This only needs to happen once for each fake directory
+
+        #  create a symbolic link to dependecies in the temp directory
+        blas_libs_dir = "pyavl_wrapper.libs"
+        source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
+        target_path = os.path.join("/tmp", blas_libs_dir)
+
+        # Create a symbolic link based on the platform
+        if not os.path.exists(target_path):
+            if os.name == "posix":
+                # Unix-based system (Mac, Linux)
+                os.symlink(source_path, target_path)
+            elif os.name == "nt":
+                # Windows
+                # import ctypes
+
+                # kernel32 = ctypes.windll.kernel32
+                # kernel32.CreateSymbolicLinkW(target_path, source_path, 0)
+                raise NotImplementedError("pyavl does not support windows. Due to complcations with symbolic links.")
+            else:
+                raise NotImplementedError("operating system not recognized")
 
         # This is important for creating multiple instances of the AVL solver that do not share memory
         # It is very gross, but I cannot figure out a better way.
-        # increment this counter for the hours you wasted on trying to remove this monkey patch
-        # 4 hours
+        # increment this counter for the hours you wasted on trying find a better way
+        # 7 hours
 
         module_dir = os.path.dirname(os.path.realpath(__file__))
         module_name = os.path.basename(module_dir)
@@ -1228,35 +1247,35 @@ class AVLSolver(object):
                     if not (_var.startswith("__") and _var.endswith("__")):
                         val = getattr(diff_blk, _var)
                         setattr(diff_blk, _var, val * 0.0)
-    
+
     def clear_ad_seeds_fast(self):
         # Only clear the seeds that are used in Make_tapenade file
         num_vor = self.get_mesh_size()
-        num_vor_max = 6000 #HACK: hardcoded value from AVL.inc
+        num_vor_max = 6000  # HACK: hardcoded value from AVL.inc
         # import pdb; pdb.set_trace()
-        
+
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
                 # loop over the attributes of the common block
                 diff_blk = getattr(self.avl, att)
                 for _var in dir(diff_blk):
                     if not (_var.startswith("__") and _var.endswith("__")):
-                        
+
                         val = getattr(diff_blk, _var)
-                        
+
                         # trim sizes set to NVMAX to NVOR
                         shape = val.shape
-                        slices =  []
+                        slices = []
                         for idx_dim in range(len(shape)):
                             dim_size = shape[idx_dim]
                             if dim_size == num_vor_max:
                                 dim_size = num_vor
-                            
+
                             slices.append(slice(0, dim_size))
                         slicer = tuple(slices)
                         val[slicer] = 0.0
-                        
-                        setattr(diff_blk, _var, val )
+
+                        setattr(diff_blk, _var, val)
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):
@@ -1384,7 +1403,7 @@ class AVLSolver(object):
         res_seeds: Optional[np.ndarray] = None,
         consurf_derivs_seeds: Optional[Dict[str, Dict[str, float]]] = None,
         res_d_seeds: Optional[np.ndarray] = None,
-        print_timings=False
+        print_timings=False,
     ) -> Tuple[Dict[str, float], Dict[str, Dict[str, any]], np.ndarray]:
         # extract derivatives seeds and set the output dict of functions
         mesh_size = self.get_mesh_size()
