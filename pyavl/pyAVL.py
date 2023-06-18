@@ -172,13 +172,15 @@ class AVLSolver(object):
 
     def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
 
+        if timing:
+            start_time = time.time()
         #  create a symbolic link to dependecies in the temp directory
         blas_libs_dir = "pyavl_wrapper.libs"
         source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
         target_path = os.path.join("/tmp", blas_libs_dir)
 
         # Create a symbolic link based on the platform
-        if not os.path.exists(target_path):
+        if not os.path.exists(target_path) and os.path.exists(source_path):
             if os.name == "posix":
                 # Unix-based system (Mac, Linux)
                 os.symlink(source_path, target_path)
@@ -251,6 +253,9 @@ class AVLSolver(object):
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
         self._init_surf_data()
+
+        if timing:
+            print(f"AVL init took {time.time() - start_time} seconds")
 
     def _init_surf_data(self):
         self.surf_geom_to_fort_var = {}
