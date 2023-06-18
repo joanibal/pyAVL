@@ -2,20 +2,8 @@
 
 # # Standard Python modules
 import os
-# from pathlib import Path
 
-# CURDIR = os.path.abspath(os.path.dirname(__file__))
 
-# TO_SKIP = [
-#     "sn27lu77.f",
-#     "sn27lu90.f",
-#     "snopth.f",
-# ]
-
-# for path in Path(CURDIR).glob("*.f"):
-#     if os.path.basename(path) not in TO_SKIP:
-#         print(path)
-        
 def parse_file(file_name):
     # Initialize lists for each file type
     fortranFiles = []
@@ -47,8 +35,7 @@ def parse_file(file_name):
                     current_list = list_map[key]
                     new_list = True
                     break
-                
-                
+
             # Otherwise, if a list is currently being filled, add the file to the list
             if current_list is not None and not new_list:
                 # trim whitespace and trailing \
@@ -57,8 +44,7 @@ def parse_file(file_name):
                     line = line[:-1]
                 # prepend src/ to the file name
                 line = "src/" + line
-                
-                
+
                 # add to list
                 current_list.append(line)
 
@@ -70,6 +56,7 @@ def parse_file(file_name):
         print(file)
     for file in cFiles:
         print(file)
+
 
 # Call the function with the file name
 parse_file("src/build/fileList")  # replace "filename.txt" with the name of your file
