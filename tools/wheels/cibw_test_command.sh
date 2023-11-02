@@ -27,8 +27,11 @@ python -m unittest -v test_new_subroutines.py
 free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }'
 python -m unittest -v test_partial_derivs.py
 free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }'
+python -m unittest -v test_consurf_partial_derivs.py
+free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }'
 python -m unittest -v test_total_derivs.py
 free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }'
+
 # test mem ussage of pyavl and test framework
 python -m unittest -v test_tear_down.py
 free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }'
