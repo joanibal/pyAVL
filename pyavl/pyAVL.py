@@ -177,37 +177,33 @@ class AVLSolver(object):
             start_time = time.time()
 
         # Create a symbolic link based on the platform
-        if not os.path.exists(target_path) and os.path.exists(source_path):
-            if os.name == "posix":
-                #  create a symbolic link to dependecies in the temp directory
-                if platform.system() == "Darwin":
-                    # Mac
-                    pass # needs to be fixed in Mext
-                    # blas_libs_dir = ".dylibs"
-                    # source_path = os.path.join(BASE_DIR, blas_libs_dir)
-                    # target_path = os.path.join("/tmp", blas_libs_dir)
+        if os.name == "posix":
+            #  create a symbolic link to dependecies in the temp directory
+            if platform.system() == "Darwin":
+                # Mac
+                pass # needs to be fixed in Mext
+                # blas_libs_dir = ".dylibs"
+                # source_path = os.path.join(BASE_DIR, blas_libs_dir)
+                # target_path = os.path.join("/tmp", blas_libs_dir)
 
-                elif platform.system() == "Linux":
-                    blas_libs_dir = "pyavl_wrapper.libs"
-                    source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
-                    target_path = os.path.join("/tmp", blas_libs_dir)
+            elif platform.system() == "Linux":
+                blas_libs_dir = "pyavl_wrapper.libs"
+                source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
+                target_path = os.path.join("/tmp", blas_libs_dir)
 
-                
-                else:
-                    raise NotImplementedError("operating system not recognized")
-                
-
-                # Unix-based system (Mac, Linux)
-                os.symlink(source_path, target_path)
-            elif os.name == "nt":
-                # Windows
-                # import ctypes
-
-                # kernel32 = ctypes.windll.kernel32
-                # kernel32.CreateSymbolicLinkW(target_path, source_path, 0)
-                raise NotImplementedError("pyavl does not support windows. Due to complcations with symbolic links.")
+                if not os.path.exists(target_path) and os.path.exists(source_path):
+                    os.symlink(source_path, target_path)
             else:
-                raise NotImplementedError("operating system not recognized")
+                raise NotImplementedError("platform not recognized")
+        elif os.name == "nt":
+            # Windows
+            # import ctypes
+
+            # kernel32 = ctypes.windll.kernel32
+            # kernel32.CreateSymbolicLinkW(target_path, source_path, 0)
+            raise NotImplementedError("pyavl does not support windows. Due to complcations with symbolic links.")
+        else:
+            raise NotImplementedError("operating system not recognized")
 
         # This is important for creating multiple instances of the AVL solver that do not share memory
         # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
