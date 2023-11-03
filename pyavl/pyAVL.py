@@ -1022,7 +1022,7 @@ class AVLSolver(object):
 
     def get_mesh_size(self) -> int:
         """Get the number of panels in the mesh"""
-        return self.get_avl_fort_arr("CASE_I", "NVOR")
+        return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
@@ -1257,7 +1257,6 @@ class AVLSolver(object):
         # Only clear the seeds that are used in Make_tapenade file
         num_vor = self.get_mesh_size()
         num_vor_max = 6000  # HACK: hardcoded value from AVL.inc
-        # import pdb; pdb.set_trace()
 
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
@@ -1279,8 +1278,11 @@ class AVLSolver(object):
                             slices.append(slice(0, dim_size))
                         slicer = tuple(slices)
                         val[slicer] = 0.0
+                        # setattr(diff_blk, _var, val)
+                        # print(diff_blk, _var, val.shape, slicer)
+                        # mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+                        # print(f"    Memory usage: {mb_memory} MB")
 
-                        setattr(diff_blk, _var, val)
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):
