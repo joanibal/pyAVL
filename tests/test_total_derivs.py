@@ -34,6 +34,12 @@ class TestTotals(unittest.TestCase):
         self.avl_solver.add_constraint("beta", 0.0)
         self.avl_solver.execute_run()
 
+    def tearDown(self):
+        # Without the following line a copy of large_list will be kept in
+        # memory for each test that runs, uncomment the line to allow the
+        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        print(f"{self.id()} Memory usage: {mb_memory} MB")
+
     def finite_dif(self, con_list, geom_seeds, step=1e-7):
         con_seeds = {}
 
@@ -97,7 +103,7 @@ class TestTotals(unittest.TestCase):
                 # print(f"{func_key} wrt {con_key}", "AD", ad_dot, "FD", fd_dot)
                 rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
 
-                print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
+                # print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
                 tol = 1e-13
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:

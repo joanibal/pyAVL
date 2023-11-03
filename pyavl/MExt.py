@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 import shutil
 import sys
-
+import platform
 
 def _tmp_pkg(tempDir):
     """
@@ -50,6 +50,15 @@ class MExt(object):
         self._pkgname, self._pkgdir = _tmp_pkg(tmpdir)
         # copy the original module to the new package
         shutil.copy(srcpath, self._pkgdir)
+        if platform.system() == "Darwin":
+            # create a sym link to the orginal module .dylibs folder
+            blas_libs_dir = ".dylib"
+            source_path = os.path.join(srcpath, blas_libs_dir)
+            target_path = os.path.join(self._pkgdir, blas_libs_dir)
+
+            # Unix-based system (Mac, Linux)
+            os.symlink(source_path, target_path)
+
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module

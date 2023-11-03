@@ -27,6 +27,7 @@ from typing import Dict, List, Tuple, Union, Any
 import warnings
 import glob
 from typing import Optional
+import platform
 
 # =============================================================================
 # External Python modules
@@ -174,14 +175,28 @@ class AVLSolver(object):
 
         if timing:
             start_time = time.time()
-        #  create a symbolic link to dependecies in the temp directory
-        blas_libs_dir = "pyavl_wrapper.libs"
-        source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
-        target_path = os.path.join("/tmp", blas_libs_dir)
 
         # Create a symbolic link based on the platform
         if not os.path.exists(target_path) and os.path.exists(source_path):
             if os.name == "posix":
+                #  create a symbolic link to dependecies in the temp directory
+                if platform.system() == "Darwin":
+                    # Mac
+                    pass # needs to be fixed in Mext
+                    # blas_libs_dir = ".dylibs"
+                    # source_path = os.path.join(BASE_DIR, blas_libs_dir)
+                    # target_path = os.path.join("/tmp", blas_libs_dir)
+
+                elif platform.system() == "Linux":
+                    blas_libs_dir = "pyavl_wrapper.libs"
+                    source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
+                    target_path = os.path.join("/tmp", blas_libs_dir)
+
+                
+                else:
+                    raise NotImplementedError("operating system not recognized")
+                
+
                 # Unix-based system (Mac, Linux)
                 os.symlink(source_path, target_path)
             elif os.name == "nt":
@@ -195,7 +210,7 @@ class AVLSolver(object):
                 raise NotImplementedError("operating system not recognized")
 
         # This is important for creating multiple instances of the AVL solver that do not share memory
-        # It is very gross, but I cannot figure out a better way.
+        # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
         # increment this counter for the hours you wasted on trying find a better way
         # 7 hours
 
