@@ -55,7 +55,7 @@ class MExt(object):
             # create a sym link to the orginal module .dylibs folder
             blas_libs_dir = ".dylibs"
             source_path = os.path.join(spec.submodule_search_locations[0], blas_libs_dir)
-            target_path = os.path.join(self._pkgdir, self._pkgname, blas_libs_dir)
+            target_path = os.path.join(self._pkgdir, blas_libs_dir)
 
             # Unix-based system (Mac, Linux)
             print("Creating symlink from {} to {}".format(source_path, target_path))
