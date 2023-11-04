@@ -52,7 +52,7 @@ class MExt(object):
         shutil.copy(srcpath, self._pkgdir)
         if platform.system() == "Darwin":
             # create a sym link to the orginal module .dylibs folder
-            blas_libs_dir = ".dylib"
+            blas_libs_dir = ".dylibs"
             source_path = os.path.join(srcpath, blas_libs_dir)
             target_path = os.path.join(self._pkgdir, blas_libs_dir)
 
@@ -63,6 +63,9 @@ class MExt(object):
         sys.path.append(tmpdir)
         # import the module
         # __import__ returns the package, not the sub-module
+        os.listdir(self._pkgdir)
+        os.listdir(tmpdir)
+        
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
         # remove the bogus directory from sys.path
         sys.path.remove(tmpdir)
