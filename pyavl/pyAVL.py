@@ -215,6 +215,7 @@ class AVLSolver(object):
         avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        print('importing', module_name)
         self.avl = MExt.MExt("libavl", module_name, lib_so_file=avl_lib_so_file, debug=debug)._module
 
         # from . import libavl
