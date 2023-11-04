@@ -54,17 +54,18 @@ class MExt(object):
             # create a sym link to the orginal module .dylibs folder
             blas_libs_dir = ".dylibs"
             source_path = os.path.join(srcpath, blas_libs_dir)
-            target_path = os.path.join(self._pkgdir, blas_libs_dir)
+            target_path = os.path.join(self._pkgdir, self._pkgname, blas_libs_dir)
 
             # Unix-based system (Mac, Linux)
+            print("Creating symlink from {} to {}".format(source_path, target_path))
             os.symlink(source_path, target_path)
 
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module
         # __import__ returns the package, not the sub-module
-        os.listdir(self._pkgdir)
-        os.listdir(tmpdir)
+        print(os.listdir(self._pkgdir))
+        print(os.listdir(tmpdir))
         
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
         # remove the bogus directory from sys.path
