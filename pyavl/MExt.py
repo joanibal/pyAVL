@@ -50,10 +50,11 @@ class MExt(object):
         self._pkgname, self._pkgdir = _tmp_pkg(tmpdir)
         # copy the original module to the new package
         shutil.copy(srcpath, self._pkgdir)
+        print('copying from {} to {}'.format(srcpath, self._pkgdir))
         if platform.system() == "Darwin":
             # create a sym link to the orginal module .dylibs folder
             blas_libs_dir = ".dylibs"
-            source_path = os.path.join(srcpath, blas_libs_dir)
+            source_path = os.path.join(spec.submodule_search_locations[0], blas_libs_dir)
             target_path = os.path.join(self._pkgdir, self._pkgname, blas_libs_dir)
 
             # Unix-based system (Mac, Linux)
