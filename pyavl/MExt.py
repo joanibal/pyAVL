@@ -50,7 +50,6 @@ class MExt(object):
         self._pkgname, self._pkgdir = _tmp_pkg(tmpdir)
         # copy the original module to the new package
         shutil.copy(srcpath, self._pkgdir)
-        print('copying from {} to {}'.format(srcpath, self._pkgdir))
         if platform.system() == "Darwin":
             # create a sym link to the orginal module .dylibs folder
             blas_libs_dir = ".dylibs"
@@ -59,7 +58,7 @@ class MExt(object):
 
             # Unix-based system (Mac, Linux)
             if not os.path.exists(target_path) and os.path.exists(source_path):
-                print("Creating symlink from {} to {}".format(source_path, target_path))
+                # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
 
         elif platform.system() == "Linux":
@@ -68,10 +67,10 @@ class MExt(object):
             target_path = os.path.join("/tmp", blas_libs_dir)
 
             if not os.path.exists(target_path) and os.path.exists(source_path):
-                print("Creating symlink from {} to {}".format(source_path, target_path))
+                # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
         else:
-            raise NotImplementedError("platform not recognized")            
+            raise NotImplementedError("platform not supported")            
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module

@@ -1,7 +1,7 @@
 project(
   'pyavl',
   'c',
-  version: '1.0.0',
+  version: '1.1.0',
   license: 'GPL-2.0',
   meson_version: '>= 0.64.0',
   default_options: [
@@ -85,14 +85,6 @@ incdir_numpy = run_command(py3,
 ).stdout().strip()
 inc_np = include_directories(incdir_numpy)
 
-# # TODO: pyoptsparse supports numpy>=1.16 but numpy.f2py.get_include() wasnt added until later, raise numpy version?
-#incdir_f2py = run_command(py3_target,
-#  [
-#    '-c',
-#    'import os; os.chdir(".."); import numpy.f2py; print(numpy.f2py.get_include())'
-#  ],
-#  check : true
-#).stdout().strip()
 incdir_f2py = incdir_numpy / '..' / '..' / 'f2py' / 'src'
 inc_f2py = include_directories(incdir_f2py)
 
@@ -119,7 +111,6 @@ endif
 blas = dependency(blas_name)
 lapack = dependency(lapack_name)
 
-# TODO: Add `pybind11` when available as a dependency
 dependency_map = {
   'BLAS': blas,
   'LAPACK': lapack,
@@ -176,37 +167,9 @@ fortranobject_dep = declare_dependency(
   include_directories: [inc_np, inc_f2py],
 )
 
-
 c = run_command('src' / 'grab-all-fortran-files.py', check: true)
 avl_source_files = c.stdout().strip().split('\n')
 avl_inc = include_directories('src/includes')
-# avl_source_files = files(
-#         'src/aero.f',
-#         # 'src/aic.f',
-#         # 'src/ainput.f',
-#         # 'src/airutil.f',
-#         # 'src/amake.f',
-#         # 'src/amass.f',
-#         # 'src/amode.f',
-#         # 'src/aoper.f',
-#         # 'src/aoutput.f',
-#         # 'src/asetup.f',
-#         # 'src/atpforc.f',
-#         # 'src/atrim.f',
-#         # 'src/autil.f',
-#         # 'src/avl.f',
-#         # 'src/cdcl.f',
-#         # 'src/getvm.f',
-#         # 'src/hidden.f',
-#         # 'src/matrix-lapackdp.f',
-#         # 'src/second.f',
-#         # # 'src/second_g77.f', #TODO: patch back in as needed
-#         # # 'src/second_ifc.f', #TODO: patch back in as needed
-#         # 'src/sgutil.f',
-#         # 'src/spline.f',
-#         # 'src/userio.f',
-#         # 'src/eispack.f',
-# )
 
 avl_c_wrapper = custom_target('libavlmodule.c',
 input : ['src/f2py/libavl.pyf'],
