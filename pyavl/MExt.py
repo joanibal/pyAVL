@@ -72,7 +72,6 @@ class MExt(object):
                 os.symlink(source_path, target_path)
         else:
             raise NotImplementedError("platform not recognized")            
-        import pdb; pdb.set_trace()
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module
