@@ -1,4 +1,7 @@
 # pyAVL
+[![Downloads](https://static.pepy.tech/badge/pyavl-wrapper)](https://pepy.tech/project/pyavl-wrapper)
+<!--- [![Monthly Downloads](https://pepy.tech/badge/aerosandbox/month)](https://pepy.tech/project/aerosandbox) --->
+[![Documentation](https://joanibal.github.io/pyAVL/)]([https://aerosandbox.readthedocs.io/en/master/?badge=master](https://joanibal.github.io/pyAVL/))
 
 pyAVL is a stripped down version of Mark Drela and Harold Youngren's famous AVL code wrapped in python with f2py.
 This allows one to more easily conduct large parameter sweeps in AVL or to include AVL into a larger model. 
