@@ -34,7 +34,7 @@ class TestResidualDPartials(unittest.TestCase):
 
     def tearDown(self) -> None:
         mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Memory usage: %s MB" % mb_memory)
+        print(f"{self.id()} Memory usage: {mb_memory} MB" )
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -68,7 +68,7 @@ class TestResidualDPartials(unittest.TestCase):
             # do dot product
             res_sum = np.sum(res_d_seeds_rev * res_d_seeds)
 
-            print(f"res wrt {con_key}", "fwd", res_sum, "rev", con_seeds[con_key])
+            # print(f"res wrt {con_key}", "fwd", res_sum, "rev", con_seeds[con_key])
 
             np.testing.assert_allclose(
                 res_sum,
@@ -96,9 +96,9 @@ class TestResidualDPartials(unittest.TestCase):
 
                 idx_max_rel_error = np.argmax(rel_error)
                 idx_max_abs_error = np.argmax(abs_error)
-                print(
-                    f"{surf_key:10} {geom_key:10} AD:{np.linalg.norm(res_d_seeds): .5e} FD:{np.linalg.norm(res_d_seeds_FD): .5e} max rel err:{(rel_error[idx_max_rel_error]): .3e} max abs err:{(np.max(abs_error)): .3e}"
-                )
+                # print(
+                #     f"{surf_key:10} {geom_key:10} AD:{np.linalg.norm(res_d_seeds): .5e} FD:{np.linalg.norm(res_d_seeds_FD): .5e} max rel err:{(rel_error[idx_max_rel_error]): .3e} max abs err:{(np.max(abs_error)): .3e}"
+                # )
                 np.testing.assert_allclose(
                     res_d_seeds,
                     res_d_seeds_FD,
@@ -131,7 +131,7 @@ class TestResidualDPartials(unittest.TestCase):
                 res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
                 geom_sum = np.sum(geom_seeds_rev[surf_key][geom_key] * geom_seeds)
 
-                print(f"res wrt {surf_key}:{geom_key}", "rev", geom_sum, "fwd", res_sum)
+                # print(f"res wrt {surf_key}:{geom_key}", "rev", geom_sum, "fwd", res_sum)
 
                 np.testing.assert_allclose(
                     res_sum,
@@ -176,7 +176,7 @@ class TestResidualDPartials(unittest.TestCase):
         gamma_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
         res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
 
-        print("fwd_sum", gamma_sum, "rev_sum", res_sum)
+        # print("fwd_sum", gamma_sum, "rev_sum", res_sum)
         np.testing.assert_allclose(
             gamma_sum,
             res_sum,
@@ -197,7 +197,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
     def tearDown(self):
         mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Memory usage: %s MB" % mb_memory)
+        print(f"{self.id()} Memory usage: {mb_memory} MB" )
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -239,7 +239,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             # do dot product
             con_sum = np.sum(con_seeds_rev[con_key])
 
-            print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", cs_deriv_sum)
+            # print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", cs_deriv_sum)
 
             np.testing.assert_allclose(
                 con_sum,
@@ -265,18 +265,25 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                     for cs_key in cs_d[func_key]:
                         sens_label = f"d{func_key}/d{cs_key} wrt {surf_key}:{geom_key:5}"
 
-                        # rel_err = np.linalg.norm(cs_d[func_key][cs_key] - cs_d_fd[func_key][cs_key]) / np.linalg.norm(cs_d[func_key][cs_key])
+                        # print(f"{sens_label} AD:{cs_d[func_key][cs_key]} FD:{cs_d_fd[func_key][cs_key]}")
 
-                        print(f"{sens_label} AD:{cs_d[func_key][cs_key]} FD:{cs_d_fd[func_key][cs_key]}")
-
-                        #
-                        # TODO: fix this: add absolute tolerance when true value is zero
-                        # np.testing.assert_allclose(
-                        #     cs_d[func_key][cs_key],
-                        #     cs_d_fd[func_key][cs_key],
-                        #     rtol=1e-3,
-                        #     err_msg=sens_label,
-                        # )
+                        tol = 1e-13
+                        # print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                        if np.abs(cs_d[func_key][cs_key]) < tol or np.abs(cs_d_fd[func_key][cs_key]) < tol:
+                            # If either value is basically zero, use an absolute tolerance
+                            np.testing.assert_allclose(
+                                cs_d[func_key][cs_key],
+                                cs_d_fd[func_key][cs_key],
+                                atol=1e-20,
+                                err_msg=sens_label,
+                            )
+                        else:
+                            np.testing.assert_allclose(
+                                cs_d[func_key][cs_key],
+                                cs_d_fd[func_key][cs_key],
+                                rtol=1e-3,
+                                err_msg=sens_label,
+                            )
 
     def test_rev_geom(self):
         np.random.seed(111)
@@ -313,7 +320,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
                     # # print(geom_seeds_rev)
                     tol = 1e-13
-                    print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                    # print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(fwd_sum) < tol or np.abs(rev_sum) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(
@@ -341,7 +348,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         for func_key in cs_d:
             for cs_key in cs_d[func_key]:
                 sens_label = f"d{func_key}/d{cs_key} wrt gamma_d"
-                print(sens_label, cs_d[func_key][cs_key], cs_d_fd[func_key][cs_key])
+                # print(sens_label, cs_d[func_key][cs_key], cs_d_fd[func_key][cs_key])
                 np.testing.assert_allclose(
                     cs_d[func_key][cs_key],
                     cs_d_fd[func_key][cs_key],
@@ -367,7 +374,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
                 fwd_sum = np.sum(cs_d_fwd[func_key][cs_key])
 
-                print("fwd_sum", fwd_sum, "rev_sum", rev_sum)
+                # print("fwd_sum", fwd_sum, "rev_sum", rev_sum)
                 np.testing.assert_allclose(
                     fwd_sum,
                     rev_sum,

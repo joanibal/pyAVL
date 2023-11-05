@@ -39,8 +39,6 @@ import numpy as np
 # =============================================================================
 from . import MExt
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-
 
 class AVLSolver(object):
     con_var_to_fort_var = {
@@ -174,28 +172,9 @@ class AVLSolver(object):
 
         if timing:
             start_time = time.time()
-        #  create a symbolic link to dependecies in the temp directory
-        blas_libs_dir = "pyavl_wrapper.libs"
-        source_path = os.path.join(BASE_DIR, "..", blas_libs_dir)
-        target_path = os.path.join("/tmp", blas_libs_dir)
 
-        # Create a symbolic link based on the platform
-        if not os.path.exists(target_path) and os.path.exists(source_path):
-            if os.name == "posix":
-                # Unix-based system (Mac, Linux)
-                os.symlink(source_path, target_path)
-            elif os.name == "nt":
-                # Windows
-                # import ctypes
-
-                # kernel32 = ctypes.windll.kernel32
-                # kernel32.CreateSymbolicLinkW(target_path, source_path, 0)
-                raise NotImplementedError("pyavl does not support windows. Due to complcations with symbolic links.")
-            else:
-                raise NotImplementedError("operating system not recognized")
-
-        # This is important for creating multiple instances of the AVL solver that do not share memory
-        # It is very gross, but I cannot figure out a better way.
+        # MExt is important for creating multiple instances of the AVL solver that do not share memory
+        # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
         # increment this counter for the hours you wasted on trying find a better way
         # 7 hours
 
@@ -204,10 +183,11 @@ class AVLSolver(object):
         avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
-        self.avl = MExt.MExt("libavl", module_name, lib_so_file=avl_lib_so_file, debug=debug)._module
+        print('importing', module_name)
+        self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module
 
+        # this way doesn't work with mulitple isntances fo AVLSolver
         # from . import libavl
-
         # self.avl = libavl
 
         if not (geo_file is None):
@@ -1022,7 +1002,7 @@ class AVLSolver(object):
 
     def get_mesh_size(self) -> int:
         """Get the number of panels in the mesh"""
-        return self.get_avl_fort_arr("CASE_I", "NVOR")
+        return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
@@ -1257,7 +1237,6 @@ class AVLSolver(object):
         # Only clear the seeds that are used in Make_tapenade file
         num_vor = self.get_mesh_size()
         num_vor_max = 6000  # HACK: hardcoded value from AVL.inc
-        # import pdb; pdb.set_trace()
 
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
@@ -1279,8 +1258,11 @@ class AVLSolver(object):
                             slices.append(slice(0, dim_size))
                         slicer = tuple(slices)
                         val[slicer] = 0.0
+                        # setattr(diff_blk, _var, val)
+                        # print(diff_blk, _var, val.shape, slicer)
+                        # mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+                        # print(f"    Memory usage: {mb_memory} MB")
 
-                        setattr(diff_blk, _var, val)
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):

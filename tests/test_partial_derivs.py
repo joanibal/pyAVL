@@ -36,7 +36,7 @@ class TestFunctionPartials(unittest.TestCase):
         # Without the following line a copy of large_list will be kept in
         # memory for each test that runs, uncomment the line to allow the
         mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Memory usage: %s MB" % mb_memory)
+        print(f"{self.id()} Memory usage: {mb_memory} MB")
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -47,7 +47,7 @@ class TestFunctionPartials(unittest.TestCase):
             )
 
             for func_key in func_seeds:
-                print(f"{func_key} wrt {con_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                # print(f"{func_key} wrt {con_key}", func_seeds[func_key], func_seeds_FD[func_key])
                 tol = 1e-13
                 if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
                     # If either value is basically zero, use an absolute tolerance
@@ -74,7 +74,7 @@ class TestFunctionPartials(unittest.TestCase):
 
             for func_key in self.avl_solver.case_var_to_fort_var:
                 con_seeds_rev, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
-                print(f"{func_key} wrt {con_key}", "fwd", func_seeds_fwd[func_key], "rev", con_seeds_rev[con_key])
+                # print(f"{func_key} wrt {con_key}", "fwd ", func_seeds_fwd[func_key], "rev", con_seeds_rev[con_key])
                 tol = 1e-14
 
                 if np.abs(func_seeds_fwd[func_key]) < tol or np.abs(con_seeds_rev[con_key]) < tol:
@@ -113,9 +113,9 @@ class TestFunctionPartials(unittest.TestCase):
                         func_seeds_FD[func_key] + 1e-15
                     )
 
-                    print(
-                        f"{func_key:10} wrt {surf_key}:{geom_key} AD:{func_seeds[func_key]: .5e} FD:{func_seeds_FD[func_key]: .5e} rel_error:{rel_error: .3e}"
-                    )
+                    # print(
+                    #     f"{func_key:10} wrt {surf_key}:{geom_key} AD:{func_seeds[func_key]: .5e} FD:{func_seeds_FD[func_key]: .5e} rel_error:{rel_error: .3e}"
+                    # )
 
                     tol = 1e-13
                     if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
@@ -157,7 +157,7 @@ class TestFunctionPartials(unittest.TestCase):
 
                     # # print(geom_seeds_rev)
                     tol = 1e-13
-                    print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                    # print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(fwd_sum) < tol or np.abs(rev_sum) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(
@@ -185,9 +185,9 @@ class TestFunctionPartials(unittest.TestCase):
             rel_error = np.linalg.norm(func_seeds[func_key] - func_seeds_FD[func_key]) / np.linalg.norm(
                 func_seeds_FD[func_key] + 1e-15
             )
-            print(
-                f"{func_key:10} AD:{func_seeds[func_key]: .5e} FD:{func_seeds_FD[func_key]: .5e} rel_error:{rel_error: .3e}"
-            )
+            # print(
+            #     f"{func_key:10} AD:{func_seeds[func_key]: .5e} FD:{func_seeds_FD[func_key]: .5e} rel_error:{rel_error: .3e}"
+            # )
 
             tol = 1e-13
             if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
@@ -240,7 +240,7 @@ class TestResidualPartials(unittest.TestCase):
         # Without the following line a copy of large_list will be kept in
         # memory for each test that runs, uncomment the line to allow the
         mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Memory usage: %s MB" % mb_memory)
+        print(f"{self.id()} Memory usage: {mb_memory} MB" )
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
