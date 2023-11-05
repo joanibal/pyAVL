@@ -22,7 +22,7 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
 
     def test_constrained_alpha_sweep(self):
         self.avl_solver.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
@@ -143,18 +143,19 @@ class TestHingeMom(unittest.TestCase):
         np.testing.assert_allclose(mom_data["Rudder"], -1.0957068091302286e-3, rtol=1e-8)
         np.testing.assert_allclose(mom_data["Elevator"], -1.065702741142345e-2, rtol=1e-8)
 
+
 class TestCaseDerivs(unittest.TestCase):
     def setUp(self) -> None:
         # self.avl_solver = AVLSolver(geo_file=geom_file)
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
-        
+
     def test_coefs_wrt_con_surfs(self):
         self.avl_solver.add_constraint("alpha", 45.00)
         self.avl_solver.execute_run()
         run_data = self.avl_solver.get_case_total_data()
         coef_derivs = self.avl_solver.get_case_coef_derivs()
-        #TODO: test againast values from AVL
+        # TODO: test againast values from AVL
 
 
 class TestVariableSetting(unittest.TestCase):
@@ -165,27 +166,25 @@ class TestVariableSetting(unittest.TestCase):
         """
         Test that setting the alpha works
         """
-        
+
         self.avl_solver.add_constraint("alpha", 10.00)
         self.avl_solver.execute_run()
-        alfa_new = self.avl_solver.get_case_parameter('alpha')
+        alfa_new = self.avl_solver.get_case_parameter("alpha")
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
-        
 
     def test_con_surf_set(self):
         """
         Test that setting the control surface works
         """
-        
+
         self.avl_solver.add_constraint("Elevator", 10.00)
         self.avl_solver.add_constraint("alpha", 10.00)
         self.avl_solver.execute_run()
-        alfa_new = self.avl_solver.get_case_parameter('alpha')
+        alfa_new = self.avl_solver.get_case_parameter("alpha")
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
         def_dict = self.avl_solver.get_control_deflections()
-        np.testing.assert_allclose(def_dict['Elevator'], 10.00, rtol=1e-15)
-        
-        
+        np.testing.assert_allclose(def_dict["Elevator"], 10.00, rtol=1e-15)
+
 
 if __name__ == "__main__":
     unittest.main()

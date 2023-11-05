@@ -169,24 +169,25 @@ class AVLSolver(object):
     ad_suffix = "_DIFF"
 
     def __init__(self, geo_file=None, mass_file=None, debug=False, timing=False):
-        # TODO: fix MExt to work with pyavl.lib packages
-        #   - copy dependecies to the temp directory
-        # This only needs to happen once for each fake directory
 
-        # This is important for creating multiple instances of the AVL solver that do not share memory
-        # It is very gross, but I cannot figure out a better way.
-        # increment this counter for the hours you wasted on trying to remove this monkey patch
-        # 4 hours
+        if timing:
+            start_time = time.time()
+
+        # MExt is important for creating multiple instances of the AVL solver that do not share memory
+        # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
+        # increment this counter for the hours you wasted on trying find a better way
+        # 7 hours
 
         module_dir = os.path.dirname(os.path.realpath(__file__))
         module_name = os.path.basename(module_dir)
         avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
-        self.avl = MExt.MExt("libavl", module_name, lib_so_file=avl_lib_so_file, debug=debug)._module
+        print('importing', module_name)
+        self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module
 
+        # this way doesn't work with mulitple isntances fo AVLSolver
         # from . import libavl
-
         # self.avl = libavl
 
         if not (geo_file is None):
@@ -232,6 +233,9 @@ class AVLSolver(object):
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
         self._init_surf_data()
+
+        if timing:
+            print(f"AVL init took {time.time() - start_time} seconds")
 
     def _init_surf_data(self):
         self.surf_geom_to_fort_var = {}
@@ -998,7 +1002,7 @@ class AVLSolver(object):
 
     def get_mesh_size(self) -> int:
         """Get the number of panels in the mesh"""
-        return self.get_avl_fort_arr("CASE_I", "NVOR")
+        return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
@@ -1228,35 +1232,37 @@ class AVLSolver(object):
                     if not (_var.startswith("__") and _var.endswith("__")):
                         val = getattr(diff_blk, _var)
                         setattr(diff_blk, _var, val * 0.0)
-    
+
     def clear_ad_seeds_fast(self):
         # Only clear the seeds that are used in Make_tapenade file
         num_vor = self.get_mesh_size()
-        num_vor_max = 6000 #HACK: hardcoded value from AVL.inc
-        # import pdb; pdb.set_trace()
-        
+        num_vor_max = 6000  # HACK: hardcoded value from AVL.inc
+
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
                 # loop over the attributes of the common block
                 diff_blk = getattr(self.avl, att)
                 for _var in dir(diff_blk):
                     if not (_var.startswith("__") and _var.endswith("__")):
-                        
+
                         val = getattr(diff_blk, _var)
-                        
+
                         # trim sizes set to NVMAX to NVOR
                         shape = val.shape
-                        slices =  []
+                        slices = []
                         for idx_dim in range(len(shape)):
                             dim_size = shape[idx_dim]
                             if dim_size == num_vor_max:
                                 dim_size = num_vor
-                            
+
                             slices.append(slice(0, dim_size))
                         slicer = tuple(slices)
                         val[slicer] = 0.0
-                        
-                        setattr(diff_blk, _var, val )
+                        # setattr(diff_blk, _var, val)
+                        # print(diff_blk, _var, val.shape, slicer)
+                        # mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+                        # print(f"    Memory usage: {mb_memory} MB")
+
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):
@@ -1384,7 +1390,7 @@ class AVLSolver(object):
         res_seeds: Optional[np.ndarray] = None,
         consurf_derivs_seeds: Optional[Dict[str, Dict[str, float]]] = None,
         res_d_seeds: Optional[np.ndarray] = None,
-        print_timings=False
+        print_timings=False,
     ) -> Tuple[Dict[str, float], Dict[str, Dict[str, any]], np.ndarray]:
         # extract derivatives seeds and set the output dict of functions
         mesh_size = self.get_mesh_size()

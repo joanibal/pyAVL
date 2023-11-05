@@ -28,7 +28,7 @@ for alpha in range(10):
 
 print("----------------- CL sweep ----------------")
 print("   Angle        Cl           Cd           Cdff         Cdv          Cm         CN")
-for cl in np.arange(0.6, 1.7, 0.001):
+for cl in np.arange(0.6, 1.7, 0.1):
     avl_solver.add_trim_condition("CL", cl)
     avl_solver.execute_run()
     run_data = avl_solver.get_case_total_data()

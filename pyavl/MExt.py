@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 import shutil
 import sys
-
+import platform
 
 def _tmp_pkg(tempDir):
     """
@@ -35,7 +35,7 @@ class MExt(object):
     Load a unique copy of a module that can be treated as a "class instance".
     """
 
-    def __init__(self, libName, packageName, lib_so_file=None, debug=False):
+    def __init__(self, libName, packageName, pip_name, lib_so_file=None, debug=False):
         
         if lib_so_file is None:
             lib_so_file = f"{libName}.so"
@@ -50,10 +50,32 @@ class MExt(object):
         self._pkgname, self._pkgdir = _tmp_pkg(tmpdir)
         # copy the original module to the new package
         shutil.copy(srcpath, self._pkgdir)
+        if platform.system() == "Darwin":
+            # create a sym link to the orginal module .dylibs folder
+            blas_libs_dir = ".dylibs"
+            source_path = os.path.join(spec.submodule_search_locations[0], blas_libs_dir)
+            target_path = os.path.join(self._pkgdir, blas_libs_dir)
+
+            # Unix-based system (Mac, Linux)
+            if not os.path.exists(target_path) and os.path.exists(source_path):
+                # print("Creating symlink from {} to {}".format(source_path, target_path))
+                os.symlink(source_path, target_path)
+
+        elif platform.system() == "Linux":
+            blas_libs_dir = f"{pip_name}.libs"
+            source_path = os.path.join(spec.submodule_search_locations[0], "..", blas_libs_dir)
+            target_path = os.path.join("/tmp", blas_libs_dir)
+
+            if not os.path.exists(target_path) and os.path.exists(source_path):
+                # print("Creating symlink from {} to {}".format(source_path, target_path))
+                os.symlink(source_path, target_path)
+        else:
+            raise NotImplementedError("platform not supported")            
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module
         # __import__ returns the package, not the sub-module
+        
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
         # remove the bogus directory from sys.path
         sys.path.remove(tmpdir)
