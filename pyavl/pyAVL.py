@@ -192,7 +192,9 @@ class AVLSolver(object):
                 target_path = os.path.join("/tmp", blas_libs_dir)
 
                 if not os.path.exists(target_path) and os.path.exists(source_path):
-                    os.symlink(source_path, target_path)
+                    print("would have made symlink from {} to {}".format(source_path, target_path))
+
+                    # os.symlink(source_path, target_path)
             else:
                 raise NotImplementedError("platform not recognized")
         elif os.name == "nt":
@@ -216,7 +218,7 @@ class AVLSolver(object):
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
         print('importing', module_name)
-        self.avl = MExt.MExt("libavl", module_name, lib_so_file=avl_lib_so_file, debug=debug)._module
+        self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module
 
         # from . import libavl
 

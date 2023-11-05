@@ -35,7 +35,7 @@ class MExt(object):
     Load a unique copy of a module that can be treated as a "class instance".
     """
 
-    def __init__(self, libName, packageName, lib_so_file=None, debug=False):
+    def __init__(self, libName, packageName, pip_name, lib_so_file=None, debug=False):
         
         if lib_so_file is None:
             lib_so_file = f"{libName}.so"
@@ -58,15 +58,25 @@ class MExt(object):
             target_path = os.path.join(self._pkgdir, blas_libs_dir)
 
             # Unix-based system (Mac, Linux)
-            print("Creating symlink from {} to {}".format(source_path, target_path))
-            os.symlink(source_path, target_path)
+            if not os.path.exists(target_path) and os.path.exists(source_path):
+                print("Creating symlink from {} to {}".format(source_path, target_path))
+                os.symlink(source_path, target_path)
 
+        elif platform.system() == "Linux":
+            blas_libs_dir = f"{pip_name}.libs"
+            source_path = os.path.join(spec.submodule_search_locations[0], "..", blas_libs_dir)
+            target_path = os.path.join("/tmp", blas_libs_dir)
+
+            if not os.path.exists(target_path) and os.path.exists(source_path):
+                print("Creating symlink from {} to {}".format(source_path, target_path))
+                os.symlink(source_path, target_path)
+        else:
+            raise NotImplementedError("platform not recognized")            
+        import pdb; pdb.set_trace()
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module
         # __import__ returns the package, not the sub-module
-        print(os.listdir(self._pkgdir))
-        print(os.listdir(tmpdir))
         
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
         # remove the bogus directory from sys.path
