@@ -193,6 +193,16 @@ C
       real(kind=avl_real) CDTOT_G,CLTOT_G
       real(kind=avl_real) CXTOT_G,CYTOT_G,CZTOT_G
       real(kind=avl_real) CRTOT_G,CMTOT_G,CNTOT_G
+      real(kind=avl_real) CDTOT_AL, CLTOT_AL, CYTOT_AL, CRTOT_AL
+      real(kind=avl_real) CMTOT_AL, CNTOT_AL ! stab derives wrt alpha
+      real(kind=avl_real) CDTOT_BE, CLTOT_BE, CYTOT_BE, CRTOT_BE
+      real(kind=avl_real) CMTOT_BE, CNTOT_BE ! stab derives wrt beta
+      real(kind=avl_real) CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX
+      real(kind=avl_real) CMTOT_RX, CNTOT_RX ! stab derives wrt 
+      real(kind=avl_real) CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY
+      real(kind=avl_real) CMTOT_RY, CNTOT_RY ! stab derives wrt 
+      real(kind=avl_real) CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ
+      real(kind=avl_real) CMTOT_RZ, CNTOT_RZ ! stab derives wrt 
       real(kind=avl_real) CHINGE
       real(kind=avl_real) CHINGE_U
       real(kind=avl_real) CHINGE_D
@@ -237,7 +247,7 @@ C
      & CRTOT, CMTOT, CNTOT,   ! total Cl,Cm,Cn
      & CRSAX, CMSAX, CNSAX,   ! total Cl,Cm,Cn in stability axis
      & CDVTOT,                ! total viscous CD
-     & CDTOT_A, CLTOT_A,            ! sensitivities wrt alpha
+     & CDTOT_A, CLTOT_A, ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
      & CDTOT_U(NUMAX),CLTOT_U(NUMAX),                !sens wrt U,W
      & CXTOT_U(NUMAX),CYTOT_U(NUMAX),CZTOT_U(NUMAX), !sens wrt U,W
      & CRTOT_U(NUMAX),CMTOT_U(NUMAX),CNTOT_U(NUMAX), !sens wrt U,W
@@ -247,6 +257,11 @@ C
      & CDTOT_G(NGMAX),CLTOT_G(NGMAX),                !sens wrt design
      & CXTOT_G(NGMAX),CYTOT_G(NGMAX),CZTOT_G(NGMAX), !sens wrt design
      & CRTOT_G(NGMAX),CMTOT_G(NGMAX),CNTOT_G(NGMAX), !sens wrt design
+     & CDTOT_AL, CLTOT_AL, CYTOT_AL, CRTOT_AL, CMTOT_AL, CNTOT_AL, ! stab derives wrt alpha
+     & CDTOT_BE, CLTOT_BE, CYTOT_BE, CRTOT_BE, CMTOT_BE, CNTOT_BE, ! stab derives wrt beta
+     & CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX, CMTOT_RX, CNTOT_RX, ! stab derives wrt beta
+     & CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY, CMTOT_RY, CNTOT_RY, ! stab derives wrt beta
+     & CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ, CMTOT_RZ, CNTOT_RZ, ! stab derives wrt beta
      & CHINGE(NDMAX),
      & CHINGE_U(NDMAX,NUMAX),
      & CHINGE_D(NDMAX,NDMAX),

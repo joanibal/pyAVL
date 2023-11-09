@@ -1713,11 +1713,10 @@ C
       CALL GETSA(LNASA_SA,SATYPE,DIR)
 C
 C---- set freestream velocity components from alpha, beta
-      CALL VINFAB
+      ! CALL VINFAB
 C
 C---- calculate forces and sensitivities
-      CALL AERO
-      CALL GETSA(LNASA_SA,SATYPE,DIR)
+      ! CALL AERO
 C
 C---- set stability-axes rates (RX,RY,RZ) in terms of body-axes rates
       CA = COS(ALFA)
@@ -1771,55 +1770,67 @@ C
 
 C
 C---- set force derivatives in stability axes
-      CL_AL = CLTOT_U(1)*VINF_A(1) + CLTOT_U(4)*WROT_A(1)
+      CLTOT_AL = CLTOT_U(1)*VINF_A(1) + CLTOT_U(4)*WROT_A(1)
      &      + CLTOT_U(2)*VINF_A(2) + CLTOT_U(5)*WROT_A(2)
      &      + CLTOT_U(3)*VINF_A(3) + CLTOT_U(6)*WROT_A(3) + CLTOT_A
-      CL_BE = CLTOT_U(1)*VINF_B(1)
+      CLTOT_BE = CLTOT_U(1)*VINF_B(1)
      &      + CLTOT_U(2)*VINF_B(2)
      &      + CLTOT_U(3)*VINF_B(3)
-      CL_RX = CLTOT_U(4)*WROT_RX(1) + CLTOT_U(6)*WROT_RX(3)
-      CL_RY = CLTOT_U(5)
-      CL_RZ = CLTOT_U(6)*WROT_RZ(3) + CLTOT_U(4)*WROT_RZ(1)
+      CLTOT_RX = CLTOT_U(4)*WROT_RX(1) + CLTOT_U(6)*WROT_RX(3)
+      CLTOT_RY = CLTOT_U(5)
+      CLTOT_RZ = CLTOT_U(6)*WROT_RZ(3) + CLTOT_U(4)*WROT_RZ(1)
 C
-      CY_AL = CYTOT_U(1)*VINF_A(1) + CYTOT_U(4)*WROT_A(1)
+      CDTOT_AL = CDTOT_U(1)*VINF_A(1) + CDTOT_U(4)*WROT_A(1)
+     &      + CDTOT_U(2)*VINF_A(2) + CDTOT_U(5)*WROT_A(2)
+     &      + CDTOT_U(3)*VINF_A(3) + CDTOT_U(6)*WROT_A(3) + CDTOT_A
+      CDTOT_BE = CDTOT_U(1)*VINF_B(1)
+     &      + CDTOT_U(2)*VINF_B(2)
+     &      + CDTOT_U(3)*VINF_B(3)
+      CDTOT_RX = CDTOT_U(4)*WROT_RX(1) + CDTOT_U(6)*WROT_RX(3)
+      CDTOT_RY = CDTOT_U(5)
+      CDTOT_RZ = CDTOT_U(6)*WROT_RZ(3) + CDTOT_U(4)*WROT_RZ(1)
+C
+      CYTOT_AL = CYTOT_U(1)*VINF_A(1) + CYTOT_U(4)*WROT_A(1)
      &      + CYTOT_U(2)*VINF_A(2) + CYTOT_U(5)*WROT_A(2)
      &      + CYTOT_U(3)*VINF_A(3) + CYTOT_U(6)*WROT_A(3)
-      CY_BE = CYTOT_U(1)*VINF_B(1)
+      CYTOT_BE = CYTOT_U(1)*VINF_B(1)
      &      + CYTOT_U(2)*VINF_B(2)
      &      + CYTOT_U(3)*VINF_B(3)
-      CY_RX = CYTOT_U(4)*WROT_RX(1) + CYTOT_U(6)*WROT_RX(3)
-      CY_RY = CYTOT_U(5)
-      CY_RZ = CYTOT_U(6)*WROT_RZ(3) + CYTOT_U(4)*WROT_RZ(1)
+      CYTOT_RX = CYTOT_U(4)*WROT_RX(1) + CYTOT_U(6)*WROT_RX(3)
+      CYTOT_RY = CYTOT_U(5)
+      CYTOT_RZ = CYTOT_U(6)*WROT_RZ(3) + CYTOT_U(4)*WROT_RZ(1)
 C
-      CR_AL = CRSAX_U(1)*VINF_A(1) + CRSAX_U(4)*WROT_A(1)
+      CRTOT_AL = CRSAX_U(1)*VINF_A(1) + CRSAX_U(4)*WROT_A(1)
      &      + CRSAX_U(2)*VINF_A(2) + CRSAX_U(5)*WROT_A(2)
      &      + CRSAX_U(3)*VINF_A(3) + CRSAX_U(6)*WROT_A(3) + CRSAX_A
-      CR_BE = CRSAX_U(1)*VINF_B(1)
+      CRTOT_BE = CRSAX_U(1)*VINF_B(1)
      &      + CRSAX_U(2)*VINF_B(2)
      &      + CRSAX_U(3)*VINF_B(3)
-      CR_RX = CRSAX_U(4)*WROT_RX(1) + CRSAX_U(6)*WROT_RX(3)
-      CR_RY = CRSAX_U(5)
-      CR_RZ = CRSAX_U(6)*WROT_RZ(3) + CRSAX_U(4)*WROT_RZ(1)
+      CRTOT_RX = CRSAX_U(4)*WROT_RX(1) + CRSAX_U(6)*WROT_RX(3)
+      CRTOT_RY = CRSAX_U(5)
+      CRTOT_RZ = CRSAX_U(6)*WROT_RZ(3) + CRSAX_U(4)*WROT_RZ(1)
 C
-      CM_AL = CMSAX_U(1)*VINF_A(1) + CMSAX_U(4)*WROT_A(1)
+      CMTOT_AL = CMSAX_U(1)*VINF_A(1) + CMSAX_U(4)*WROT_A(1)
      &      + CMSAX_U(2)*VINF_A(2) + CMSAX_U(5)*WROT_A(2)
      &      + CMSAX_U(3)*VINF_A(3) + CMSAX_U(6)*WROT_A(3)
-      CM_BE = CMSAX_U(1)*VINF_B(1)
+      CMTOT_BE = CMSAX_U(1)*VINF_B(1)
      &      + CMSAX_U(2)*VINF_B(2)
      &      + CMSAX_U(3)*VINF_B(3)
-      CM_RX = CMSAX_U(4)*WROT_RX(1) + CMSAX_U(6)*WROT_RX(3)
-      CM_RY = CMSAX_U(5)
-      CM_RZ = CMSAX_U(6)*WROT_RZ(3) + CMSAX_U(4)*WROT_RZ(1)
+      CMTOT_RX = CMSAX_U(4)*WROT_RX(1) + CMSAX_U(6)*WROT_RX(3)
+      CMTOT_RY = CMSAX_U(5)
+      CMTOT_RZ = CMSAX_U(6)*WROT_RZ(3) + CMSAX_U(4)*WROT_RZ(1)
 C
-      CN_AL = CNSAX_U(1)*VINF_A(1) + CNSAX_U(4)*WROT_A(1)
+      CNTOT_AL = CNSAX_U(1)*VINF_A(1) + CNSAX_U(4)*WROT_A(1)
      &      + CNSAX_U(2)*VINF_A(2) + CNSAX_U(5)*WROT_A(2)
      &      + CNSAX_U(3)*VINF_A(3) + CNSAX_U(6)*WROT_A(3) + CNSAX_A
-      CN_BE = CNSAX_U(1)*VINF_B(1)
+      CNTOT_BE = CNSAX_U(1)*VINF_B(1)
      &      + CNSAX_U(2)*VINF_B(2)
      &      + CNSAX_U(3)*VINF_B(3)
-      CN_RX = CNSAX_U(4)*WROT_RX(1) + CNSAX_U(6)*WROT_RX(3)
-      CN_RY = CNSAX_U(5)
-      CN_RZ = CNSAX_U(6)*WROT_RZ(3) + CNSAX_U(4)*WROT_RZ(1)
+      CNTOT_RX = CNSAX_U(4)*WROT_RX(1) + CNSAX_U(6)*WROT_RX(3)
+      CNTOT_RY = CNSAX_U(5)
+      CNTOT_RZ = CNSAX_U(6)*WROT_RZ(3) + CNSAX_U(4)*WROT_RZ(1)
+C
+C        
 
       IF(CL_AL .NE. 0.0) THEN
        XNP = XYZREF(1) - CREF*CM_AL/CL_AL
@@ -1834,6 +1845,34 @@ C        WRITE(LU,8402) BB
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
       ENDIF
+      
+      ! apply the facotors to the outputs as done in the print statements of DERMATS
+      CRTOT_AL = DIR*CRTOT_AL
+      CRTOT_BE = DIR*CRTOT_BE
+      CNTOT_AL = DIR*CNTOT_AL
+      CNTOT_BE = DIR*CNTOT_BE
+      
+      CLTOT_RX = CLTOT_RX*2.0/BREF 
+      CLTOT_RY = CLTOT_RY*2.0/CREF 
+      CLTOT_RZ = CLTOT_RZ*2.0/BREF
+            
+      CDTOT_RX = CDTOT_RX*2.0/BREF 
+      CDTOT_RY = CDTOT_RY*2.0/CREF 
+      CDTOT_RZ = CDTOT_RZ*2.0/BREF
+      
+      
+      CYTOT_RX = CYTOT_RX*2.0/BREF
+      CYTOT_RY = CYTOT_RY*2.0/CREF
+      CYTOT_RZ = CYTOT_RZ*2.0/BREF
+      CRTOT_RX = DIR*CRTOT_RX*2.0/BREF 
+      CRTOT_RY = DIR*CRTOT_RY*2.0/CREF
+      CRTOT_RZ = DIR*CRTOT_RZ*2.0/BREF
+      CMTOT_RX = CMTOT_RX*2.0/BREF
+      CMTOT_RY = CMTOT_RY*2.0/CREF
+      CMTOT_RZ = CMTOT_RZ*2.0/BREF
+      CNTOT_RX = DIR*CNTOT_RX*2.0/BREF
+      CNTOT_RY = DIR*CNTOT_RY*2.0/CREF
+      CNTOT_RZ = DIR*CNTOT_RZ*2.0/BREF
 
 C C
       RETURN

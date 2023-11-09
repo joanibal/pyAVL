@@ -95,7 +95,7 @@ C     calculate stability axis based values
       
       DO K = 1, NCONTROL
         ! do the sign change here so that it included in the derivative
-        ! routnis         
+        ! routines         
         CRTOT_D(K) = DIR*CRTOT_D(K)
         CNTOT_D(K) = DIR*CNTOT_D(K)
       ENDDO
@@ -123,6 +123,8 @@ C
         CZTOT_U(IU) = CZTOT_U(IU) + CDREF*VINF(3)*VINF(IU)/VMAG
       ENDDO
 C
+      ! compute the stability derivatives every time (it's quite cheap)
+      call calcST
       RETURN
       END ! AERO
 
