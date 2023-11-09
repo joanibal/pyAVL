@@ -4,7 +4,7 @@
 from pyavl import AVLSolver
 import copy
 import resource
-import matplotlib.pyplot as plt
+
 # =============================================================================
 # Standard Python Modules
 # =============================================================================
