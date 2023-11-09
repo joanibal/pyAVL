@@ -14,6 +14,7 @@ python -m unittest -v test_parameters.py
 python -m unittest -v test_analysis.py
 python -m unittest -v test_surf_geom.py
 python -m unittest -v test_contraints.py
+python -m unittest -v test_stab_derivs.py
 
 # tests for adjoint
 python -m unittest -v test_new_subroutines.py
