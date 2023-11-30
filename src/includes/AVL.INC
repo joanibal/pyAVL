@@ -21,7 +21,7 @@ C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
 C     
 C    ICONX   max number of control or design variable declaration lines per section (20)
-      PARAMETER (NVMAX=6000,
+      PARAMETER (NVMAX=5550,
      &           NSMAX=400,
      &           NFMAX=30,
      &           NLMAX=500,

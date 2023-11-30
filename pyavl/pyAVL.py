@@ -1236,7 +1236,8 @@ class AVLSolver(object):
     def clear_ad_seeds_fast(self):
         # Only clear the seeds that are used in Make_tapenade file
         num_vor = self.get_mesh_size()
-        num_vor_max = 6000  # HACK: hardcoded value from AVL.inc
+        gam = self.get_avl_fort_arr("VRTX_R", "GAM")
+        num_vor_max = gam.size
 
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
