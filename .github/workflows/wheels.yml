@@ -81,6 +81,11 @@ jobs:
           #   MACOSX_DEPLOYMENT_TARGET=10.9
           #   MACOS_DEPLOYMENT_TARGET=10.9
           #   _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64
+          CIBW_BEFORE_BUILD_MACOS: "bash {project}/tools/wheels/cibw_before_build_macos.sh {project}"
+          CIBW_ENVIRONMENT_MACOS: >
+            SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/
+            Developer/SDKs/MacOSX10.15.sdk LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH 
+            MACOSX_DEPLOYMENT_TARGET=12.0 _PYTHON_HOST_PLATFORM=macosx-12.0-arm64
           # CIBW_ENVIRONMENT_MACOS: >
           #   ${{ 
           #     matrix.buildplat[2] == 'x86_64' && 
@@ -92,11 +97,19 @@ jobs:
           #     'MACOSX_DEPLOYMENT_TARGET=11.0\n' +
           #     '_PYTHON_HOST_PLATFORM=macosx-11.0-arm64'
           #   }}
+          # CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
+          #   DYLD_LIBRARY_PATH=/usr/local/lib delocate-listdeps {wheel} &&
+          #   DYLD_LIBRARY_PATH=/usr/local/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
-            DYLD_LIBRARY_PATH=/usr/local/lib delocate-listdeps {wheel} &&
-            DYLD_LIBRARY_PATH=/usr/local/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
-          # DYLD_LIBRARY_PATH=/usr/local/gfortran/lib:/opt/arm64-builds/lib delocate-listdeps {wheel} &&
-          # DYLD_LIBRARY_PATH=/usr/local/gfortran/lib:/opt/arm64-builds/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
+            DYLD_LIBRARY_PATH=/usr/local/gfortran/lib:/opt/arm64-builds/lib delocate-listdeps {wheel} &&
+            DYLD_LIBRARY_PATH=/usr/local/gfortran/lib:/opt/arm64-builds/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
+            
+          PKG_CONFIG_PATH: /opt/arm64-builds/lib/pkgconfig
+          # assumes that the cmake config is in /usr/local/lib/cmake
+          CMAKE_PREFIX_PATH: /opt/arm64-builds/
+          REPAIR_PATH: /usr/local/gfortran/lib:/opt/arm64-builds/lib
+
+            
 
       - uses: actions/upload-artifact@v3
         name: upload the wheels
