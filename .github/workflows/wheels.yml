@@ -66,15 +66,26 @@ jobs:
           # is closed and an update to pypa/cibuildwheel is done, then
           # that environment variable can be removed.
           CIBW_ENVIRONMENT_MACOS: >
-            SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk
-            LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-            MACOSX_DEPLOYMENT_TARGET=10.9
-            MACOS_DEPLOYMENT_TARGET=10.9
-            _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64
+            ${{ 
+              matrix.buildplat[2] == 'x86_64' && 
+              'SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk\n' +
+              'LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH\n' +
+              'MACOSX_DEPLOYMENT_TARGET=10.9\n' +
+              '_PYTHON_HOST_PLATFORM=macosx-10.9-x86_64' || 
+              matrix.buildplat[2] == 'arm64' && 
+              'MACOSX_DEPLOYMENT_TARGET=11.0\n' +
+              '_PYTHON_HOST_PLATFORM=macosx-11.0-arm64'
+            }}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
-            DYLD_LIBRARY_PATH=/usr/local/lib delocate-listdeps {wheel} &&
-            DYLD_LIBRARY_PATH=/usr/local/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
-
+            ${{ 
+              matrix.buildplat[2] == 'x86_64' && 
+              'DYLD_LIBRARY_PATH=/usr/local/lib delocate-listdeps {wheel} &&\n' +
+              'DYLD_LIBRARY_PATH=/usr/local/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}' || 
+              matrix.buildplat[2] == 'arm64' && 
+              'DYLD_LIBRARY_PATH=/usr/local/gfortran/lib:/opt/arm64-builds/lib delocate-listdeps {wheel} &&' +
+              'DYLD_LIBRARY_PATH=/usr/local/gfortran/lib:/opt/arm64-builds/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}'
+            }}
+            
       - uses: actions/upload-artifact@v3
         name: upload the wheels
         with:
