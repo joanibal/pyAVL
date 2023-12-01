@@ -52,6 +52,17 @@ jobs:
         if: ${{ runner.os == 'Windows' && env.IS_32_BIT == 'false' }}
 
 
+      - name: Set CIBW_ENVIRONMENT for macos-x86_64
+        if: buildplat[2] == 'x86' 
+        run: |
+          echo "CIBW_ENVIRONMENT=SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=10.9 _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64" >> $GITHUB_ENV
+
+      - name: Set CIBW_ENVIRONMENT for macos-arm64
+        if: buildplat[2] == 'arm64' 
+        run: |
+          echo "CIBW_ENVIRONMENT=SDKROOT=/path/to/arm64/sdk LD_LIBRARY_PATH=/path/to/arm64/lib:\$LD_LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=11.0 _PYTHON_HOST_PLATFORM=macosx-11.0-arm64" >> $GITHUB_ENV
+
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.12.0
         env:
@@ -65,12 +76,12 @@ jobs:
           # https://github.com/pypa/cibuildwheel/issues/1419. Once that
           # is closed and an update to pypa/cibuildwheel is done, then
           # that environment variable can be removed.
-          CIBW_ENVIRONMENT_MACOS: >
-            SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk
-            LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-            MACOSX_DEPLOYMENT_TARGET=10.9
-            MACOS_DEPLOYMENT_TARGET=10.9
-            _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64
+          # CIBW_ENVIRONMENT_MACOS: >
+          #   SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk
+          #   LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          #   MACOSX_DEPLOYMENT_TARGET=10.9
+          #   MACOS_DEPLOYMENT_TARGET=10.9
+          #   _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64
           # CIBW_ENVIRONMENT_MACOS: >
           #   ${{ 
           #     matrix.buildplat[2] == 'x86_64' && 
