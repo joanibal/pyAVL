@@ -23,8 +23,11 @@ if m_dep.found()
   add_project_link_arguments('-lm', language : 'c')
 endif
 
-r = run_command('which gfortran')
-message('gfortran is @0@'.format(r.stdout()))
+gfortran_path = run_command('which', 'gfortran').stdout().strip()
+message('Path to gfortran: ' + gfortran_path)
+ls_bin = run_command('ls', '/usr/local/bin').stdout().strip()
+message('gfortran should be in here: ' + ls_bin)
+
 
 # Adding at project level causes many spurious -lgfortran flags.
 add_languages('fortran', native: false)
