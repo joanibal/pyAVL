@@ -23,6 +23,10 @@ if m_dep.found()
   add_project_link_arguments('-lm', language : 'c')
 endif
 
+message('copying @0@ to @1@ ...'.format(source, dest))
+r = run_command('which gfortran')
+message('gfortran is @0@'.format(r.stdout()))
+
 # Adding at project level causes many spurious -lgfortran flags.
 add_languages('fortran', native: false)
 ff = meson.get_compiler('fortran')
