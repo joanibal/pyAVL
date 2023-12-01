@@ -25,8 +25,10 @@ endif
 
 gfortran_path = run_command('which', 'gfortran').stdout().strip()
 message('Path to gfortran: ' + gfortran_path)
-ls_bin = run_command('ls', '/usr/local/bin').stdout().strip()
-message('gfortran should be in here: ' + ls_bin)
+cross_file = run_command('cat', '/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-cross-file.ini').stdout().strip()
+native_file = run_command('cat', '/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-native-file.ini').stdout().strip()
+message('crossfile:' + cross_file)
+message('nativefile:' + cross_file)
 
 
 # Adding at project level causes many spurious -lgfortran flags.
