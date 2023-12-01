@@ -51,16 +51,15 @@ jobs:
           echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH
         if: ${{ runner.os == 'Windows' && env.IS_32_BIT == 'false' }}
 
+      # - name: Set CIBW_ENVIRONMENT for macos-x86_64
+      #   if: buildplat[2] == 'x86' 
+      #   run: |
+      #     echo "CIBW_ENVIRONMENT=SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=10.9 _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64" >> $GITHUB_ENV
 
-      - name: Set CIBW_ENVIRONMENT for macos-x86_64
-        if: buildplat[2] == 'x86' 
-        run: |
-          echo "CIBW_ENVIRONMENT=SDKROOT=/Applications/Xcode_11.7.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=10.9 _PYTHON_HOST_PLATFORM=macosx-10.9-x86_64" >> $GITHUB_ENV
-
-      - name: Set CIBW_ENVIRONMENT for macos-arm64
-        if: buildplat[2] == 'arm64' 
-        run: |
-          echo "CIBW_ENVIRONMENT=SDKROOT=/path/to/arm64/sdk LD_LIBRARY_PATH=/path/to/arm64/lib:\$LD_LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=11.0 _PYTHON_HOST_PLATFORM=macosx-11.0-arm64" >> $GITHUB_ENV
+      # - name: Set CIBW_ENVIRONMENT for macos-arm64
+      #   if: buildplat[2] == 'arm64' 
+      #   run: |
+      #     echo "CIBW_ENVIRONMENT=SDKROOT=/path/to/arm64/sdk LD_LIBRARY_PATH=/path/to/arm64/lib:\$LD_LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=11.0 _PYTHON_HOST_PLATFORM=macosx-11.0-arm64" >> $GITHUB_ENV
 
 
       - name: Build wheels
