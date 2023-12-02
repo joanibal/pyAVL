@@ -23,38 +23,38 @@ if m_dep.found()
   add_project_link_arguments('-lm', language : 'c')
 endif
 
-# gfortran_path = run_command('which', 'gfortran').stdout().strip()
-# message('Path to gfortran: ' + gfortran_path)
-# # cross_file = run_command('cat', '/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-cross-file.ini').stdout().strip()
-# # native_file = run_command('cat', '/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-native-file.ini').stdout().strip()
-# # message('crossfile:' + cross_file)
-# # message('nativefile:' + native_file)
+gfortran_path = run_command('which', 'gfortran').stdout().strip()
+message('Path to gfortran: ' + gfortran_path)
+# cross_file = run_command('cat', '/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-cross-file.ini').stdout().strip()
+# native_file = run_command('cat', '/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-native-file.ini').stdout().strip()
+# message('crossfile:' + cross_file)
+# message('nativefile:' + native_file)
 
-# # Reference the file
-# # file_to_print = files('/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-cross-file.ini')
-# # /Users/runner/work/pyAVL/pyAVL/.mesonpy-3wtlvumz/meson-python-cross-file.ini --native-file=/Users/runner/work/pyAVL/pyAVL/.mesonpy-3wtlvumz/meson-python-native-file.ini
+# Reference the file
+# file_to_print = files('/Users/runner/work/pyAVL/pyAVL/.mesonpy-r2gk0ueu/meson-python-cross-file.ini')
+# /Users/runner/work/pyAVL/pyAVL/.mesonpy-3wtlvumz/meson-python-cross-file.ini --native-file=/Users/runner/work/pyAVL/pyAVL/.mesonpy-3wtlvumz/meson-python-native-file.ini
 
-# # Run the script to find the file
-# find_file_script = run_command('find_cross_file.sh')
+# Run the script to find the file
+find_file_script = run_command('find_cross_file.sh')
 
-# # Check if the command was successful
-# if find_file_script.returncode() == 0
-#     # Get the file path from the script output
-#     file_path = find_file_script.stdout().strip()
+# Check if the command was successful
+if find_file_script.returncode() == 0
+    # Get the file path from the script output
+    file_path = find_file_script.stdout().strip()
 
-#     # Now read the file using a second run_command
-#     read_file_command = run_command('cat', file_path)
-#     if read_file_command.returncode() == 0
-#         # Print the contents of the file
-#         message('Contents of the file:\n' + read_file_command.stdout())
-#     else
-#         error('Failed to read the file contents')
-#     endif
-# else
-#     error('Failed to find the file')
-# endif
-# # Run the script to find the file
-# find_file_script = run_command('find_native_file.sh')
+    # Now read the file using a second run_command
+    read_file_command = run_command('cat', file_path)
+    if read_file_command.returncode() == 0
+        # Print the contents of the file
+        message('Contents of the file:\n' + read_file_command.stdout())
+    else
+        error('Failed to read the file contents')
+    endif
+else
+    error('Failed to find the file')
+endif
+# Run the script to find the file
+find_file_script = run_command('find_native_file.sh')
 
 # Check if the command was successful
 if find_file_script.returncode() == 0
