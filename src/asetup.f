@@ -65,7 +65,7 @@ C
 !       ENDIF
       if (ltiming) then 
         call cpu_time(t3)
-        write(*,*) '  LUDCMP time: ', t3 - t2
+        write(*,*) '  LUDCMP time: ', t3 - t0
       end if
 C
 C

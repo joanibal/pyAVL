@@ -49,9 +49,9 @@ class AVLSolver(object):
     param_idx_dict = {
         "alpha": 0,
         "beta": 1,
-        "pb/2V": 2,
-        "qc/2V": 3,
-        "rb/2V": 4,
+        "roll rate": 2,
+        "pitch rate": 3,
+        "yaw rate": 4,
         "CL": 5,
         "CD0": 6,
         "bank": 7,
@@ -81,9 +81,9 @@ class AVLSolver(object):
     conval_idx_dict = {
         "alpha": 0,
         "beta": 1,
-        "pb/2V": 2,
-        "qc/2V": 3,
-        "rb/2V": 4,
+        "roll rate": 2,
+        "pitch rate": 3,
+        "yaw rate": 4,
         "CL": 5,
         "CY": 6,
         "CR BA": 7,
@@ -135,9 +135,53 @@ class AVLSolver(object):
         "CM": ["CASE_R", "CMTOT_D"],
         "CN": ["CASE_R", "CNTOT_D"],
     }
-    # fmt: on
     
-    # fmt: off
+    case_stab_derivs_to_fort_var = {
+        # derivative of coefficents wrt alpha
+        "CL": {
+            "alpha": ["CASE_R", "CLTOT_AL"],
+            "beta": ["CASE_R", "CLTOT_BE"],
+            "roll rate": ["CASE_R", "CLTOT_RX"],
+            "pitch rate": ["CASE_R", "CLTOT_RY"],
+            "yaw rate": ["CASE_R", "CLTOT_RZ"],
+            },
+        "CD": {
+            "alpha": ["CASE_R", "CDTOT_AL"],
+            "beta": ["CASE_R", "CDTOT_BE"],
+            "roll rate": ["CASE_R", "CDTOT_RX"],
+            "pitch rate": ["CASE_R", "CDTOT_RY"],
+            "yaw rate": ["CASE_R", "CDTOT_RZ"],
+            },
+        "CY": {
+            "alpha": ["CASE_R", "CYTOT_AL"],
+            "beta": ["CASE_R", "CYTOT_BE"],
+            "roll rate": ["CASE_R", "CYTOT_RX"],
+            "pitch rate": ["CASE_R", "CYTOT_RY"],
+            "yaw rate": ["CASE_R", "CYTOT_RZ"],
+            },
+        "CR SA": {
+            "alpha": ["CASE_R", "CRTOT_AL"],
+            "beta": ["CASE_R", "CRTOT_BE"],
+            "roll rate": ["CASE_R", "CRTOT_RX"],
+            "pitch rate": ["CASE_R", "CRTOT_RY"],
+            "yaw rate": ["CASE_R", "CRTOT_RZ"],
+            },
+        "CM": {
+            "alpha": ["CASE_R", "CMTOT_AL"],
+            "beta": ["CASE_R", "CMTOT_BE"],
+            "roll rate": ["CASE_R", "CMTOT_RX"],
+            "pitch rate": ["CASE_R", "CMTOT_RY"],
+            "yaw rate": ["CASE_R", "CMTOT_RZ"],
+            },
+        "CN SA": {
+            "alpha": ["CASE_R", "CNTOT_AL"],
+            "beta": ["CASE_R", "CNTOT_BE"],
+            "roll rate": ["CASE_R", "CNTOT_RX"],
+            "pitch rate": ["CASE_R", "CNTOT_RY"],
+            "yaw rate": ["CASE_R", "CNTOT_RZ"],
+            },
+    }
+    
     # This dict has the following structure:
     # python key: [common block name, fortran varaiable name]
     case_surf_var_to_fort_var = {
@@ -183,7 +227,6 @@ class AVLSolver(object):
         avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
-        print('importing', module_name)
         self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module
 
         # this way doesn't work with mulitple isntances fo AVLSolver
@@ -432,6 +475,18 @@ class AVLSolver(object):
 
         return deriv_data
 
+    def get_case_stab_derivs(self) -> Dict[str, Dict[str, float]]:
+        deriv_data = {}
+
+        for func_key, var_dict in self.case_stab_derivs_to_fort_var.items():
+            deriv_data[func_key] = {}
+
+            for var_key, avl_key in var_dict.items():
+                val_arr = self.get_avl_fort_arr(*avl_key)
+                deriv_data[func_key][var_key] = val_arr[()]
+
+        return deriv_data
+
     def get_avl_fort_arr(self, common_block, variable, slicer=None):
         # this had to be split up into two steps to work
 
@@ -640,9 +695,6 @@ class AVLSolver(object):
     def execute_run(self):
         # run the analysis (equivalent to the avl command `x` in the oper menu)
         self.avl.oper()
-
-        # needed for stability derivaties
-        self.avl.calcst()
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
         CLs = np.arange(start_CL, end_CL + increment, increment)
@@ -1417,7 +1469,7 @@ class AVLSolver(object):
         self.set_residual_d_ad_seeds(res_d_seeds)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds)
         if print_timings:
-            print(f"Time to set seeds: {time.time() - time_last}")
+            print(f"    Time to set seeds: {time.time() - time_last}")
             time_last = time.time()
 
         # propogate the seeds through without resolveing
@@ -1426,7 +1478,7 @@ class AVLSolver(object):
         self.avl.get_res_b()
         self.avl.update_surfaces_b()
         if print_timings:
-            print(f"Time to propogate seeds: {time.time() - time_last}")
+            print(f"    Time to propogate seeds: {time.time() - time_last}")
             time_last = time.time()
 
         # extract derivatives seeds and set the output dict of functions
@@ -1435,7 +1487,7 @@ class AVLSolver(object):
         gamma_seeds = self.get_gamma_ad_seeds()
         gamma_d_seeds = self.get_gamma_d_ad_seeds()
         if print_timings:
-            print(f"Time to extract seeds: {time.time() - time_last}")
+            print(f"    Time to extract seeds: {time.time() - time_last}")
             time_last = time.time()
 
         self.set_function_ad_seeds(func_seeds, scale=0.0)
@@ -1443,7 +1495,7 @@ class AVLSolver(object):
         self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds, scale=0.0)
         if print_timings:
-            print(f"Time to clear seeds: {time.time() - time_last}")
+            print(f"    Time to clear seeds: {time.time() - time_last}")
             time_last = time.time()
 
         return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds
@@ -1467,6 +1519,10 @@ class AVLSolver(object):
         funcs: list of functions that need derivatives
         """
         sens = {}
+        
+        if self.get_avl_fort_arr("CASE_L", "LTIMING"):
+            print_timings = True
+        
         # set up and solve the adjoint for each function
         for func in funcs:
             sens[func] = {}
