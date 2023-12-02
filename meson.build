@@ -53,6 +53,27 @@ if find_file_script.returncode() == 0
 else
     error('Failed to find the file')
 endif
+# Run the script to find the file
+find_file_script = run_command('find_native_file.sh')
+
+# Check if the command was successful
+if find_file_script.returncode() == 0
+    # Get the file path from the script output
+    file_path = find_file_script.stdout().strip()
+
+    # Now read the file using a second run_command
+    read_file_command = run_command('cat', file_path)
+    if read_file_command.returncode() == 0
+        # Print the contents of the file
+        message('Contents of the file:\n' + read_file_command.stdout())
+    else
+        error('Failed to read the file contents')
+    endif
+else
+    error('Failed to find the file')
+endif
+
+
 
 # Adding at project level causes many spurious -lgfortran flags.
 add_languages('fortran', native: false)
