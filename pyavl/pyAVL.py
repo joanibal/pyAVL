@@ -1028,6 +1028,8 @@ class AVLSolver(object):
             py_string = fort_string.decode().strip()
         elif fort_string.dtype == np.dtype("|S80"):
             py_string = fort_string.decode().strip()
+        elif fort_string.dtype == np.dtype("|S120"):
+            py_string = fort_string.decode().strip()
         else:
             raise TypeError(f"Unable to convert {fort_string} of type {fort_string.dtype} to string")
 
