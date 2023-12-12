@@ -55,7 +55,7 @@ cirrus_wheels_macos_arm64_task:
 # Upload Wheels to PyPI
 upload_wheels_to_pypi:
   env: 
-    PYPI_TOKEN = ENCRYPTED[86c3cc8db1e625f4679f1ac47baaed782169e8ac4a1731400b6c93f5c3bc1977165180856e1d5416c54bd421c0943a0d]
+    PYPI_TOKEN = ENCRYPTED[3a78537243c7e38cd58853cc4caf77a2e6b2f3a06511952347677300620f6d61f650fd45142d02788b00492b5e6de49f]
   depends_on:
     - cirrus_wheels_macos_arm64_task # Ensure this task is completed
   script:
