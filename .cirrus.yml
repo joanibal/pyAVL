@@ -19,7 +19,12 @@ cirrus_wheels_macos_arm64_task:
        # building all four wheels in a single task takes ~45 mins
       #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
        CIBW_BUILD: cp39-* 
+    - env:
+       # building all four wheels in a single task takes ~45 mins
+      #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
+       CIBW_BUILD: cp38-* 
   env:
+    CIBW_ARCHS: arm64
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
     CIBW_PRERELEASE_PYTHONS: True
     CIBW_ENVIRONMENT: >
