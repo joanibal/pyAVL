@@ -53,13 +53,14 @@ cirrus_wheels_macos_arm64_task:
   <<: *BUILD_AND_STORE_WHEELS
 
 # Upload Wheels to PyPI
-upload_wheels_to_pypi:
+upload_wheels_to_test_pypi:
   env: 
     PYPI_TOKEN = ENCRYPTED[3a78537243c7e38cd58853cc4caf77a2e6b2f3a06511952347677300620f6d61f650fd45142d02788b00492b5e6de49f]
   depends_on:
     - cirrus_wheels_macos_arm64_task # Ensure this task is completed
   script:
+    - echo $PYPI_TOKEN
     - python -m pip install twine
-    - python -m twine upload --repository testpypi --verbose --username __token__ --password $PYPI_TOKEN wheelhouse/*
+    - python -m twine upload --verbose --repository testpypi --username __token__ --password $PYPI_TOKEN wheelhouse/*
 
 
