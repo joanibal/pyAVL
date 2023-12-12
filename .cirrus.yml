@@ -11,18 +11,18 @@ build_and_store_wheels: &BUILD_AND_STORE_WHEELS
 # Build macosx_arm64 natively
 ######################################################################
 
-cirrus_wheels_macos_arm64_task:
+cirrus_wheels_macos_arm64:
   macos_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:14
   matrix:
     - env:
        # building all four wheels in a single task takes ~45 mins
-      #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
-       CIBW_BUILD: cp39-* 
-    - env:
-       # building all four wheels in a single task takes ~45 mins
-      #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
-       CIBW_BUILD: cp310-* 
+       CIBW_BUILD: cp39-* cp310-* cp311-*
+      #  CIBW_BUILD: cp39-* 
+    # - env:
+    #    # building all four wheels in a single task takes ~45 mins
+    #   #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
+    #    CIBW_BUILD: cp310-* 
   env:
     CIBW_ARCHS: arm64
     CIBW_ARCHS_MACOS: arm64
@@ -61,6 +61,6 @@ upload_wheels_to_pypi:
     - cirrus_wheels_macos_arm64_task # Ensure this task is completed
   script:
     - python -m pip install twine
-    - python -m twine upload --repository testpypi --username __token__ --password $PYPI_TOKEN wheelhouse/*
+    - python -m twine upload --repository testpypi --verbose --username __token__ --password $PYPI_TOKEN wheelhouse/*
 
 
