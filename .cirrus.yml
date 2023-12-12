@@ -61,6 +61,6 @@ upload_wheels_to_test_pypi:
   script:
     - echo $PYPI_TOKEN
     - python -m pip install twine
-    - python -m twine upload --verbose --repository testpypi --username __token__ --password $PYPI_TOKEN wheelhouse/*
+    - python -m twine upload --verbose --repository-url https://test.pypi.org/legacy/ --username __token__ --password $PYPI_TOKEN wheelhouse/*
 
 
