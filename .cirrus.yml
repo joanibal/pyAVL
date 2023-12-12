@@ -23,6 +23,7 @@ cirrus_wheels_macos_arm64_task:
     #   #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
     #    CIBW_BUILD: cp310-* 
   env:
+    PYPI_TOKEN: ENCRYPTED[3a78537243c7e38cd58853cc4caf77a2e6b2f3a06511952347677300620f6d61f650fd45142d02788b00492b5e6de49f]
     CIBW_ARCHS: arm64
     CIBW_ARCHS_MACOS: arm64
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
@@ -52,14 +53,30 @@ cirrus_wheels_macos_arm64_task:
     - clang --version
   <<: *BUILD_AND_STORE_WHEELS
 
-  # Upload Wheels to PyPI
-  upload_wheels_to_test_pypi_task:
-    env: 
-      PYPI_TOKEN: ENCRYPTED[3a78537243c7e38cd58853cc4caf77a2e6b2f3a06511952347677300620f6d61f650fd45142d02788b00492b5e6de49f]
-    depends_on:
-      - cirrus_wheels_macos_arm64_task # Ensure this task is completed
-    script:
-      - python -m pip install twine
-      - python -m twine upload --verbose --repository-url https://test.pypi.org/legacy/ --username __token__ --password $PYPI_TOKEN wheelhouse/*
+  upload_pypi_script: |
+    #!/usr/bin/env bash
+    echo ${CIRRUS_RELEASE}
+    # if [[ "${CIRRUS_RELEASE}" == "" ]]; then
+    #     exit 0
+    # fi
+
+    # deploy source distribution to PyPI using 'twine'
+    python -m pip install twine
+    python -m twine upload --verbose --repository-url https://test.pypi.org/legacy/ --username __token__ --password ${PYPI_TOKEN} wheelhouse/*
+  
+# this task was not correctly configured, see the docs for how to download wheels
+# # Upload Wheels to PyPI
+# upload_wheels_to_test_pypi_task:
+#   compute_engine_instance:
+#       image_project: cirrus-images
+#       image: family/docker-builder
+#       platform: linux
+#   env: 
+#     PYPI_TOKEN: ENCRYPTED[3a78537243c7e38cd58853cc4caf77a2e6b2f3a06511952347677300620f6d61f650fd45142d02788b00492b5e6de49f]
+#   depends_on:
+#     - cirrus_wheels_macos_arm64_task # Ensure this task is completed
+#   script:
+#     - python -m pip install twine
+#     - python -m twine upload --verbose --repository-url https://test.pypi.org/legacy/ --username __token__ --password $PYPI_TOKEN wheelhouse/*
 
 
