@@ -64,7 +64,7 @@ cirrus_wheels_macos_arm64_task:
     if [[ "${CIRRUS_RELEASE}" == "" ]]; then
       python -m twine upload --verbose --skip-existing --repository-url https://test.pypi.org/legacy/ --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
     else 
-      echo "would have uploaded"
-      # python -m twine upload --verbose --skip-existing --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
+      # echo "would have uploaded"
+      python -m twine upload --verbose --skip-existing --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
     fi
     
