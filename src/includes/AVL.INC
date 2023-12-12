@@ -21,7 +21,7 @@ C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
 C     
 C    ICONX   max number of control or design variable declaration lines per section (20)
-      PARAMETER (NVMAX=6000,
+      PARAMETER (NVMAX=5550,
      &           NSMAX=400,
      &           NFMAX=30,
      &           NLMAX=500,
@@ -54,10 +54,10 @@ C---- unit values, names, and namelengths
       COMMON /UN_C/UNCHL,UNCHM,UNCHT,UNCHF,UNCHS,UNCHV,UNCHA,UNCHI,UNCHD
       COMMON /UN_I/NUL  ,NUM  ,NUT  ,NUF  ,NUS  ,NUV  ,NUA  ,NUI  ,NUD
 C
-      CHARACTER*80  FRNDEF, FPRDEF, FEVDEF
-      CHARACTER*80 TITLE
+      CHARACTER*120  FRNDEF, FPRDEF, FEVDEF
+      CHARACTER*120 TITLE
       CHARACTER*40 STITLE, BTITLE, RTITLE
-      CHARACTER*80 AFILES
+      CHARACTER*120 AFILES
       
       CHARACTER*16 DNAME, GNAME
       CHARACTER*12 VARNAM, CONNAM

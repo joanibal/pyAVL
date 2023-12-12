@@ -63,7 +63,7 @@ C
       REAL Ixx , Iyy , Izz , Ixy , Ixz , Iyz
       REAL Ixxi, Iyyi, Izzi, Ixyi, Ixzi, Iyzi
 C
-      CHARACTER*80 CASE
+      CHARACTER*120 CASE
       CHARACTER*256 LINE, LINEU
 C
       CHARACTER*32 UNCHGEE, UNCHRHO, UNCH

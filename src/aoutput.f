@@ -492,7 +492,7 @@ C...OUTPUT   Printed output on logical unit LUN
 C
       INCLUDE 'AVL.INC'
       CHARACTER*1 ANS
-      CHARACTER*80 FNAM
+      CHARACTER*120 FNAM
       SAVE FNAM
       DATA FNAM /' '/
 C

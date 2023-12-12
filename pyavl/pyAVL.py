@@ -1028,6 +1028,8 @@ class AVLSolver(object):
             py_string = fort_string.decode().strip()
         elif fort_string.dtype == np.dtype("|S80"):
             py_string = fort_string.decode().strip()
+        elif fort_string.dtype == np.dtype("|S120"):
+            py_string = fort_string.decode().strip()
         else:
             raise TypeError(f"Unable to convert {fort_string} of type {fort_string.dtype} to string")
 
@@ -1288,7 +1290,8 @@ class AVLSolver(object):
     def clear_ad_seeds_fast(self):
         # Only clear the seeds that are used in Make_tapenade file
         num_vor = self.get_mesh_size()
-        num_vor_max = 6000  # HACK: hardcoded value from AVL.inc
+        gam = self.get_avl_fort_arr("VRTX_R", "GAM")
+        num_vor_max = gam.size
 
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):

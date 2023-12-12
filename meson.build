@@ -67,8 +67,9 @@ endif
 
 # _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
 # link_args = ['-Wl,--version-script=' + _linker_script]
-link_args = ['-Wl,--image-base,0x10000000']
-link_args = ['-mcmodel=medium']
+# link_args = ['-Wl,--image-base,0x10000000']
+# link_args = ['-mcmodel=medium']
+link_args = []
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')

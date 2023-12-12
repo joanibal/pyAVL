@@ -219,7 +219,7 @@ C     Reads N integer variables, leaving unchanged
 C     if only <return> is entered.
 C--------------------------------------------------
       DIMENSION IVTMP(40)
-      CHARACTER*80 LINE
+      CHARACTER*120 LINE
 C
       READ(*,1000) LINE
  1000 FORMAT(A80)
@@ -250,7 +250,7 @@ C     Reads N real variables, leaving unchanged
 C     if only <return> is entered.
 C-------------------------------------------------
       DIMENSION VTMP(40)
-      CHARACTER*80 LINE
+      CHARACTER*120 LINE
 C
       READ(*,1000) LINE
  1000 FORMAT(A80)
