@@ -22,9 +22,10 @@ cirrus_wheels_macos_arm64_task:
     - env:
        # building all four wheels in a single task takes ~45 mins
       #  CIBW_BUILD: cp38-* cp39-* cp310-* cp311-*
-       CIBW_BUILD: cp38-* 
+       CIBW_BUILD: cp310-* 
   env:
     CIBW_ARCHS: arm64
+    CIBW_ARCHS_MACOS: arm64
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
     CIBW_PRERELEASE_PYTHONS: True
     CIBW_ENVIRONMENT: >
@@ -60,6 +61,6 @@ upload_wheels_to_pypi:
     - cirrus_wheels_macos_arm64_task # Ensure this task is completed
   script:
     - python -m pip install twine
-    - python -m twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ --username __token__ --password $PYPI_TOKEN wheelhouse/*
+    - python -m twine upload --repository testpypi --username __token__ --password $PYPI_TOKEN wheelhouse/*
 
 
