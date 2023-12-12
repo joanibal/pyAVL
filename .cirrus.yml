@@ -62,9 +62,9 @@ cirrus_wheels_macos_arm64_task:
     # deploy source distribution to PyPI using 'twine'
     python -m pip install twine
     if [[ "${CIRRUS_RELEASE}" == "" ]]; then
-      python -m twine upload --verbose --repository-url https://test.pypi.org/legacy/ --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
+      python -m twine upload --verbose --skip-existing --repository-url https://test.pypi.org/legacy/ --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
     else 
       echo "would have uploaded"
-      # python -m twine upload --verbose --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
+      # python -m twine upload --verbose --skip-existing --username __token__ --password ${PYPI_TOKEN_TEST} wheelhouse/*
     fi
     
