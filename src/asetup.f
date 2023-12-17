@@ -65,7 +65,7 @@ C
 !       ENDIF
       if (ltiming) then 
         call cpu_time(t3)
-        write(*,*) '  LUDCMP time: ', t3 - t0
+        write(*,*) '  BUILD AIC time: ', t3 - t0
       end if
 C
 C
@@ -140,13 +140,16 @@ C
       DO J = 1, NVOR
         !$AD II-LOOP
         DO I = 1, NVOR
-           AICN(I,J) = WC_GAM(1,I,J)*ENC(1,I)
+          AICN(I,J) = WC_GAM(1,I,J)*ENC(1,I)
      &               + WC_GAM(2,I,J)*ENC(2,I)
      &               + WC_GAM(3,I,J)*ENC(3,I)
-           LVNC(I) = .TRUE.
-         ENDDO
-       ENDDO
-
+        ENDDO
+      ENDDO
+      
+      DO I = 1, NVOR
+        LVNC(I) = .TRUE.
+      ENDDO
+        
 C----- process each surface which does not shed a wake
 C$AD II-LOOP
        DO 10 N = 1, NSURF
@@ -492,6 +495,7 @@ C
 
 
       SUBROUTINE VELSUM
+      use OMP_LIB
       INCLUDE 'AVL.INC'
 C--------------------------------------------------
 C     Sums AIC components to get WC, WV
@@ -531,6 +535,57 @@ C
       ! C
       !   ENDDO
       ! ENDDO
+!       DO I = 1, NVOR
+!         DO K = 1, 3
+!           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
+!      &            + WCSRD_U(K,I,2)*VINF(2)
+!      &            + WCSRD_U(K,I,3)*VINF(3)
+!      &            + WCSRD_U(K,I,4)*WROT(1)
+!      &            + WCSRD_U(K,I,5)*WROT(2)
+!      &            + WCSRD_U(K,I,6)*WROT(3)
+!           WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+!      &            + WVSRD_U(K,I,2)*VINF(2)
+!      &            + WVSRD_U(K,I,3)*VINF(3)
+!      &            + WVSRD_U(K,I,4)*WROT(1)
+!      &            + WVSRD_U(K,I,5)*WROT(2)
+!      &            + WVSRD_U(K,I,6)*WROT(3)
+!         enddo 
+!       enddo 
+      
+      
+!       DO J = 1, NVOR
+!         DO I = 1, NVOR
+!           DO K = 1, 3
+!             WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
+!             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
+!           ENDDO
+!         ENDDO
+!       ENDDO
+      
+      
+!       DO N = 1, NUMAX
+!         DO I = 1, NVOR
+!           DO K = 1, 3
+!             WC_U(K,I,N) = WCSRD_U(K,I,N)
+!             WV_U(K,I,N) = WVSRD_U(K,I,N)
+!           enddo
+!         enddo
+!       enddo
+      
+            
+!       DO N = 1, NUMAX
+!         DO J = 1, NVOR
+!           DO I = 1, NVOR
+!             DO K = 1, 3
+!               WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+!               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
+!             ENDDO
+!           ENDDO
+!         enddo 
+!       enddo
+! C
+! C
+
       DO I = 1, NVOR
         DO K = 1, 3
           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
@@ -568,7 +623,10 @@ C
         enddo
       enddo
       
-            
+      ! this is where all the time is spent
+      ! I have tried to break this loop up and modify it in different ways
+      ! yet the simpilest loop remains the fastest
+      !$omp simd
       DO N = 1, NUMAX
         DO J = 1, NVOR
           DO I = 1, NVOR
@@ -578,6 +636,7 @@ C
             ENDDO
           ENDDO
         enddo 
+        write(*,*) "Hello from process: ", OMP_GET_THREAD_NUM()
       enddo
 C
 C

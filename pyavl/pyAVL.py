@@ -227,7 +227,9 @@ class AVLSolver(object):
         avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
-        self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module
+        self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug, timing=timing)._module
+        if timing:
+            print(f'time to mext package {time.time() - start_time}')
 
         # this way doesn't work with mulitple isntances fo AVLSolver
         # from . import libavl
@@ -1476,9 +1478,21 @@ class AVLSolver(object):
 
         # propogate the seeds through without resolveing
         self.avl.aero_b()
+        if print_timings:
+            print(f"        aero_b: {time.time() - time_last}")
+            time_last = time.time()
         self.avl.velsum_b()
+        if print_timings:
+            print(f"        velsum_b: {time.time() - time_last}")
+            time_last = time.time()
         self.avl.get_res_b()
+        if print_timings:
+            print(f"        get_res_b: {time.time() - time_last}")
+            time_last = time.time()
         self.avl.update_surfaces_b()
+        if print_timings:
+            print(f"        update_surfaces_b: {time.time() - time_last}")
+            time_last = time.time()
         if print_timings:
             print(f"    Time to propogate seeds: {time.time() - time_last}")
             time_last = time.time()
@@ -1532,7 +1546,7 @@ class AVLSolver(object):
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
-            _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0}, print_timings=print_timings)
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -1550,7 +1564,7 @@ class AVLSolver(object):
             dfdR_d = self.get_residual_d_ad_seeds()
             # self.clear_ad_seeds()
             con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
-                func_seeds={func: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
+                func_seeds={func: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d, print_timings=print_timings
             )
             if print_timings:
                 print(f"Time to combine derivs: {time.time() - time_last}")
@@ -1575,7 +1589,7 @@ class AVLSolver(object):
 
                     # get the RHS of the adjiont equation (pFpU)
                     # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+                    _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds, print_timings=print_timings)
                     if print_timings:
                         print(f"Time to get RHS: {time.time() - time_last}")
                         time_last = time.time()
@@ -1594,7 +1608,7 @@ class AVLSolver(object):
                     dfdR_d = self.get_residual_d_ad_seeds()
                     # self.clear_ad_seeds()
                     con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
-                        consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
+                        consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d, print_timings=print_timings
                     )
                     if print_timings:
                         print(f"Time to combine : {time.time() - time_last}")

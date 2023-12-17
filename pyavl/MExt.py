@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 import platform
+import time
 
 def _tmp_pkg(tempDir):
     """
@@ -35,8 +36,10 @@ class MExt(object):
     Load a unique copy of a module that can be treated as a "class instance".
     """
 
-    def __init__(self, libName, packageName, pip_name, lib_so_file=None, debug=False):
-        
+    def __init__(self, libName, packageName, pip_name, lib_so_file=None, debug=False, timing=False):
+        if timing:
+            last_time = time.time()
+
         if lib_so_file is None:
             lib_so_file = f"{libName}.so"
         
@@ -48,8 +51,15 @@ class MExt(object):
         srcpath = os.path.join(spec.submodule_search_locations[0],  lib_so_file)
         # now create a temp directory for the bogus package
         self._pkgname, self._pkgdir = _tmp_pkg(tmpdir)
+        if timing:
+            print(f"time to make mext dir {time.time()-last_time}")
+            last_time = time.time()
         # copy the original module to the new package
         shutil.copy(srcpath, self._pkgdir)
+        if timing:
+            print(f"time to copy to mext dir {time.time()-last_time}")
+            last_time = time.time()
+
         if platform.system() == "Darwin":
             # create a sym link to the orginal module .dylibs folder
             blas_libs_dir = ".dylibs"
@@ -60,6 +70,9 @@ class MExt(object):
             if not os.path.exists(target_path) and os.path.exists(source_path):
                 # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
+                if timing:
+                    print(f"time to symlink blas dir {time.time()-last_time}")
+                    last_time = time.time()
 
         elif platform.system() == "Linux":
             blas_libs_dir = f"{pip_name}.libs"
@@ -69,6 +82,10 @@ class MExt(object):
             if not os.path.exists(target_path) and os.path.exists(source_path):
                 # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
+                if timing:
+                    print(f"time to symlink blas dir {time.time()-last_time}")
+                    last_time = time.time()
+
         else:
             raise NotImplementedError("platform not supported")            
         # add the directory containing the new package to the search path
@@ -77,12 +94,20 @@ class MExt(object):
         # __import__ returns the package, not the sub-module
         
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
+        if timing:
+            print(f"time to import lib {time.time()-last_time}")
+            last_time = time.time()
+
         # remove the bogus directory from sys.path
         sys.path.remove(tmpdir)
         # return the module object
         self._module = getattr(self._pkg, self.name)
         # now add the module's stuff to this class
         self.__dict__.update(self._module.__dict__)
+        if timing:
+            print(f"time clean up {time.time()-last_time}")
+            last_time = time.time()
+
 
     def __del__(self):
         # remove module if not in debug mode

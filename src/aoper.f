@@ -919,7 +919,7 @@ C---------------------------------------------------
       INCLUDE 'AVL.INC'
       REAL VSYS(IVMAX,IVMAX), VRES(IVMAX), DDC(NDMAX), WORK(IVMAX)
       INTEGER IVSYS(IVMAX)
-      real t0, t1, t2, t3, t4, t5, t6, t7, t8, t9
+      real t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, tm1
       real t10, t11, t12, t13, t14, t15, t16, t17, t18, t19
 
 C
@@ -937,17 +937,20 @@ C----- Geometric Stability axes, X aft, Z up
 C     
       call set_par_and_cons(NITER, IR)
       
-      call cpu_time(t0)
+      call cpu_time(tm1)
 C
 C---- set, factor AIC matrix and induced-velocity matrix (if they don't exist)
       CALL SETUP
+      if (ltiming) then 
+            call cpu_time(t0)
+            write(*,*) ' SETUP time: ', t0 - tm1
+      end if
       IF(.NOT.LAIC) THEN
             call factor_AIC
       ENDIF
-      
       if (ltiming) then 
             call cpu_time(t1)
-            write(*,*) ' SETUP time: ', t1 - t0
+            write(*,*) ' factorize time: ', t1 - t0
       end if
 C
 
@@ -1372,7 +1375,7 @@ C       WRITE(*,*) 'PARVAL(IPALFA,IR): ', PARVAL(IPALFA,IR)
       LSEN = .TRUE.
       if (ltiming) then 
             call cpu_time(t19)
-            write(*,*) ' TOTAL time: ', t19 - t0
+            write(*,*) ' TOTAL time: ', t19 - tm1
       end if
 
       RETURN
