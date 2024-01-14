@@ -371,7 +371,7 @@ class AVLFuncsComp(om.ExplicitComponent):
                 if d_input in d_input_geom:
                     d_inputs[d_input] += d_input_geom[d_input]
                 if d_input in ["alpha", "beta"] or d_input in self.control_names:
-                    d_inputs[d_input] += d_input_geom[d_input]
+                    d_inputs[d_input] += con_seeds[d_input]
 
 
 class AVLPostProcessComp(om.ExplicitComponent):

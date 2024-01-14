@@ -41,10 +41,6 @@ from . import MExt
 
 
 class AVLSolver(object):
-    con_var_to_fort_var = {
-        "alpha": ["CASE_R", "ALFA"],
-        "beta": ["CASE_R", "BETA"],
-    }
 
     param_idx_dict = {
         "alpha": 0,
@@ -78,6 +74,8 @@ class AVLSolver(object):
         "visc CM_a": 28,
         "visc CM_u": 29,
     }
+    
+    # the control surface contraints get added to this array in the __init__
     conval_idx_dict = {
         "alpha": 0,
         "beta": 1,
@@ -89,6 +87,13 @@ class AVLSolver(object):
         "CR BA": 7,
         "CM": 8,
         "CR": 9,
+    }
+    
+    # control surfaces added in __init__
+    #TODO: the keys of this dict aren't used
+    con_var_to_fort_var = {
+        "alpha": ["CASE_R", "ALFA"],
+        "beta": ["CASE_R", "BETA"],
     }
 
     # fmt: off
@@ -272,6 +277,13 @@ class AVLSolver(object):
         self.control_variables = {}
         for idx_c_var, c_name in enumerate(control_names):
             self.control_variables[c_name] = f"D{idx_c_var+1}"
+            
+        # set control surface constraint indecies in to con val dict
+        idx_control_start = np.max([x for x in self.conval_idx_dict.values()]) + 1
+        for idx_c_var, c_name in enumerate(control_names):
+            self.conval_idx_dict[c_name] = idx_control_start + idx_c_var
+            self.con_var_to_fort_var[c_name] = ["CASE_R", "DELCON"]
+            
 
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
@@ -711,7 +723,6 @@ class AVLSolver(object):
     def get_surface_names(self, remove_dublicated=False) -> List[str]:
         """get the surface names from the geometry"""
         fort_names = self.get_avl_fort_arr("CASE_C", "STITLE")
-        print(fort_names)
         surf_names = self._convertFortranStringArrayToList(fort_names)
 
         if remove_dublicated:
@@ -1100,6 +1111,10 @@ class AVLSolver(object):
 
             fort_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
             con_seeds[con] = copy.deepcopy(fort_arr)
+            print(f'{con}:{fort_arr} from {blk}{var} {idx_con} ')
+
+        fort_arr = self.get_avl_fort_arr(blk, var, slicer=(0))
+        print('raw fort conval array', fort_arr)
 
         return con_seeds
 
