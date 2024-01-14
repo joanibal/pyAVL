@@ -711,6 +711,7 @@ class AVLSolver(object):
     def get_surface_names(self, remove_dublicated=False) -> List[str]:
         """get the surface names from the geometry"""
         fort_names = self.get_avl_fort_arr("CASE_C", "STITLE")
+        print(fort_names)
         surf_names = self._convertFortranStringArrayToList(fort_names)
 
         if remove_dublicated:
@@ -842,7 +843,10 @@ class AVLSolver(object):
         for surf_name in surf_data:
             if surf_name not in unique_surf_names:
                 raise ValueError(
-                    f"surface name, {surf_name}, not found in the current avl object. Note duplicated surfaces can not be set directly"
+                    f"""surface name, {surf_name}, not found in the current avl object."
+                        Note duplicated surfaces can not be set directly.
+                        Surface in file {unique_surf_names}
+                        {surf_names}"""
                 )
 
             for var in surf_data[surf_name]:

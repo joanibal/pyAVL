@@ -52,8 +52,8 @@ C$BWD-OF II-LOOP
           ENDDO
         END IF
       ENDDO
-      DO ii1=1,nvor
-        DO ii2=1,nvor
+      DO ii1=1,nvmax
+        DO ii2=1,nvmax
           DO ii3=1,3
             wc_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -85,9 +85,9 @@ C$BWD-OF II-LOOP
 
 C  Differentiation of velsum in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: vinf wrot gam wv
-C   with respect to varying inputs: vinf wrot gam wv wv_gam
-C   RW status of diff variables: vinf:incr wrot:incr gam:incr wv:in-out
-C                wv_gam:out
+C   with respect to varying inputs: vinf wrot gam wv_gam wv
+C   RW status of diff variables: vinf:incr wrot:incr gam:incr wv_gam:out
+C                wv:in-out
 C GAMSUM
 C
 C
@@ -101,8 +101,8 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
-      DO ii1=1,nvor
-        DO ii2=1,nvor
+      DO ii1=1,nvmax
+        DO ii2=1,nvmax
           DO ii3=1,3
             wv_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -131,8 +131,8 @@ C
       END
 
 C  Differentiation of set_par_and_cons in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: alfa beta wrot xyzref
-C   with respect to varying inputs: alfa beta conval xyzref
+C   gradient     of useful results: alfa beta wrot delcon xyzref
+C   with respect to varying inputs: alfa beta conval delcon xyzref
 C WSENS
       SUBROUTINE SET_PAR_AND_CONS_B(niter, ir)
       INCLUDE 'AVL.INC'
@@ -144,9 +144,9 @@ C WSENS
 C
 C
 C
+      INTEGER branch
       INTEGER ii2
       INTEGER ii1
-      INTEGER branch
       IF (niter .GT. 0) THEN
 C----- might as well directly set operating variables if they are known
         IF (icon(ivalfa, ir) .EQ. icalfa) THEN
@@ -171,20 +171,37 @@ C----- might as well directly set operating variables if they are known
         END IF
 C$AD-II-loop
         IF (icon(ivrotz, ir) .EQ. icrotz) THEN
-          DO ii1=1,nrmax
-            DO ii2=1,icmax
-              conval_diff(ii2, ii1) = 0.D0
-            ENDDO
+          CALL PUSHCONTROL1B(1)
+        ELSE
+          CALL PUSHCONTROL1B(0)
+        END IF
+        DO n=1,ndmax
+          iv = ivtot + n
+          ic = ictot + n
+          IF (icon(iv, ir) .EQ. ic) THEN
+            CALL PUSHCONTROL1B(1)
+          ELSE
+            CALL PUSHCONTROL1B(0)
+          END IF
+        ENDDO
+        DO ii1=1,nrmax
+          DO ii2=1,icmax
+            conval_diff(ii2, ii1) = 0.D0
           ENDDO
+        ENDDO
+        DO n=ndmax,1,-1
+          CALL POPCONTROL1B(branch)
+          IF (branch .NE. 0) THEN
+            ic = ictot + n
+            conval_diff(ic, ir) = conval_diff(ic, ir) + delcon_diff(n)
+            delcon_diff(n) = 0.D0
+          END IF
+        ENDDO
+        CALL POPCONTROL1B(branch)
+        IF (branch .NE. 0) THEN
           conval_diff(icrotz, ir) = conval_diff(icrotz, ir) + 2.*
      +      wrot_diff(3)/bref
           wrot_diff(3) = 0.D0
-        ELSE
-          DO ii1=1,nrmax
-            DO ii2=1,icmax
-              conval_diff(ii2, ii1) = 0.D0
-            ENDDO
-          ENDDO
         END IF
         CALL POPCONTROL1B(branch)
         IF (branch .EQ. 0) THEN
