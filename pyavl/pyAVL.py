@@ -1605,3 +1605,28 @@ class AVLSolver(object):
                     cs_deriv_seeds[func_key][cs_key] = 0.0
 
         return sens
+
+# move this to another file that is only imported if matplotlib exisits
+import matplotlib.pyplot as plt
+class AVLPloter(object):
+    
+    def plot_oml(self, surf_data):
+        # plot aircraft outer model line Top and side view
+        # surf_data Dict[str, Dict[]]
+        
+        # plot each surface
+        for surf in surf_data:
+            xyzles  = surf_data[surf]['xyzles']
+            
+            # add the oml of this surface to each plot 
+            
+            # top plot (x-y)
+            plt.plot(xyzles[:,0], xyzles[:,1])
+            
+            # side plot (x-z)
+            # plt.plot(xyzles[:,0], xyzles[:,1])
+
+
+        
+        
+        
