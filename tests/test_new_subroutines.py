@@ -56,6 +56,10 @@ class TestNewSubroutines(unittest.TestCase):
         )
 
     def test_new_solve(self):
+        self.avl_solver.add_constraint("Elevator", 10.00)
+        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.add_constraint("beta", 10.00)
+        
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.velsum()
         self.avl_solver.avl.aero()
@@ -89,3 +93,7 @@ class TestNewSubroutines(unittest.TestCase):
                     err_msg=f"deriv of func_key {func_key} wrt {consurf_key}",
                     atol=1e-14,
                 )
+                
+
+if __name__ == "__main__":
+    unittest.main()
