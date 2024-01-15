@@ -5,11 +5,17 @@ from pyavl import AVLSolver, AVLGroup
 
 model = om.Group()
 model.add_subsystem("avlsolver", AVLGroup(geom_file="aircraft.avl"))
-# model.add_design_var("avlsolver.Wing:aincs", lower=-10, upper=10)
+# look at vlm_opt.html to see all the design variables and add them here
+model.add_design_var("avlsolver.Wing:aincs", lower=-10, upper=10)
 model.add_design_var("avlsolver.Elevator", lower=-10, upper=10)
-# model.add_constraint("avlsolver.CL", equals=1.5)
+
+# the outputs of AVL can be used as contraints
+model.add_constraint("avlsolver.CL", equals=1.5)
 model.add_constraint("avlsolver.CM", equals=0.0)
-# model.add_objective("avlsolver.CD")
+# Some variables (like chord, dihedral, x and z leading edge position) can lead to local minimum. 
+# To help fix this add a contraint that keeps the variable monotonic
+
+model.add_objective("avlsolver.CD")
 
 prob = om.Problem(model)
 
@@ -21,6 +27,8 @@ prob.driver.options['disp'] = True
 
 prob.setup(mode='rev')
 om.n2(prob, show_browser=False, outfile="vlm_opt.html")
-prob.run_model()
-prob.check_totals()
+prob.run_driver()
 
+# do this instead if you want to check derivatives
+# prob.run_model()
+# prob.check_totals()
