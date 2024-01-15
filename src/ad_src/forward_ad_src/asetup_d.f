@@ -32,8 +32,8 @@ C
      +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
      +            chordv, chordv_diff, nvor, rc, rc_diff, nsurfv, 
      +            .false., wc_gam, wc_gam_diff, nvmax)
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO

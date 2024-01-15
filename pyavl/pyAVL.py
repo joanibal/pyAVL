@@ -75,27 +75,6 @@ class AVLSolver(object):
         "visc CM_u": 29,
     }
     
-    # the control surface contraints get added to this array in the __init__
-    conval_idx_dict = {
-        "alpha": 0,
-        "beta": 1,
-        "roll rate": 2,
-        "pitch rate": 3,
-        "yaw rate": 4,
-        "CL": 5,
-        "CY": 6,
-        "CR BA": 7,
-        "CM": 8,
-        "CR": 9,
-    }
-    
-    # control surfaces added in __init__
-    #TODO: the keys of this dict aren't used
-    con_var_to_fort_var = {
-        "alpha": ["CASE_R", "ALFA"],
-        "beta": ["CASE_R", "BETA"],
-    }
-
     # fmt: off
     # This dict has the following structure:
     # python key: [common block name, fortran varaiable name]
@@ -272,6 +251,30 @@ class AVLSolver(object):
         self.bref = self.get_avl_fort_arr("CASE_R", "BREF")
         self.cref = self.get_avl_fort_arr("CASE_R", "CREF")
         self.sref = self.get_avl_fort_arr("CASE_R", "SREF")
+        
+        # todo store the default dict somewhere else
+        # the control surface contraints get added to this array in the __init__
+        self.conval_idx_dict = {
+            "alpha": 0,
+            "beta": 1,
+            "roll rate": 2,
+            "pitch rate": 3,
+            "yaw rate": 4,
+            "CL": 5,
+            "CY": 6,
+            "CR BA": 7,
+            "CM": 8,
+            "CR": 9,
+        }
+        
+        # control surfaces added in __init__
+        #TODO: the keys of this dict aren't used
+        self.con_var_to_fort_var = {
+            "alpha": ["CASE_R", "ALFA"],
+            "beta": ["CASE_R", "BETA"],
+        }
+
+
 
         control_names = self.get_control_names()
         self.control_variables = {}
@@ -1130,7 +1133,6 @@ class AVLSolver(object):
                 val = con_seed_arr * scale
                 slicer = (0, idx_con)
                 
-                print(f"AD: {con}:{val}")
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
             elif mode == "FD":
@@ -1141,7 +1143,6 @@ class AVLSolver(object):
                 val += con_seed_arr * scale
 
                 # use the contraint API to adjust the value
-                print(f"FD: {con}:{val}")
                 self.add_constraint(con, val)
 
     def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:
