@@ -237,8 +237,10 @@ C$AD-II-loop
       END
 
 C  Differentiation of set_vel_rhs in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: vinf wrot xyzref rc rhs
-C   with respect to varying inputs: vinf wrot xyzref rc enc
+C   gradient     of useful results: vinf wrot delcon xyzref rc
+C                enc_d rhs
+C   with respect to varying inputs: vinf wrot delcon xyzref rc
+C                enc enc_d
       SUBROUTINE SET_VEL_RHS_B()
 C
       INCLUDE 'AVL.INC'
@@ -248,6 +250,7 @@ C
      +     (3)
       INTEGER i
       REAL DOT
+      INTEGER n
       REAL result1
       REAL result1_diff
       INTEGER branch
@@ -291,6 +294,11 @@ C
           CALL CROSS(rrot, wunit, vunit_w_term)
           CALL PUSHREAL8ARRAY(vunit, 3)
           vunit = vunit + vunit_w_term
+C Add contribution from control surfaces
+          DO n=1,ncontrol
+            CALL PUSHREAL8(result1)
+            result1 = DOT(enc_d(1, i, n), vunit)
+          ENDDO
           CALL PUSHCONTROL1B(1)
         ELSE
           CALL PUSHCONTROL1B(0)
@@ -306,6 +314,13 @@ C
         IF (branch .EQ. 0) THEN
           rhs_diff(i) = 0.D0
         ELSE
+          DO n=ncontrol,1,-1
+            result1_diff = -(delcon(n)*rhs_diff(i))
+            delcon_diff(n) = delcon_diff(n) - result1*rhs_diff(i)
+            CALL POPREAL8(result1)
+            CALL DOT_B(enc_d(1, i, n), enc_d_diff(1, i, n), vunit, 
+     +                 vunit_diff, result1_diff)
+          ENDDO
           result1_diff = -rhs_diff(i)
           rhs_diff(i) = 0.D0
           CALL DOT_B(enc(1, i), enc_diff(1, i), vunit, vunit_diff, 
