@@ -1111,10 +1111,6 @@ class AVLSolver(object):
 
             fort_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
             con_seeds[con] = copy.deepcopy(fort_arr)
-            print(f'{con}:{fort_arr} from {blk}{var} {idx_con} ')
-
-        fort_arr = self.get_avl_fort_arr(blk, var, slicer=(0))
-        print('raw fort conval array', fort_arr)
 
         return con_seeds
 
@@ -1133,7 +1129,8 @@ class AVLSolver(object):
                 var = "CONVAL" + self.ad_suffix
                 val = con_seed_arr * scale
                 slicer = (0, idx_con)
-
+                
+                print(f"AD: {con}:{val}")
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
             elif mode == "FD":
@@ -1144,6 +1141,7 @@ class AVLSolver(object):
                 val += con_seed_arr * scale
 
                 # use the contraint API to adjust the value
+                print(f"FD: {con}:{val}")
                 self.add_constraint(con, val)
 
     def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:

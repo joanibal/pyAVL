@@ -192,7 +192,6 @@ class AVLSolverComp(om.ImplicitComponent):
 
                 d_input_geom = om_surf_dict_to_input(geom_seeds)
 
-                print('con_seeds', con_seeds)
                 for d_input in d_inputs:
                     if d_input in d_input_geom:
                         d_inputs[d_input] += d_input_geom[d_input]
