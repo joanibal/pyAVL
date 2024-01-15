@@ -52,8 +52,8 @@ C$BWD-OF II-LOOP
           ENDDO
         END IF
       ENDDO
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           DO ii3=1,3
             wc_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -101,8 +101,8 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           DO ii3=1,3
             wv_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO

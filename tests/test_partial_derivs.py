@@ -26,12 +26,11 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
-        # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        # self.avl_solver.add_constraint("alpha", 25.0)
-        # self.avl_solver.add_constraint("beta", 5.0)
-        # self.avl_solver.execute_run()
-        # pass
+        # self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
+        self.avl_solver = AVLSolver(geo_file="rect.avl")
+        self.avl_solver.add_constraint("alpha", 25.0)
+        self.avl_solver.add_constraint("beta", 5.0)
+        self.avl_solver.execute_run()
         
     def tearDown(self):
         # Without the following line a copy of large_list will be kept in
@@ -48,7 +47,7 @@ class TestFunctionPartials(unittest.TestCase):
             )
 
             for func_key in func_seeds:
-                print(f"{func_key} wrt {con_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                # print(f"{func_key} wrt {con_key}", func_seeds[func_key], func_seeds_FD[func_key])
                 tol = 1e-13
                 if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
                     # If either value is basically zero, use an absolute tolerance

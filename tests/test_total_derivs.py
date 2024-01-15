@@ -169,4 +169,8 @@ class TestTotals(unittest.TestCase):
                         print(
                             f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                         )
+                        
+                #TODO: add an assert here
 
+if __name__ == "__main__":
+    unittest.main()
