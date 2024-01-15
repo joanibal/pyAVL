@@ -47,10 +47,8 @@ C
       INTEGER l
       INTEGER n
       REAL sina
-      REAL sina_diff
       INTRINSIC SIN
       REAL cosa
-      REAL cosa_diff
       INTRINSIC COS
       REAL dir
       EXTERNAL GETSA
@@ -127,21 +125,14 @@ C
       CALL BDFORC_D()
       CALL TPFORC_D()
 C
-      sina_diff = COS(alfa)*alfa_diff
       sina = SIN(alfa)
-      cosa_diff = -(SIN(alfa)*alfa_diff)
       cosa = COS(alfa)
 C     calculate stability axis based values
       CALL GETSA(lnasa_sa, satype, dir)
-      crsax_diff = dir*(cosa*crtot_diff+crtot*cosa_diff+sina*cntot_diff+
-     +  cntot*sina_diff)
       crsax = dir*(crtot*cosa+cntot*sina)
-      cnsax_diff = dir*(cosa*cntot_diff+cntot*cosa_diff-sina*crtot_diff-
-     +  crtot*sina_diff)
       cnsax = dir*(cntot*cosa-crtot*sina)
-C   do the sign change here so that it included in the derivative
-C   routnis         
-
+C do the sign change here so that it included in the derivative
+C routines         
       DO k=1,ncontrol
         crtot_d_diff(k) = dir*crtot_d_diff(k)
         crtot_d(k) = dir*crtot_d(k)
@@ -186,7 +177,9 @@ C
         cytot_u(iu) = cytot_u(iu) + cdref*vinf(2)*vinf(iu)/vmag
         cztot_u(iu) = cztot_u(iu) + cdref*vinf(3)*vinf(iu)/vmag
       ENDDO
+C compute the stability derivatives every time (it's quite cheap)
 C
+      CALL CALCST_D()
       RETURN
       END
 

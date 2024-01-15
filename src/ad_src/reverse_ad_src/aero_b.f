@@ -51,10 +51,8 @@ C
       INTEGER l
       INTEGER n
       REAL sina
-      REAL sina_diff
       INTRINSIC SIN
       REAL cosa
-      REAL cosa_diff
       INTRINSIC COS
       REAL dir
       EXTERNAL GETSA
@@ -65,7 +63,6 @@ C
       REAL vmag_diff
       INTRINSIC SQRT
       INTEGER iu
-      REAL(kind=8) temp_diff
       INTEGER ii1
 C
       cdtot = 0.
@@ -148,8 +145,6 @@ C
       CALL SFFORC()
       CALL BDFORC()
 C
-      sina = SIN(alfa)
-      cosa = COS(alfa)
 C     calculate stability axis based values
       CALL GETSA(lnasa_sa, satype, dir)
 C---------------------------------------------------------
@@ -160,6 +155,7 @@ C
 C
 C
 C
+      CALL CALCST_B()
       vmag_diff = vinf(3)*cdref*cztot_diff + vinf(2)*cdref*cytot_diff + 
      +  vinf(1)*cdref*cxtot_diff
       IF (vsq .EQ. 0.D0) THEN
@@ -181,17 +177,6 @@ C
         cntot_d_diff(k) = dir*cntot_d_diff(k)
         crtot_d_diff(k) = dir*crtot_d_diff(k)
       ENDDO
-      temp_diff = dir*cnsax_diff
-      cntot_diff = cntot_diff + cosa*temp_diff
-      cosa_diff = cntot*temp_diff
-      crtot_diff = crtot_diff - sina*temp_diff
-      sina_diff = -(crtot*temp_diff)
-      temp_diff = dir*crsax_diff
-      crtot_diff = crtot_diff + cosa*temp_diff
-      cosa_diff = cosa_diff + crtot*temp_diff
-      cntot_diff = cntot_diff + sina*temp_diff
-      sina_diff = sina_diff + cntot*temp_diff
-      alfa_diff = COS(alfa)*sina_diff - SIN(alfa)*cosa_diff
       CALL TPFORC_B()
       CALL BDFORC_B()
       CALL POPREAL8ARRAY(cdstrp, nsmax)

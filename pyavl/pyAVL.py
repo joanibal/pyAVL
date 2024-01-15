@@ -41,10 +41,6 @@ from . import MExt
 
 
 class AVLSolver(object):
-    con_var_to_fort_var = {
-        "alpha": ["CASE_R", "ALFA"],
-        "beta": ["CASE_R", "BETA"],
-    }
 
     param_idx_dict = {
         "alpha": 0,
@@ -78,19 +74,7 @@ class AVLSolver(object):
         "visc CM_a": 28,
         "visc CM_u": 29,
     }
-    conval_idx_dict = {
-        "alpha": 0,
-        "beta": 1,
-        "roll rate": 2,
-        "pitch rate": 3,
-        "yaw rate": 4,
-        "CL": 5,
-        "CY": 6,
-        "CR BA": 7,
-        "CM": 8,
-        "CR": 9,
-    }
-
+    
     # fmt: off
     # This dict has the following structure:
     # python key: [common block name, fortran varaiable name]
@@ -267,11 +251,42 @@ class AVLSolver(object):
         self.bref = self.get_avl_fort_arr("CASE_R", "BREF")
         self.cref = self.get_avl_fort_arr("CASE_R", "CREF")
         self.sref = self.get_avl_fort_arr("CASE_R", "SREF")
+        
+        # todo store the default dict somewhere else
+        # the control surface contraints get added to this array in the __init__
+        self.conval_idx_dict = {
+            "alpha": 0,
+            "beta": 1,
+            "roll rate": 2,
+            "pitch rate": 3,
+            "yaw rate": 4,
+            "CL": 5,
+            "CY": 6,
+            "CR BA": 7,
+            "CM": 8,
+            "CR": 9,
+        }
+        
+        # control surfaces added in __init__
+        #TODO: the keys of this dict aren't used
+        self.con_var_to_fort_var = {
+            "alpha": ["CASE_R", "ALFA"],
+            "beta": ["CASE_R", "BETA"],
+        }
+
+
 
         control_names = self.get_control_names()
         self.control_variables = {}
         for idx_c_var, c_name in enumerate(control_names):
             self.control_variables[c_name] = f"D{idx_c_var+1}"
+            
+        # set control surface constraint indecies in to con val dict
+        idx_control_start = np.max([x for x in self.conval_idx_dict.values()]) + 1
+        for idx_c_var, c_name in enumerate(control_names):
+            self.conval_idx_dict[c_name] = idx_control_start + idx_c_var
+            self.con_var_to_fort_var[c_name] = ["CASE_R", "DELCON"]
+            
 
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
@@ -842,7 +857,10 @@ class AVLSolver(object):
         for surf_name in surf_data:
             if surf_name not in unique_surf_names:
                 raise ValueError(
-                    f"surface name, {surf_name}, not found in the current avl object. Note duplicated surfaces can not be set directly"
+                    f"""surface name, {surf_name}, not found in the current avl object."
+                        Note duplicated surfaces can not be set directly.
+                        Surface in file {unique_surf_names}
+                        {surf_names}"""
                 )
 
             for var in surf_data[surf_name]:
@@ -1114,7 +1132,7 @@ class AVLSolver(object):
                 var = "CONVAL" + self.ad_suffix
                 val = con_seed_arr * scale
                 slicer = (0, idx_con)
-
+                
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
             elif mode == "FD":
@@ -1605,3 +1623,4 @@ class AVLSolver(object):
                     cs_deriv_seeds[func_key][cs_key] = 0.0
 
         return sens
+

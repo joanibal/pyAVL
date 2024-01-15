@@ -83,8 +83,8 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
 C  Differentiation of velsum in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: wv
 C   with respect to varying inputs: vinf wrot gam wv_gam
-C   RW status of diff variables: vinf:in wrot:in gam:in wv:out
-C                wv_gam:in
+C   RW status of diff variables: vinf:in wrot:in gam:in wv_gam:in
+C                wv:out
 C GAMSUM
 C
 C
@@ -157,7 +157,7 @@ C
       END
 
 C  Differentiation of set_par_and_cons in forward (tangent) mode (with options i4 dr8 r8):
-C   variations   of useful results: alfa beta wrot xyzref
+C   variations   of useful results: alfa beta wrot delcon xyzref
 C   with respect to varying inputs: conval xyzref
 C WSENS
       SUBROUTINE SET_PAR_AND_CONS_D(niter, ir)
@@ -219,11 +219,21 @@ C$AD-II-loop
         IF (icon(ivrotz, ir) .EQ. icrotz) THEN
           wrot_diff(3) = 2.*conval_diff(icrotz, ir)/bref
           wrot(3) = conval(icrotz, ir)*2./bref
+          DO ii1=1,ndmax
+            delcon_diff(ii1) = 0.D0
+          ENDDO
+        ELSE
+          DO ii1=1,ndmax
+            delcon_diff(ii1) = 0.D0
+          ENDDO
         END IF
         DO n=1,ndmax
           iv = ivtot + n
           ic = ictot + n
-          IF (icon(iv, ir) .EQ. ic) delcon(n) = conval(ic, ir)
+          IF (icon(iv, ir) .EQ. ic) THEN
+            delcon_diff(n) = conval_diff(ic, ir)
+            delcon(n) = conval(ic, ir)
+          END IF
         ENDDO
       ELSE
         alfa_diff = 0.D0
@@ -231,12 +241,16 @@ C$AD-II-loop
         DO ii1=1,3
           wrot_diff(ii1) = 0.D0
         ENDDO
+        DO ii1=1,ndmax
+          delcon_diff(ii1) = 0.D0
+        ENDDO
       END IF
       END
 
 C  Differentiation of set_vel_rhs in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rhs
-C   with respect to varying inputs: vinf wrot xyzref rc enc
+C   with respect to varying inputs: vinf wrot delcon xyzref rc
+C                enc enc_d
       SUBROUTINE SET_VEL_RHS_D()
 C
       INCLUDE 'AVL.INC'
@@ -247,6 +261,7 @@ C
       INTEGER i
       REAL DOT
       REAL DOT_D
+      INTEGER n
       REAL result1
       REAL result1_diff
       rhs_diff = 0.D0
@@ -292,10 +307,18 @@ C
      +                 , vunit_w_term_diff)
           vunit_diff = vunit_diff + vunit_w_term_diff
           vunit = vunit + vunit_w_term
+C Add contribution from control surfaces
           result1_diff = DOT_D(enc(1, i), enc_diff(1, i), vunit, 
      +      vunit_diff, result1)
           rhs_diff(i) = -result1_diff
           rhs(i) = -result1
+          DO n=1,ncontrol
+            result1_diff = DOT_D(enc_d(1, i, n), enc_d_diff(1, i, n), 
+     +        vunit, vunit_diff, result1)
+            rhs_diff(i) = rhs_diff(i) - delcon(n)*result1_diff - result1
+     +        *delcon_diff(n)
+            rhs(i) = rhs(i) - result1*delcon(n)
+          ENDDO
         ELSE
           rhs_diff(i) = 0.D0
           rhs(i) = 0

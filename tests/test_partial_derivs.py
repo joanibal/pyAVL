@@ -244,16 +244,20 @@ class TestResidualPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
-            _, res_seeds, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})
-
             _, res_seeds_FD, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, geom_seeds={}, mode="FD", step=1e-8
             )
+            
+            _, res_seeds, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})
 
+
+
+            # print(f"res wrt {con_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
             np.testing.assert_allclose(
                 res_seeds,
                 res_seeds_FD,
                 rtol=1e-5,
+                err_msg=f"d(res) w.r.t.{con_key}"
             )
 
     def test_rev_aero_constraint(self):

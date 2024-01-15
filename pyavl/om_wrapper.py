@@ -29,7 +29,7 @@ def add_avl_controls_as_inputs(self, avl):
     self.control_names = avl.get_control_names()
     for c_name in self.control_names:
         self.add_input(c_name, val=0.0, units="deg")
-
+    return self.control_names
 
 def add_avl_geom_as_inputs(self, avl):
     # add the geometric parameters as inputs
@@ -91,7 +91,7 @@ class AVLSolverComp(om.ImplicitComponent):
         self.add_input("alpha", val=0.0, units="deg")
         self.add_input("beta", val=0.0, units="deg")
 
-        add_avl_controls_as_inputs(self, self.avl)
+        self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_as_inputs(self, self.avl)
 
     def apply_nonlinear(self, inputs, outputs, residuals):
@@ -138,6 +138,7 @@ class AVLSolverComp(om.ImplicitComponent):
         self.avl.set_surface_params(surf_data)
 
         # def_dict = self.avl.get_control_deflections()
+        print('executing avl run')
         self.avl.execute_run()
 
         gam_arr = self.avl.get_avl_fort_arr("VRTX_R", "GAM", slicer=(slice(0, self.num_states),))
@@ -154,7 +155,7 @@ class AVLSolverComp(om.ImplicitComponent):
         #     print(func_key, run_data[func_key])
         # func_key = "CL"
         # print(func_key, run_data[func_key])
-        print("AVL solve time: ", time.time() - start_time)
+        # print("AVL solve time: ", time.time() - start_time)
 
     def apply_linear(self, inputs, outputs, d_inputs, d_outputs, d_residuals, mode):
         if mode == "fwd":
@@ -162,7 +163,10 @@ class AVLSolverComp(om.ImplicitComponent):
             for con_key in ["alpha", "beta"]:
                 if con_key in d_inputs:
                     con_seeds[con_key] = d_inputs[con_key]
-
+            for con_key in self.control_names:
+                if con_key in d_inputs:
+                    con_seeds[con_key] = d_inputs[con_key]
+                    
             geom_seeds = om_input_to_surf_dict(self, d_inputs)
 
             _, res_seeds, _, res_d_seeds = self.avl.execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds)
@@ -177,7 +181,7 @@ class AVLSolverComp(om.ImplicitComponent):
                 res_d_seeds = d_residuals["gamma_d"]
 
                 con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds = self.avl.execute_jac_vec_prod_rev(
-                    res_seeds=res_seeds, res_d_seeds=res_d_seeds, print_timings=True
+                    res_seeds=res_seeds, res_d_seeds=res_d_seeds
                 )
 
                 if "gamma" in d_outputs:
@@ -193,18 +197,21 @@ class AVLSolverComp(om.ImplicitComponent):
                         d_inputs[d_input] += d_input_geom[d_input]
                     if d_input in ["alpha", "beta"]:
                         d_inputs[d_input] += con_seeds[d_input]
+                    if d_input in self.control_names:
+                        d_inputs[d_input] += con_seeds[d_input]
+                  
 
     def solve_linear(self, d_outputs, d_residuals, mode):
         if mode == "rev":
             self.avl.set_gamma_ad_seeds(d_outputs["gamma"])
             self.avl.set_gamma_d_ad_seeds(d_outputs["gamma_d"])
-            start_time = time.time()
+            # start_time = time.time()
             self.avl.avl.solve_adjoint()
-            print("OM Solve adjoint time: ", time.time() - start_time)
+            # print("OM Solve adjoint time: ", time.time() - start_time)
             d_residuals["gamma"] = self.avl.get_residual_ad_seeds()
             d_residuals["gamma_d"] = self.avl.get_residual_d_ad_seeds()
         elif mode == "fwd":
-            raise NotImplementedError()
+            raise NotImplementedError("only reverse mode derivaties implemented. Use prob.setup(mode='rev')")
 
 
 class AVLFuncsComp(om.ExplicitComponent):
@@ -222,17 +229,16 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.add_input("alpha", val=0.0, units="deg")
         self.add_input("beta", val=0.0, units="deg")
 
-        add_avl_controls_as_inputs(self, self.avl)
+        self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_as_inputs(self, self.avl)
 
         # add the outputs
         for func_key in self.avl.case_var_to_fort_var:
             self.add_output(func_key)
 
-        con_names = self.avl.get_control_names()
 
         for func_key in self.avl.case_derivs_to_fort_var:
-            for con_name in con_names:
+            for con_name in self.control_names:
                 var_name = f"d{func_key}_d{con_name}"
                 self.add_output(var_name)
 
@@ -244,6 +250,9 @@ class AVLFuncsComp(om.ExplicitComponent):
 
         # TODO: add_constraint does not correctly do derives yet
         start_time = time.time()
+        
+        for c_name in self.control_names:
+            self.avl.add_constraint(c_name, inputs[c_name][0])
 
         self.avl.add_constraint("alpha", float(inputs["alpha"]))
         self.avl.add_constraint("beta", float(inputs["beta"]))
@@ -271,8 +280,9 @@ class AVLFuncsComp(om.ExplicitComponent):
         run_data = self.avl.get_case_total_data()
 
         for func_key in run_data:
-            # print(func_key, run_data[func_key])
+            # print(f' {func_key} {run_data[func_key]}')
             outputs[func_key] = run_data[func_key]
+        # print(f" CD {run_data['CD']} CL {run_data['CL']}")
 
         consurf_derivs_seeds = self.avl.get_case_coef_derivs()
 
@@ -283,7 +293,7 @@ class AVLFuncsComp(om.ExplicitComponent):
                 var_name = f"d{func_key}_d{con_name}"
                 outputs[var_name] = consurf_derivs_seeds[func_key][con_name]
                 
-        print("Funcs Compute time: ", time.time() - start_time)
+        # print("Funcs Compute time: ", time.time() - start_time)
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         if mode == "fwd":
@@ -291,7 +301,10 @@ class AVLFuncsComp(om.ExplicitComponent):
             for con_key in ["alpha", "beta"]:
                 if con_key in d_inputs:
                     con_seeds[con_key] = d_inputs[con_key]
-
+            for con_key in self.control_names:
+                if con_key in d_inputs:
+                    con_seeds[con_key] = d_inputs[con_key]
+                    
             if "gamma" in d_inputs:
                 gamma_seeds = d_inputs["gamma"]
             else:
@@ -325,7 +338,7 @@ class AVLFuncsComp(om.ExplicitComponent):
                 if func_key in d_outputs:
                     func_seeds[func_key] = d_outputs[func_key]
                     if np.abs(func_seeds[func_key]) > 0.0:
-                        print(func_key, func_seeds[func_key])
+                        print(f'  running rev mode derivs for {func_key}')
 
             csd_seeds = {}
             con_names = self.avl.get_control_names()
@@ -338,11 +351,11 @@ class AVLFuncsComp(om.ExplicitComponent):
                         csd_seeds[func_key][con_name] = d_outputs[var_name]
                         
                         if np.abs(csd_seeds[func_key][con_name]) > 0.0:
-                            print(var_name, csd_seeds[func_key][con_name])
+                            # print(var_name, csd_seeds[func_key][con_name])
+                            print(f'  running rev mode derivs for {func_key}:{con_name}')
                         
-
             con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds = self.avl.execute_jac_vec_prod_rev(
-                func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds, print_timings=True
+                func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds
             )
 
             if "gamma" in d_inputs:
@@ -356,7 +369,7 @@ class AVLFuncsComp(om.ExplicitComponent):
             for d_input in d_inputs:
                 if d_input in d_input_geom:
                     d_inputs[d_input] += d_input_geom[d_input]
-                if d_input in ["alpha", "beta"]:
+                if d_input in ["alpha", "beta"] or d_input in self.control_names:
                     d_inputs[d_input] += con_seeds[d_input]
 
 
