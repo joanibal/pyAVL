@@ -8,27 +8,37 @@ import time
 class AVLGroup(om.Group):
     def initialize(self):
         self.options.declare("geom_file", types=str)
+        self.options.declare("mass_file", default=None)
         self.options.declare("write_grid", types=bool, default=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
 
+        self.options.declare("output_stabililty_derivs", types=bool, default=False)
+        self.options.declare("output_con_surf_derivs", types=bool, default=False)
+
     def setup(self):
         geom_file = self.options["geom_file"]
-        avl = AVLSolver(geo_file=geom_file, debug=False)
+        mass_file = self.options["mass_file"]
+        output_stabililty_derivs = self.options["output_stabililty_derivs"]
+        output_con_surf_derivs = self.options["output_con_surf_derivs"]
+
+        avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
         self.add_subsystem("solver", AVLSolverComp(avl=avl), promotes=["*"])
-        self.add_subsystem("funcs", AVLFuncsComp(avl=avl), promotes=["*"])
+        self.add_subsystem("funcs", AVLFuncsComp(avl=avl,
+                                    output_stabililty_derivs=output_stabililty_derivs,
+                                    output_con_surf_derivs=output_con_surf_derivs),
+                                    promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
                 "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"]), promotes=["*"]
             )
-
 
 # helper functions used by the AVL components
 def add_avl_controls_as_inputs(self, avl):
     # add the control surfaces as inputs
     self.control_names = avl.get_control_names()
     for c_name in self.control_names:
-        self.add_input(c_name, val=0.0, units="deg")
+        self.add_input(c_name, val=0.0, units="deg", tags="con_surf")
     return self.control_names
 
 def add_avl_geom_as_inputs(self, avl):
@@ -39,6 +49,12 @@ def add_avl_geom_as_inputs(self, avl):
         for key in surf_data[surf]:
             geom_key = f"{surf}:{key}"
             self.add_input(geom_key, val=surf_data[surf][key], tags="geom")
+
+def add_avl_conditions_as_inputs(sys, avl):
+    # TODO: add all the condition constraints
+        
+    sys.add_input("alpha", val=0.0, units="deg", tags="flt_cond")
+    sys.add_input("beta", val=0.0, units="deg" , tags="flt_cond")
 
 
 def om_input_to_surf_dict(sys, inputs):
@@ -87,10 +103,9 @@ class AVLSolverComp(om.ImplicitComponent):
 
         self.add_output("gamma", val=np.zeros(self.num_states))
         self.add_output("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
-
-        self.add_input("alpha", val=0.0, units="deg")
-        self.add_input("beta", val=0.0, units="deg")
-
+        
+        add_avl_conditions_as_inputs(self, self.avl)
+        
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_as_inputs(self, self.avl)
 
@@ -217,6 +232,8 @@ class AVLSolverComp(om.ImplicitComponent):
 class AVLFuncsComp(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("output_stabililty_derivs", types=bool, default=False)
+        self.options.declare("output_con_surf_derivs", types=bool, default=False)
 
     def setup(self):
         self.avl = self.options["avl"]
@@ -226,8 +243,7 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
 
-        self.add_input("alpha", val=0.0, units="deg")
-        self.add_input("beta", val=0.0, units="deg")
+        add_avl_conditions_as_inputs(self, self.avl)
 
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_as_inputs(self, self.avl)
@@ -236,11 +252,20 @@ class AVLFuncsComp(om.ExplicitComponent):
         for func_key in self.avl.case_var_to_fort_var:
             self.add_output(func_key)
 
-
-        for func_key in self.avl.case_derivs_to_fort_var:
-            for con_name in self.control_names:
-                var_name = f"d{func_key}_d{con_name}"
-                self.add_output(var_name)
+        self.output_con_surf_derivs = self.options["output_con_surf_derivs"]
+        if self.output_con_surf_derivs:
+            for func_key in self.avl.case_derivs_to_fort_var:
+                for con_name in self.control_names:
+                    var_name = f"d{func_key}_d{con_name}"
+                    self.add_output(var_name)
+        
+        self.output_stabililty_derivs = self.options["output_stabililty_derivs"]
+        if self.output_stabililty_derivs:
+            deriv_dict = self.avl.case_stab_derivs_to_fort_var
+            for func_key in deriv_dict:
+                for var in deriv_dict[func_key]:
+                    var_name = f"d{func_key}_d{var}"
+                    self.add_output(var_name)        
 
     def compute(self, inputs, outputs):
         # self.avl.set_gamma(inputs['gamma'])
@@ -284,14 +309,19 @@ class AVLFuncsComp(om.ExplicitComponent):
             outputs[func_key] = run_data[func_key]
         # print(f" CD {run_data['CD']} CL {run_data['CL']}")
 
-        consurf_derivs_seeds = self.avl.get_case_coef_derivs()
+        if self.output_con_surf_derivs:
+            consurf_derivs_seeds = self.avl.get_case_coef_derivs()
+            for func_key in consurf_derivs_seeds:
+                for con_name in consurf_derivs_seeds[func_key]:
+                    var_name = f"d{func_key}_d{con_name}"
+                    outputs[var_name] = consurf_derivs_seeds[func_key][con_name]
 
-
-        # con_names = self.avl.get_control_names()
-        for func_key in consurf_derivs_seeds:
-            for con_name in consurf_derivs_seeds[func_key]:
-                var_name = f"d{func_key}_d{con_name}"
-                outputs[var_name] = consurf_derivs_seeds[func_key][con_name]
+        if self.output_stabililty_derivs:
+            stab_derivs = self.avl.get_case_stab_derivs()
+            for func_key in stab_derivs:
+                for var in stab_derivs[func_key]:
+                    var_name = f"d{func_key}_d{var}"
+                    outputs[var_name] = stab_derivs[func_key][var]
                 
         # print("Funcs Compute time: ", time.time() - start_time)
 
@@ -386,8 +416,7 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
 
-        self.add_input("alpha", val=0.0, units="deg")
-        self.add_input("beta", val=0.0, units="deg")
+        add_avl_conditions_as_inputs(self, self.avl)
 
         add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_as_inputs(self, self.avl)
