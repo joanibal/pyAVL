@@ -92,7 +92,7 @@ C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
       idx_strip = JFRST(ISURF)
 C
 C-----------------------------------------------------------------
-C---- section arc lengths of wing trace in y-z plane
+C---- Arc length positions of sections in wing trace in y-z plane
       YZLEN(1) = 0.
       DO ISEC = 2, NSEC(ISURF)
         DY = XYZLES(2,ISEC, ISURF) - XYZLES(2,ISEC-1, ISURF)
@@ -140,7 +140,13 @@ C
        ENDDO
 C
       ELSE
-C----- set spanwise spacing using overall parameters NVS(ISURF), SSPACE
+C
+C----- Otherwise, set spanwise spacing using the SURFACE spanwise
+C      parameters NVS, SSPACE
+C
+C      This spanwise spacing is modified (fudged) to align vortex edges
+C      with SECTIONs as defined.  This allows CONTROLs to be defined
+C      without bridging vortex strips
 C
        NSPACE = 2*NVS(ISURF) + 1
        IF(NSPACE.GT.KPMAX) THEN
@@ -175,7 +181,7 @@ C----- find node nearest each section
        IPTLOC(1)    = 1
        IPTLOC(NSEC(ISURF)) = NPT
 C
-C----- fudge Glauert angles to make nodes match up exactly with interior sections
+C----- fudge spacing array to make nodes match up exactly with interior sections
        DO ISEC = 2, NSEC(ISURF)-1
          IPT1 = IPTLOC(ISEC-1)
          IPT2 = IPTLOC(ISEC  )
@@ -185,6 +191,7 @@ C----- fudge Glauert angles to make nodes match up exactly with interior section
           STOP
          ENDIF
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
          YPT1 = YPT(IPT1)
          YSCALE = (YZLEN(ISEC)-YZLEN(ISEC-1)) / (YPT(IPT2)-YPT(IPT1))
          DO IPT = IPT1, IPT2-1
@@ -194,6 +201,7 @@ C
            YCP(IVS) = YZLEN(ISEC-1) + YSCALE*(YCP(IVS)-YPT1)
          ENDDO
 C
+C----- check for unique spacing node for next section, if not we need more nodes
          IPT1 = IPTLOC(ISEC  )
          IPT2 = IPTLOC(ISEC+1)
          IF(IPT1.EQ.IPT2) THEN
@@ -202,6 +210,7 @@ C
           STOP
          ENDIF
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
          YPT1 = YPT(IPT1)
          YSCALE = (YPT(IPT2)-YZLEN(ISEC)) / (YPT(IPT2)-YPT(IPT1))
          DO IPT = IPT1, IPT2-1
@@ -218,6 +227,19 @@ C
        ENDDO
 C
       ENDIF
+cc#ifdef USE_CPOML
+C...  store section counters
+      IF (ISURF .EQ. 1) THEN
+        ICNTFRST(ISURF) = 1
+      ELSE
+        ICNTFRST(ISURF) = ICNTFRST(ISURF-1) + NCNTSEC(ISURF-1)
+      ENDIF
+      NCNTSEC(ISURF) = NSEC(ISURF)
+      DO ISEC = 1, NSEC(ISURF)
+        II = ICNTFRST(ISURF) + (ISEC-1)
+        ICNTSEC(II) = IPTLOC(ISEC)
+      ENDDO
+cc#endif
 C
 C
 C====================================================
@@ -347,6 +369,15 @@ C
           TANLE(idx_strip)  = (XYZLER(1)-XYZLEL(1))/WIDTH
           TANTE(idx_strip)  = (XYZLER(1)+CHORDR - XYZLEL(1)-CHORDL)/WIDTH
 C
+cc#ifdef USE_CPOML
+          CHSIN = CHSINL + F1*(CHSINR-CHSINL)
+          CHCOS = CHCOSL + F1*(CHCOSR-CHCOSL)
+          AINC1(idx_strip) = ATAN2(CHSIN,CHCOS)
+          CHSIN = CHSINL + F2*(CHSINR-CHSINL)
+          CHCOS = CHCOSL + F2*(CHCOSR-CHCOSL)
+          AINC2(idx_strip) = ATAN2(CHSIN,CHCOS)
+C
+cc#endif
           CHSIN = CHSINL + FC*(CHSINR-CHSINL)
           CHCOS = CHCOSL + FC*(CHCOSR-CHCOSL)
           AINC(idx_strip) = ATAN2(CHSIN,CHCOS)
@@ -533,8 +564,33 @@ C
 C
 C---------- TE control point used only if surface sheds a wake
             LVNC(idx_vor) = LFWAKE(ISURF)
-            idx_vor = idx_vor + 1
+C
+cc#ifdef USE_CPOML
+C...        nodal grid associated with vortex strip (aft-panel nodes)
+C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
+C...        retained in (x,z) plane at this point
+            CALL AKIMA( XLASEC(1,ISEC,ISURF), ZLASEC(1,ISEC,ISURF), NSL,
+     &                  XPT(IVC+1), ZL, DSDX )
+            CALL AKIMA( XUASEC(1,ISEC,ISURF), ZUASEC(1,ISEC,ISURF), NSL,
+     &                  XPT(IVC+1), ZU, DSDX )
+C
+            XYN1(1,NVOR) = RLE1(1,NSTRIP) + XPT(IVC+1)*CHORD1(NSTRIP)
+            XYN1(2,NVOR) = RLE1(2,NSTRIP)
+            ZLON1(NVOR)  = RLE1(3,NSTRIP) + ZL*CHORD1(NSTRIP)
+            ZUPN1(NVOR)  = RLE1(3,NSTRIP) + ZU*CHORD1(NSTRIP)
+C
+            CALL AKIMA( XLASEC(1,ISEC+1,ISURF), ZLASEC(1,ISEC+1,ISURF), NSL,
+     &                  XPT(IVC+1), ZL, DSDX )
+            CALL AKIMA( XUASEC(1,ISEC+1,ISURF), ZUASEC(1,ISEC+1,ISURF), NSL,
+     &                  XPT(IVC+1), ZU, DSDX )
 
+            XYN2(1,NVOR) = RLE2(1,NSTRIP) + XPT(IVC+1)*CHORD2(NSTRIP)
+            XYN2(2,NVOR) = RLE2(2,NSTRIP)
+            ZLON2(NVOR)  = RLE2(3,NSTRIP) + ZL*CHORD2(NSTRIP)
+            ZUPN2(NVOR)  = RLE2(3,NSTRIP) + ZU*CHORD2(NSTRIP)
+C
+cc#endif
+            idx_vor = idx_vor + 1
  1505     CONTINUE
 C           
         idx_strip = idx_strip + 1
@@ -719,7 +775,8 @@ C-----------------------------------
 C
       NNI = NSURF + 1
       IF(NNI.GT.NFMAX) THEN
-        WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX.'
+        WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX',
+     &             ' currently ',NFMAX
         STOP
       ENDIF
 C
@@ -740,6 +797,7 @@ C---- same various logical flags
       LFWAKE(NNI) = LFWAKE(NN)
       LFALBE(NNI) = LFALBE(NN)
       LFLOAD(NNI) = LFLOAD(NN)
+      LRANGE(NNI) = LRANGE(NN)
 
 C---- accumulate stuff for new image surface 
       ! IFRST(NNI) = NVOR   + 1
@@ -761,6 +819,16 @@ C
 C--- Image flag reversed (set to -IMAGS) for imaged surfaces
       IMAGS(NNI) = -IMAGS(NN)
 C
+cc#ifdef USE_CPOML
+      ICNTFRST(NNI) = ICNTFRST(NN) + NCNTSEC(NN)
+      NCNTSEC(NNI)  = NCNTSEC(NN)
+      DO ISEC = 1, NCNTSEC(NNI)
+            IDUP = ICNTFRST(NNI) + (ISEC-1)
+            IORG = ICNTFRST(NN ) + (ISEC-1)
+            ICNTSEC(IDUP) = ICNTSEC(IORG)
+      ENDDO
+cc#endif
+C
       YOFF = 2.0*Ypt
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
@@ -770,7 +838,8 @@ C    not edge 1 as for a strip with IMAGS=1
       DO 100 IVS = 1, NVS(NNI)
       !   NSTRIP = NSTRIP + 1
         IF(idx_strip.GT.NSMAX) THEN
-          WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX.'
+          WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX',
+     &               ' currently ',NSMAX
           STOP
         ENDIF
 C
@@ -792,6 +861,11 @@ C
         TANLE(JJI)  = -TANLE(JJ)
         AINC (JJI)  =  AINC(JJ)
 C
+cc#ifdef USE_CPOML
+        AINC1(JJI) = AINC2(JJ)
+        AINC2(JJI) = AINC1(JJ)
+C
+cc#endif
         NSURFS(idx_strip) = NNI
 C
         DO N = 1, NDESIGN
@@ -826,7 +900,8 @@ C
         DO 80 IVC = 1, NVC(NNI)
       !     NVOR = NVOR + 1
           IF(idx_vor.GT.NVMAX) THEN
-            WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX.'
+            WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX',
+     &                 ' currently ',NVMAX
             STOP
           ENDIF
 C
@@ -857,8 +932,20 @@ ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
             RSGN = VREFL(JJ,N)
             DCONTROL(III,N) = -DCONTROL(II,N)*RSGN
           ENDDO
+C          
+cc#ifdef USE_CPOML
+C...      nodal grid associated with vortex strip
+          XYN1(1,III) =  XYN2(1,II)
+          XYN1(2,III) = -XYN2(2,II) + YOFF
+          XYN2(1,III) =  XYN1(1,II)
+          XYN2(2,III) = -XYN1(2,II) + YOFF
+C
+          ZLON1(III)  = ZLON2(II)
+          ZUPN1(III)  = ZUPN2(II)
+          ZLON2(III)  = ZLON1(II)
+          ZUPN2(III)  = ZUPN1(II)
+cc#endif
           idx_vor = idx_vor + 1
-
 C
    80   CONTINUE
 C
@@ -885,7 +972,8 @@ C-----------------------------------
 C
       NNI = NBODY + 1
       IF(NNI.GT.NBMAX) THEN
-        WRITE(*,*) 'BDUPL: Body array overflow. Increase NBMAX.'
+        WRITE(*,*) 'BDUPL: Body array overflow. Increase NBMAX',
+     &             ' currently ',NBMAX
         STOP
       ENDIF
 C
