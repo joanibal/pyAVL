@@ -740,6 +740,7 @@ C---- same various logical flags
       LFWAKE(NNI) = LFWAKE(NN)
       LFALBE(NNI) = LFALBE(NN)
       LFLOAD(NNI) = LFLOAD(NN)
+      LSURFSPACING(NNI) = LSURFSPACING(NN)
 
 C---- accumulate stuff for new image surface 
       ! IFRST(NNI) = NVOR   + 1

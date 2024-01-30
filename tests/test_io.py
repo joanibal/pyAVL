@@ -21,6 +21,9 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 geom_output_file = os.path.join(base_dir, "aircraft_out.avl")
 
+rect_geom_file = os.path.join(base_dir, "rect.avl")
+geom_output_file = os.path.join(base_dir, "rect_out.avl")
+
 # TODO: add test for expected input output errors
 
 
@@ -43,6 +46,33 @@ class TestOutput(unittest.TestCase):
         avl_solver.write_geom_file(geom_output_file)
         baseline_data = avl_solver.get_surface_params()
 
+        del avl_solver
+        avl_solver = AVLSolver(geo_file=geom_output_file)
+        new_data = baseline_data = avl_solver.get_surface_params()
+
+        for surf in baseline_data:
+            for key in baseline_data[surf]:
+                data = new_data[surf][key]
+                # check if it is a list of strings
+                if isinstance(data, list) and isinstance(data[0], str):
+                    for a, b in zip(data, baseline_data[surf][key]):
+                        assert a == b
+                else:
+                    np.testing.assert_allclose(
+                        new_data[surf][key],
+                        baseline_data[surf][key],
+                        atol=1e-8,
+                        err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
+                    )
+    
+    def test_write_panneling_params(self):
+        # test that the surface is output correctly when only section or surface
+        # panneling is given
+        avl_solver = AVLSolver(geo_file=rect_geom_file)
+        avl_solver.write_geom_file(geom_output_file)   
+        baseline_data = avl_solver.get_surface_params(include_panneling=True, include_geom=False)
+        assert baseline_data['Wing']['use surface spacing'] == True
+        
         del avl_solver
         avl_solver = AVLSolver(geo_file=geom_output_file)
         new_data = baseline_data = avl_solver.get_surface_params()

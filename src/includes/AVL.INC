@@ -381,8 +381,10 @@ c
      & XYZLES_B(3, NSMAX, NBMAX) ! leading edge cordinate vector
 c
       LOGICAL LDUPL
+      LOGICAL LSURFSPACING
       COMMON /SURF_GEOM_L/
-     & LDUPL(NFMAX)      ! T if surface is a duplicated
+     & LDUPL(NFMAX),      ! T if surface is a duplicated
+     & LSURFSPACING(NFMAX)   ! surface spacing set under the surface heeading
 
       COMMON /SURF_GEOM_I/
      & NSEC(NFMAX),  ! number of sections in surface
