@@ -284,6 +284,7 @@ C
         IF(NINPUT.GE.4) THEN
          NVS(ISURF) = INT( RINPUT(3) + 0.001 )
          SSPACE(ISURF) = RINPUT(4)
+         LSURFSPACING(ISURF) = .TRUE.
         ELSE
          NVS(ISURF) = 0
          SSPACE(ISURF) = 0.0

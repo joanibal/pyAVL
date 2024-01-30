@@ -348,6 +348,7 @@ class AVLSolver(object):
                 "sspaces": ["SURF_GEOM_R", "SSPACES", slice_surf_secs],
                 "nspans": ["SURF_GEOM_I", "NSPANS", slice_surf_secs],
                 "yduplicate": ["SURF_GEOM_R", "YDUPL", slice_idx_surf],
+                "use surface spacing": ["SURF_GEOM_L", "LSURFSPACING", slice_idx_surf],
             }
 
             icontd_slices = []
@@ -979,7 +980,11 @@ class AVLSolver(object):
         fid.write(f"{surf_name}\n")
 
         fid.write(f"#Nchordwise  Cspace  [Nspanwise  Sspace]\n")
-        __write_data(["nchordwise", "cspace", "nspan", "sspace"])
+        __write_data(["nchordwise", "cspace"], newline=False)
+        if data['use surface spacing']:
+            __write_data(["nspan", "sspace"])
+        else:
+            fid.write("\n")
 
         if "yduplicate" in data:
             fid.write("YDUPLICATE\n")
@@ -1008,9 +1013,19 @@ class AVLSolver(object):
                 f"{data['xyzles'][idx_sec, 2]:.6f}   "
                 f"{data['chords'][idx_sec]:.6f} "
                 f"{data['aincs'][idx_sec]:.6f} "
-                f"{data['nspans'][idx_sec]}      "
-                f"{data['sspaces'][idx_sec]}\n"
             )
+            
+            if data['nspans'][idx_sec] != 0:
+                # if no section spacing is read in by avl nspans will be zero
+                fid.write(
+                    f"{data['nspans'][idx_sec]}      "
+                    f"{data['sspaces'][idx_sec]}\n"
+                )
+            elif data['use surface spacing']:
+                fid.write("\n")
+            else:
+                raise RuntimeError(f"neither surface nor section spacing information written"
+                                   f"for surface {surf_name} section {idx_sec + 1}")
 
             afile = data["afiles"][idx_sec]
 
