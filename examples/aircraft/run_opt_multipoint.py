@@ -114,7 +114,7 @@ prob.run_driver()
 # prob.run_model()
 # prob.check_totals()
 
-prob.model.cruise_avl.solver.avl.write_geom_file('opt_airplane.avl')
+prob.model.cruise_avl.solver.avl.write_geom_file('opt_airplane_mp.avl')
 
 if args.plot_opt_hist and args.record:
     import matplotlib.pyplot as plt

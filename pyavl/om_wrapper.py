@@ -41,15 +41,18 @@ def add_avl_controls_as_inputs(self, avl):
         self.add_input(c_name, val=0.0, units="deg", tags="con_surf")
     return self.control_names
 
-def add_avl_geom_as_inputs(self, avl):
+def add_avl_geom_vars(self, avl, add_as="inputs"):
     # add the geometric parameters as inputs
     surf_data = avl.get_surface_params()
 
     for surf in surf_data:
         for key in surf_data[surf]:
             geom_key = f"{surf}:{key}"
-            self.add_input(geom_key, val=surf_data[surf][key], tags="geom")
-
+            if add_as == "inputs":
+                self.add_input(geom_key, val=surf_data[surf][key], tags="geom")
+            elif add_as == "outputs":
+                self.add_output(geom_key, val=surf_data[surf][key], tags="geom")
+                
 def add_avl_conditions_as_inputs(sys, avl):
     # TODO: add all the condition constraints
         
@@ -107,7 +110,7 @@ class AVLSolverComp(om.ImplicitComponent):
         add_avl_conditions_as_inputs(self, self.avl)
         
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
-        add_avl_geom_as_inputs(self, self.avl)
+        add_avl_geom_vars(self, self.avl, add_as="inputs")
 
     def apply_nonlinear(self, inputs, outputs, residuals):
         for c_name in self.control_names:
@@ -246,7 +249,7 @@ class AVLFuncsComp(om.ExplicitComponent):
         add_avl_conditions_as_inputs(self, self.avl)
 
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
-        add_avl_geom_as_inputs(self, self.avl)
+        add_avl_geom_vars(self, self.avl, add_as="inputs")
 
         # add the outputs
         for func_key in self.avl.case_var_to_fort_var:
@@ -403,6 +406,7 @@ class AVLFuncsComp(om.ExplicitComponent):
                     d_inputs[d_input] += con_seeds[d_input]
 
 
+# Optional components
 class AVLPostProcessComp(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("avl", types=AVLSolver, recordable=False)
@@ -419,7 +423,7 @@ class AVLPostProcessComp(om.ExplicitComponent):
         add_avl_conditions_as_inputs(self, self.avl)
 
         add_avl_controls_as_inputs(self, self.avl)
-        add_avl_geom_as_inputs(self, self.avl)
+        add_avl_geom_vars(self, self.avl, add_as="inputs")
 
         self.iter_count = 0
 
@@ -450,3 +454,19 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.avl.write_geom_file(os.path.join(output_dir, file_name))
 
         self.iter_count += 1
+
+class AVLMeshReader(om.ExplicitComponent):
+    """
+        This class is moslty used to provide an initial set of coordinates for custom paramerization components
+    """
+    
+    def initialize(self):
+        self.options.declare("geom_file", types=str)
+        self.options.declare("mass_file", default=None)
+
+    def setup(self):
+        geom_file = self.options["geom_file"]
+        mass_file = self.options["mass_file"]
+
+        avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        add_avl_geom_vars(self, avl, add_as="outputs")
