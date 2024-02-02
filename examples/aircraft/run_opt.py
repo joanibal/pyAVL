@@ -11,18 +11,19 @@ model.add_design_var("avlsolver.Elevator", lower=-10, upper=10)
 
 # the outputs of AVL can be used as contraints
 model.add_constraint("avlsolver.CL", equals=1.5)
-model.add_constraint("avlsolver.CM", equals=0.0)
+model.add_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
 # Some variables (like chord, dihedral, x and z leading edge position) can lead to local minimum. 
 # To help fix this add a contraint that keeps the variable monotonic
 
-model.add_objective("avlsolver.CD")
+# the scaler values bring the objective functinon to ~ order 1 for the optimizer
+model.add_objective("avlsolver.CD", scaler=1e3)
 
 prob = om.Problem(model)
 
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
 prob.driver.options['debug_print'] = ["desvars", "ln_cons", "nl_cons", "objs"]
-prob.driver.options['tol'] = 1e-9
+prob.driver.options['tol'] = 1e-6
 prob.driver.options['disp'] = True
 
 prob.setup(mode='rev')
