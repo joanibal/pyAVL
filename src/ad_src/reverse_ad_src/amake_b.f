@@ -408,7 +408,8 @@ C---- section arc lengths of wing trace in y-z plane
         CALL PUSHINTEGER4(isec - 1)
 C
 C
-        IF (nvs(isurf) .EQ. 0) THEN
+        ! IF (nvs(isurf) .EQ. 0) THEN
+        IF(LSURFSPACING(ISURF) .EQV. .FALSE.) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
           DO isec=1,nsec(isurf)-1
             nvs(isurf) = nvs(isurf) + nspans(isec, isurf)
@@ -2237,7 +2238,7 @@ C
       INTEGER nn
       REAL ypt
 C
-      nni = nsurf + 1
+      nni = nn + 1
       IF (nni .GT. nfmax) THEN
         STOP
       ELSE
