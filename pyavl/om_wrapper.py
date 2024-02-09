@@ -74,9 +74,11 @@ def om_input_to_surf_dict(sys, inputs):
             # update the corresponding parameter in the surface data
             if surf not in surf_data:
                 surf_data[surf] = {}
-
-            surf_data[surf][param] = inputs[input_var]
-
+            if inputs[input_var].size == 1:
+                # if the input is a scalar, convert to a 1D array for numpy
+                surf_data[surf][param] = inputs[input_var][0]
+            else:
+                surf_data[surf][param] = inputs[input_var]
     return surf_data
 
 
@@ -116,8 +118,8 @@ class AVLSolverComp(om.ImplicitComponent):
         for c_name in self.control_names:
             self.avl.add_constraint(c_name, inputs[c_name][0])
 
-        self.avl.add_constraint("alpha", float(inputs["alpha"]))
-        self.avl.add_constraint("beta", float(inputs["beta"]))
+        self.avl.add_constraint("alpha", inputs["alpha"][0])
+        self.avl.add_constraint("beta", inputs["beta"][0])
 
         surf_data = om_input_to_surf_dict(self, inputs)
         self.avl.set_surface_params(surf_data)
@@ -148,8 +150,8 @@ class AVLSolverComp(om.ImplicitComponent):
         for c_name in self.control_names:
             self.avl.add_constraint(c_name, inputs[c_name][0])
 
-        self.avl.add_constraint("alpha", float(inputs["alpha"]))
-        self.avl.add_constraint("beta", float(inputs["beta"]))
+        self.avl.add_constraint("alpha", inputs["alpha"][0])
+        self.avl.add_constraint("beta", inputs["beta"][0])
 
         # update the surface parameters
         surf_data = om_input_to_surf_dict(self, inputs)
@@ -282,8 +284,9 @@ class AVLFuncsComp(om.ExplicitComponent):
         for c_name in self.control_names:
             self.avl.add_constraint(c_name, inputs[c_name][0])
 
-        self.avl.add_constraint("alpha", float(inputs["alpha"]))
-        self.avl.add_constraint("beta", float(inputs["beta"]))
+        # 0 to convert the 1 element arr to a scalar
+        self.avl.add_constraint("alpha", inputs["alpha"][0])
+        self.avl.add_constraint("beta", inputs["beta"][0])
 
         # update the surface parameters
         surf_data = om_input_to_surf_dict(self, inputs)
@@ -433,8 +436,8 @@ class AVLPostProcessComp(om.ExplicitComponent):
         #     self.avl.add_constraint(c_name, inputs[c_name][0])
         # def_dict = self.avl.get_control_deflections()
 
-        self.avl.add_constraint("alpha", float(inputs["alpha"]))
-        self.avl.add_constraint("beta", float(inputs["beta"]))
+        self.avl.add_constraint("alpha", inputs["alpha"][0])
+        self.avl.add_constraint("beta", inputs["beta"][0])
 
         # update the surface parameters
         surf_data = om_input_to_surf_dict(self, inputs)

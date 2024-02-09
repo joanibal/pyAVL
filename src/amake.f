@@ -100,8 +100,10 @@ C---- section arc lengths of wing trace in y-z plane
         YZLEN(ISEC) = YZLEN(ISEC-1) + SQRT(DY*DY + DZ*DZ)
       ENDDO
 C
-
-      IF(NVS(ISURF).EQ.0) THEN
+      ! we can not rely on the original condition becuase NVS(ISURF) is filled 
+      ! and we may want to rebuild the surface later
+      ! IF(NVS(ISURF).EQ.0) THEN
+      IF(LSURFSPACING(ISURF) .EQV. .FALSE.) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
        DO ISEC = 1, NSEC(ISURF)-1
          NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC, ISURF)
@@ -584,6 +586,7 @@ c--------------------------------------------------------------
             if (ISURF.ne.1) then
                   if(ldupl(isurf-1)) then 
                         ! this surface has already been created
+                        ! it was probably duplicated from the previous one
                         cycle
                   end if
                   call makesurf(ISURF)
@@ -708,7 +711,7 @@ C
 
 
 
-      SUBROUTINE SDUPL(NN,Ypt,MSG)
+      SUBROUTINE SDUPL(NN, Ypt,MSG)
 C-----------------------------------
 C     Adds image of surface NN,
 C     reflected about y=Ypt.
@@ -717,7 +720,8 @@ C-----------------------------------
       CHARACTER*(*) MSG
       integer idx_vor
 C
-      NNI = NSURF + 1
+C     
+      NNI = NN + 1
       IF(NNI.GT.NFMAX) THEN
         WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX.'
         STOP

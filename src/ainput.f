@@ -288,6 +288,7 @@ C
         ELSE
          NVS(ISURF) = 0
          SSPACE(ISURF) = 0.0
+         LSURFSPACING(ISURF) = .FALSE.
         ENDIF
 C
 C===========================================================================
