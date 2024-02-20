@@ -7,6 +7,7 @@ from pyavl import AVLSolver
 # Standard Python Modules
 # =============================================================================
 import os
+import copy
 
 # =============================================================================
 # External Python modules
@@ -86,8 +87,41 @@ class TestParameterAPI(unittest.TestCase):
         self.assertEqual(xyz_ref[0], self.params_baseline["X cg"] + 0.1)
         self.assertEqual(xyz_ref[1], self.params_baseline["Y cg"] + 0.1)
         self.assertEqual(xyz_ref[1], self.params_baseline["Z cg"] + 0.1)
-        
-              
+
+class TestReferenceAPI(unittest.TestCase):
+    def setUp(self):
+        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ref_data_baseline = {
+            # "bank": 0.0,
+            # "elevation": 0,
+            "Sref": 1.13047707106, 
+            "Cref": 0.361159860776,
+            "Bref": 5.99996825959,
+        }
+
+    def test_get_ref_data(self):
+
+        for key in self.ref_data_baseline:
+            param = self.avl_solver.get_reference_data()
+            self.assertEqual(param[key], self.ref_data_baseline[key], msg=key)
+
+    def test_set_ref_data(self):
+        new_data = copy.deepcopy(self.ref_data_baseline)
+        for key in self.ref_data_baseline:
+            # add each key to the update dict one at a time
+            new_data[key] += 0.1
+
+            self.avl_solver.set_reference_data(new_data)
+
+            # check that the parameter was updated
+            param_updated = self.avl_solver.get_reference_data()
+            self.assertEqual(param_updated[key], new_data[key], msg=key)
+
+        # make sure the reference data stays set after an update
+        self.avl_solver.execute_run()
+        for key in self.ref_data_baseline:
+            param_updated = self.avl_solver.get_reference_data()
+            self.assertEqual(param_updated[key], new_data[key], msg=key)
 
 if __name__ == "__main__":
     unittest.main()

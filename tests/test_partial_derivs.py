@@ -227,6 +227,35 @@ class TestFunctionPartials(unittest.TestCase):
             )
 
 
+    def test_fwd_param(self):
+        for param_key in self.avl_solver.param_idx_dict:
+            func_seeds, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})
+
+            func_seeds_FD, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
+                param_seeds={param_key: 1.0}, mode="FD", step=1e-7
+            )
+
+            for func_key in func_seeds:
+                # print(f"{func_key} wrt {param_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                tol = 1e-13
+                if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        func_seeds[func_key],
+                        func_seeds_FD[func_key],
+                        atol=1e-6,
+                        err_msg=f"func_key {func_key} w.r.t. {param_key}",
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        func_seeds[func_key],
+                        func_seeds_FD[func_key],
+                        rtol=1e-5,
+                        err_msg=f"func_key {func_key} w.r.t. {param_key}",
+                    )
+   
+
+
 class TestResidualPartials(unittest.TestCase):
     def setUp(self):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
