@@ -42,13 +42,22 @@ from . import MExt
 
 class AVLSolver(object):
 
-    param_idx_dict = {
-        "alpha": 0,
+    # these at technically parameters, but they are also specified as contraints
+    # These are not included in the derivatives but you can set and get them still
+    # In the code these are only used to save the state for mode analysis
+    # regardless they can be useful for getting the values after a trim solve
+    state_param_idx_dict = {
+        "alpha": 0, 
         "beta": 1,
         "roll rate": 2,
         "pitch rate": 3,
         "yaw rate": 4,
-        "CL": 5,
+        # Not a supported way to set CL as a contraint or get it as an output
+        # "CL": 5, 
+    }
+
+    param_idx_dict = {
+        # these aero state parameters
         "CD0": 6,
         "bank": 7,
         "elevation": 8,
@@ -106,6 +115,11 @@ class AVLSolver(object):
         
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
+    }
+    ref_var_to_fort_var = {
+        "Sref": ["CASE_R", "SREF"],
+        "Cref": ["CASE_R", "CREF"],
+        "Bref": ["CASE_R", "BREF"],
     }
     
     case_derivs_to_fort_var = {
@@ -247,10 +261,6 @@ class AVLSolver(object):
 
         else:
             raise ValueError("neither a geometry file or aircraft object was given")
-
-        self.bref = self.get_avl_fort_arr("CASE_R", "BREF")
-        self.cref = self.get_avl_fort_arr("CASE_R", "CREF")
-        self.sref = self.get_avl_fort_arr("CASE_R", "SREF")
         
         # todo store the default dict somewhere else
         # the control surface contraints get added to this array in the __init__
@@ -502,6 +512,21 @@ class AVLSolver(object):
                 deriv_data[func_key][var_key] = val_arr[()]
 
         return deriv_data
+    
+    def get_reference_data(self) -> Dict[str, float]:
+        ref_data = {}
+        
+        for key, avl_key in self.ref_var_to_fort_var.items():
+            ref_data[key] = self.get_avl_fort_arr(*avl_key)[()]
+            
+        return ref_data
+        
+    def set_reference_data(self, ref_data: Dict[str, float]) -> None:
+        for key, val in ref_data.items():
+            avl_key = self.ref_var_to_fort_var[key]
+            self.set_avl_fort_arr(*avl_key, val)
+            
+        return ref_data
 
     def get_avl_fort_arr(self, common_block, variable, slicer=None):
         # this had to be split up into two steps to work
@@ -568,8 +593,16 @@ class AVLSolver(object):
         """
         parvals = self.get_avl_fort_arr("CASE_R", "PARVAL")
 
+        # the key could be in one of two dicts
+        if param_key in self.param_idx_dict:
+            idx_param = self.param_idx_dict[param_key]
+        elif param_key in self.state_param_idx_dict:
+            idx_param = self.state_param_idx_dict[param_key]
+        else:
+            raise ValueError(f"param '{param_key}' not in possilbe list\n" 
+                             f"{[k for k in self.param_idx_dict] + [k for k in self.state_param_idx_dict]}")
         # [0] because pyavl only supports 1 run case
-        param_val = parvals[0][self.param_idx_dict[param_key]]
+        param_val = parvals[0][idx_param]
 
         return param_val
 
@@ -1118,7 +1151,11 @@ class AVLSolver(object):
 
         return strList
 
-    # Derivative routines
+# ---------------------------
+# --- Derivative routines ---
+# ---------------------------
+
+# --- input ad seeds --- 
     def get_constraint_ad_seeds(self) -> Dict[str, float]:
         con_seeds = {}
         for con in self.con_var_to_fort_var:
@@ -1159,7 +1196,72 @@ class AVLSolver(object):
 
                 # use the contraint API to adjust the value
                 self.add_constraint(con, val)
+    
+    def set_parameter_ad_seeds(self, parm_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
+        for param_key in parm_seeds:
+            # blk, var = self.param_idx_dict[param_key]
+            blk = "CASE_R"
+            var = "PARVAL"
+            
+            idx_param = self.param_idx_dict[param_key]
+            slicer = (0, idx_param)
 
+            if mode == "AD":
+                blk += self.ad_suffix
+                var += self.ad_suffix
+                val = parm_seeds[param_key] * scale
+            elif mode == "FD":
+                val = self.get_avl_fort_arr(blk, var, slicer=slicer)
+                val += parm_seeds[param_key] * scale
+            
+            self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+ 
+    def get_parameter_ad_seeds(self) -> Dict[str, float]:
+        # for param_key in parm_seeds:
+            # blk, var = self.param_idx_dict[param_key]
+        blk = "CASE_R"
+        var = "PARVAL"
+        
+        slicer = (0, slice(None))
+
+        blk += self.ad_suffix
+        var += self.ad_suffix
+        
+        parval_seeds_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
+        
+        param_seeds = {}
+        for key, idx in self.param_idx_dict.items():
+            param_seeds[key] = parval_seeds_arr[idx]
+        
+        return param_seeds
+    
+    def set_reference_ad_seeds(self, ref_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
+        for ref_key in ref_seeds:
+            blk, var = self.ref_var_to_fort_var[ref_key]
+
+            if mode == "AD":
+                blk += self.ad_suffix
+                var += self.ad_suffix
+                val = ref_seeds[ref_key] * scale
+            elif mode == "FD":
+                val = self.get_avl_fort_arr(blk, var)
+                val += ref_seeds[ref_key] * scale
+            
+            self.set_avl_fort_arr(blk, var, val)
+            
+    def get_reference_ad_seeds(self) -> Dict[str, float]:
+        ref_seeds = {}
+        for ref_key in self.ref_var_to_fort_var:
+            blk, var = self.ref_var_to_fort_var[ref_key]
+        
+            blk += self.ad_suffix
+            var += self.ad_suffix
+            
+            val = self.get_avl_fort_arr(blk, var)
+            ref_seeds[ref_key] = copy.deepcopy(val)
+        
+        return ref_seeds
+        
     def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:
         geom_seeds = {}
         for surf_key in self.surf_geom_to_fort_var:
@@ -1189,6 +1291,7 @@ class AVLSolver(object):
                 # print(blk, var, val, slicer)
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
+# --- state ad seeds ---
     def get_gamma_ad_seeds(self) -> np.ndarray:
         slicer = (slice(0, self.get_mesh_size()),)
         blk = "VRTX_R_DIFF"
@@ -1233,6 +1336,29 @@ class AVLSolver(object):
 
         self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
+# --- residual AD seeds --- 
+    def get_residual_ad_seeds(self) -> np.ndarray:
+        res_slice = (slice(0, self.get_mesh_size()),)
+        res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", slicer=res_slice))
+        return res_seeds
+
+    def set_residual_ad_seeds(self, res_seeds: np.ndarray, scale=1.0) -> None:
+        res_slice = (slice(0, self.get_mesh_size()),)
+        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", res_seeds * scale, slicer=res_slice)
+        return
+
+    def get_residual_d_ad_seeds(self) -> np.ndarray:
+        res_slice = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
+        res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_D_DIFF", slicer=res_slice))
+        return res_seeds
+
+    def set_residual_d_ad_seeds(self, res_d_seeds: np.ndarray, scale=1.0) -> None:
+        res_slice = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
+
+        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_D_DIFF", res_d_seeds * scale, slicer=res_slice)
+        return
+
+# --- output AD seeds ---
     def get_function_ad_seeds(self):
         func_seeds = {}
         for _var in self.case_var_to_fort_var:
@@ -1289,27 +1415,7 @@ class AVLSolver(object):
 
             self.set_avl_fort_arr(blk, var, val_arr, slicer=slicer)
 
-    def get_residual_ad_seeds(self) -> np.ndarray:
-        res_slice = (slice(0, self.get_mesh_size()),)
-        res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", slicer=res_slice))
-        return res_seeds
-
-    def set_residual_ad_seeds(self, res_seeds: np.ndarray, scale=1.0) -> None:
-        res_slice = (slice(0, self.get_mesh_size()),)
-        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_DIFF", res_seeds * scale, slicer=res_slice)
-        return
-
-    def get_residual_d_ad_seeds(self) -> np.ndarray:
-        res_slice = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
-        res_seeds = copy.deepcopy(self.get_avl_fort_arr("VRTX_R_DIFF", "RES_D_DIFF", slicer=res_slice))
-        return res_seeds
-
-    def set_residual_d_ad_seeds(self, res_d_seeds: np.ndarray, scale=1.0) -> None:
-        res_slice = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
-
-        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_D_DIFF", res_d_seeds * scale, slicer=res_slice)
-        return
-
+# --- derivative utils
     def clear_ad_seeds(self):
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
@@ -1366,10 +1472,13 @@ class AVLSolver(object):
 
                         print(att, _var, norm)
 
+# --- jacobian vecotr products --- 
     def execute_jac_vec_prod_fwd(
         self,
         con_seeds: Optional[Dict[str, float]] = None,
         geom_seeds: Optional[Dict[str, Dict[str, any]]] = None,
+        param_seeds: Optional[Dict[str, float]] = None,
+        ref_seeds: Optional[Dict[str, float]] = None,
         gamma_seeds: Optional[np.ndarray] = None,
         gamma_d_seeds: Optional[np.ndarray] = None,
         mode="AD",
@@ -1394,7 +1503,13 @@ class AVLSolver(object):
 
         if gamma_d_seeds is None:
             gamma_d_seeds = np.zeros((num_control_surfs, mesh_size))
-
+        
+        if param_seeds is None:
+            param_seeds = {}
+            
+        if ref_seeds is None:
+            ref_seeds = {}
+        
         res_slice = (slice(0, mesh_size),)
         res_d_slice = (slice(0, num_control_surfs), slice(0, mesh_size))
 
@@ -1405,6 +1520,8 @@ class AVLSolver(object):
             self.set_geom_ad_seeds(geom_seeds)
             self.set_gamma_ad_seeds(gamma_seeds)
             self.set_gamma_d_ad_seeds(gamma_d_seeds)
+            self.set_parameter_ad_seeds(param_seeds)
+            self.set_reference_ad_seeds(ref_seeds)
 
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
@@ -1420,6 +1537,8 @@ class AVLSolver(object):
             self.set_constraint_ad_seeds(con_seeds, scale=0.0)
             self.set_geom_ad_seeds(geom_seeds, scale=0.0)
             self.set_gamma_ad_seeds(gamma_seeds, scale=0.0)
+            self.set_parameter_ad_seeds(param_seeds, scale=0.0)
+            self.set_reference_ad_seeds(ref_seeds, scale=0.0)
 
             self.set_avl_fort_arr("VRTX_R_DIFF", "GAM_DIFF", gamma_seeds * 0.0, slicer=res_slice)
 
@@ -1428,6 +1547,8 @@ class AVLSolver(object):
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=step)
+            self.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
+            self.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
 
             # propogate the seeds through without resolving
             self.avl.update_surfaces()
@@ -1444,6 +1565,8 @@ class AVLSolver(object):
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=-1 * step)
+            self.set_parameter_ad_seeds(param_seeds, mode="FD", scale=-1*step)
+            self.set_reference_ad_seeds(ref_seeds, mode="FD", scale=-1*step)
 
             self.avl.update_surfaces()
             self.avl.get_res()
@@ -1521,6 +1644,8 @@ class AVLSolver(object):
         geom_seeds = self.get_geom_ad_seeds()
         gamma_seeds = self.get_gamma_ad_seeds()
         gamma_d_seeds = self.get_gamma_d_ad_seeds()
+        param_seeds = self.get_parameter_ad_seeds()
+        ref_seeds = self.get_reference_ad_seeds()
         if print_timings:
             print(f"    Time to extract seeds: {time.time() - time_last}")
             time_last = time.time()
@@ -1533,19 +1658,14 @@ class AVLSolver(object):
             print(f"    Time to clear seeds: {time.time() - time_last}")
             time_last = time.time()
 
-        return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds
+        return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, param_seeds, ref_seeds
 
-    def scipy_solve():
-        """
-        use scipy's linear solves to solve the system of equations.
-        """
-        pass
 
     def execute_adjoint_solve():
-        pass
+        raise NotImplementedError
 
     def execute_direct_solve():
-        pass
+        raise NotImplementedError
 
     def execute_run_sensitivies(self, funcs, consurf_derivs=None, print_timings=False):
 
@@ -1565,7 +1685,7 @@ class AVLSolver(object):
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
-            _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -1582,7 +1702,7 @@ class AVLSolver(object):
             dfdR = self.get_residual_ad_seeds()
             dfdR_d = self.get_residual_d_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
                 func_seeds={func: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
             )
             if print_timings:
@@ -1591,6 +1711,8 @@ class AVLSolver(object):
 
             sens[func].update(con_seeds)
             sens[func].update(geom_seeds)
+            sens[func].update(param_seeds)
+            sens[func].update(ref_seeds)
 
         if consurf_derivs is not None:
             if print_timings:
@@ -1608,7 +1730,7 @@ class AVLSolver(object):
 
                     # get the RHS of the adjiont equation (pFpU)
                     # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+                    _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
                     if print_timings:
                         print(f"Time to get RHS: {time.time() - time_last}")
                         time_last = time.time()
@@ -1626,7 +1748,7 @@ class AVLSolver(object):
                     dfdR = self.get_residual_ad_seeds()
                     dfdR_d = self.get_residual_d_ad_seeds()
                     # self.clear_ad_seeds()
-                    con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
+                    con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
                         consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
                     )
                     if print_timings:
@@ -1635,6 +1757,8 @@ class AVLSolver(object):
 
                     sens[func_key][cs_key].update(con_seeds)
                     sens[func_key][cs_key].update(geom_seeds)
+                    sens[func_key][cs_key].update(param_seeds)
+                    sens[func_key][cs_key].update(ref_seeds)
                     cs_deriv_seeds[func_key][cs_key] = 0.0
 
         return sens

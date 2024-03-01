@@ -37,11 +37,13 @@ C
       IR = 1
 C
 C---- for trim command, first number in arg string should be part of command
-
-C       WRITE(*,*) 'TRIMSET --- YES '
-C       WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
-C       WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
-
+      
+      if(LVERBOSE) then 
+            WRITE(*,*) 'TRIMSET --- YES '
+            WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
+            WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
+      endif
+      
       IF(COMAND(1:1) .NE. 'C') THEN
        LMATCH = .FALSE.
  
@@ -50,8 +52,10 @@ C       WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
 C
       CNUM = COMARG(1:2)
 C
-C       WRITE(*,*)'CNUM: ' , CNUM
-
+      if(LVERBOSE) then 
+            WRITE(*,*)'CNUM: ' , CNUM
+      ENDIF
+      
       IF    (CNUM.EQ.'1 ') THEN
 
        KTRIM = 1
@@ -80,9 +84,11 @@ C
 C------ current case has CL=0 ... set it using CL constraint, if it's present
         DO IV = 1, NVTOT
           IF(ICON(IV,IR) .EQ. ICCL) THEN
-C            WRITE(*,*)
-           WRITE(*,*)'       Setting trim CL from current CL constraint'
-           PARVAL(IPCL,IR) = CONVAL(ICCL,IR)
+            if(LVERBOSE) then 
+      WRITE(*,*)
+      WRITE(*,*)'       Setting trim CL from current CL constraint'
+            endif
+            PARVAL(IPCL,IR) = CONVAL(ICCL,IR)
            GO TO 101
           ENDIF
         ENDDO
@@ -298,31 +304,35 @@ C----- jump back here just for menu
 C        WRITE(*,2000) PROMPT(1:NPR),RTITLE(IR)
 C
        IF    (KTRIM.EQ.1) THEN
-C         WRITE(*,2005) '(level or banked horizontal flight)'
-C         WRITE(*,2105) 'B  bank angle = ', PHI  , 'deg'
-C         WRITE(*,2105) 'C  CL         = ', CL   , ' '
-C         WRITE(*,2105) 'V  velocity   = ', VEE  , UNCHV(1:NUV)
-C         WRITE(*,2105) 'M  mass       = ', RMASS, UNCHM(1:NUM)
-C         WRITE(*,2105) 'D  air dens.  = ', RHO  , UNCHD(1:NUD)
-C         WRITE(*,2105) 'G  grav.acc.  = ', GEE  , UNCHA(1:NUA)
-C         WRITE(*,2105) '   turn rad.  = ', RAD  , UNCHL(1:NUL)
-C         WRITE(*,2105) '   load fac.  = ', FAC  , ' '
-C         WRITE(*,2105) 'X  X_cg       = ', XCG  , 'Lunit'
-C         WRITE(*,2105) 'Y  Y_cg       = ', YCG  , 'Lunit'
-C         WRITE(*,2105) 'Z  Z_cg       = ', ZCG  , 'Lunit'
+          if(LVERBOSE) then 
+            WRITE(*,2005) '(level or banked horizontal flight)'
+            WRITE(*,2105) 'B  bank angle = ', PHI  , 'deg'
+            WRITE(*,2105) 'C  CL         = ', CL   , ' '
+            WRITE(*,2105) 'V  velocity   = ', VEE  , UNCHV(1:NUV)
+            WRITE(*,2105) 'M  mass       = ', RMASS, UNCHM(1:NUM)
+            WRITE(*,2105) 'D  air dens.  = ', RHO  , UNCHD(1:NUD)
+            WRITE(*,2105) 'G  grav.acc.  = ', GEE  , UNCHA(1:NUA)
+            WRITE(*,2105) '   turn rad.  = ', RAD  , UNCHL(1:NUL)
+            WRITE(*,2105) '   load fac.  = ', FAC  , ' '
+            WRITE(*,2105) 'X  X_cg       = ', XCG  , 'Lunit'
+            WRITE(*,2105) 'Y  Y_cg       = ', YCG  , 'Lunit'
+            WRITE(*,2105) 'Z  Z_cg       = ', ZCG  , 'Lunit'
+          endif
 C C
        ELSEIF(KTRIM.EQ.2) THEN
-C         WRITE(*,2005) '(steady pitch rate - looping flight)'
-C         WRITE(*,2105) 'C  CL        = ', CL   , ' '
-C         WRITE(*,2105) 'V  velocity  = ', VEE  , UNCHV(1:NUV) 
-C         WRITE(*,2105) 'M  mass      = ', RMASS, UNCHM(1:NUM)
-C         WRITE(*,2105) 'D  air dens. = ', RHO  , UNCHD(1:NUD) 
-C         WRITE(*,2105) 'G  grav.acc. = ', GEE  , UNCHA(1:NUA) 
-C         WRITE(*,2105) 'R  turn rad. = ', RAD  , UNCHL(1:NUL) 
-C         WRITE(*,2105) 'L  load fac. = ', FAC  , ' '
-C         WRITE(*,2105) 'X  X_cg      = ', XCG  , 'Lunit'
-C         WRITE(*,2105) 'Y  Y_cg      = ', YCG  , 'Lunit'
-C         WRITE(*,2105) 'Z  Z_cg      = ', ZCG  , 'Lunit'
+       if(LVERBOSE) then
+         WRITE(*,2005) '(steady pitch rate - looping flight)'
+         WRITE(*,2105) 'C  CL        = ', CL   , ' '
+         WRITE(*,2105) 'V  velocity  = ', VEE  , UNCHV(1:NUV) 
+         WRITE(*,2105) 'M  mass      = ', RMASS, UNCHM(1:NUM)
+         WRITE(*,2105) 'D  air dens. = ', RHO  , UNCHD(1:NUD) 
+         WRITE(*,2105) 'G  grav.acc. = ', GEE  , UNCHA(1:NUA) 
+         WRITE(*,2105) 'R  turn rad. = ', RAD  , UNCHL(1:NUL) 
+         WRITE(*,2105) 'L  load fac. = ', FAC  , ' '
+         WRITE(*,2105) 'X  X_cg      = ', XCG  , 'Lunit'
+         WRITE(*,2105) 'Y  Y_cg      = ', YCG  , 'Lunit'
+         WRITE(*,2105) 'Z  Z_cg      = ', ZCG  , 'Lunit'
+       endif
 C C
        ENDIF
 C

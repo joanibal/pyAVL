@@ -4,8 +4,8 @@ C
 C  Differentiation of vvor in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: chordv rc rv1 rv2 zsym ysym
 C                wc_gam
-C   with respect to varying inputs: chordv rc rv1 rv2 zsym ysym
-C                wc_gam
+C   with respect to varying inputs: chordv rc rv1 rv2 zsym betm
+C                ysym wc_gam
 C***********************************************************************
 C    Module:  aic.f
 C 
@@ -27,10 +27,10 @@ C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 C
 C
-      SUBROUTINE VVOR_B(betm, iysym, ysym, ysym_diff, izsym, zsym, 
-     +                  zsym_diff, vrcore, nv, rv1, rv1_diff, rv2, 
-     +                  rv2_diff, nsurfv, chordv, chordv_diff, nc, rc, 
-     +                  rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
+      SUBROUTINE VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, 
+     +                  zsym, zsym_diff, vrcore, nv, rv1, rv1_diff, rv2
+     +                  , rv2_diff, nsurfv, chordv, chordv_diff, nc, rc
+     +                  , rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
      +                  ncdim)
       INTEGER nv
 C--------------------------------------------------------------------
@@ -148,6 +148,7 @@ C
       REAL zsym_diff
       INTEGER izsym
       REAL betm
+      REAL betm_diff
       REAL ysym
       REAL ysym_diff
       INTEGER iysym
@@ -155,6 +156,7 @@ C
 C     
       fysym = FLOAT(iysym)
       fzsym = FLOAT(izsym)
+      betm_diff = 0.D0
 C$BWD-OF II-LOOP 
       DO i=1,nc
 C...  Control point location
@@ -255,9 +257,9 @@ C
             CALL VORVELC_B(x, x_diff, y, y_diff, z, z_diff, lbound, rv1(
      +                     1, j), rv1_diff(1, j), arg1, arg1_diff, arg2
      +                     , arg2_diff, rv2(1, j), rv2_diff(1, j), arg3
-     +                     , arg3_diff, arg4, arg4_diff, betm, uii, 
-     +                     uii_diff, vii, vii_diff, wii, wii_diff, rcore
-     +                     , rcore_diff)
+     +                     , arg3_diff, arg4, arg4_diff, betm, betm_diff
+     +                     , uii, uii_diff, vii, vii_diff, wii, wii_diff
+     +                     , rcore, rcore_diff)
             zoff_diff = arg4_diff + arg2_diff
             rv2_diff(3, j) = rv2_diff(3, j) - arg4_diff
             yoff_diff = arg3_diff + arg1_diff
@@ -286,8 +288,8 @@ C
      +                   , j), rv2_diff(1, j), rv2(2, j), rv2_diff(2, j)
      +                   , arg1, arg1_diff, rv1(1, j), rv1_diff(1, j), 
      +                   rv1(2, j), rv1_diff(2, j), arg2, arg2_diff, 
-     +                   betm, uii, uii_diff, vii, vii_diff, wii, 
-     +                   wii_diff, rcore, rcore_diff)
+     +                   betm, betm_diff, uii, uii_diff, vii, vii_diff, 
+     +                   wii, wii_diff, rcore, rcore_diff)
           zoff_diff = zoff_diff + arg2_diff + arg1_diff
           rv1_diff(3, j) = rv1_diff(3, j) - arg2_diff
           rv2_diff(3, j) = rv2_diff(3, j) - arg1_diff
@@ -305,8 +307,8 @@ C
      +                     1, j), rv2_diff(1, j), arg1, arg1_diff, rv2(3
      +                     , j), rv2_diff(3, j), rv1(1, j), rv1_diff(1, 
      +                     j), arg2, arg2_diff, rv1(3, j), rv1_diff(3, j
-     +                     ), betm, ui, ui_diff, vi, vi_diff, wi, 
-     +                     wi_diff, rcore, rcore_diff)
+     +                     ), betm, betm_diff, ui, ui_diff, vi, vi_diff
+     +                     , wi, wi_diff, rcore, rcore_diff)
             yoff_diff = yoff_diff + arg2_diff + arg1_diff
             rv1_diff(2, j) = rv1_diff(2, j) - arg2_diff
             rv2_diff(2, j) = rv2_diff(2, j) - arg1_diff
@@ -317,8 +319,9 @@ C
      +                   , j), rv1_diff(1, j), rv1(2, j), rv1_diff(2, j)
      +                   , rv1(3, j), rv1_diff(3, j), rv2(1, j), 
      +                   rv2_diff(1, j), rv2(2, j), rv2_diff(2, j), rv2(
-     +                   3, j), rv2_diff(3, j), betm, u, u_diff, v, 
-     +                   v_diff, w, w_diff, rcore, rcore_diff)
+     +                   3, j), rv2_diff(3, j), betm, betm_diff, u, 
+     +                   u_diff, v, v_diff, w, w_diff, rcore, rcore_diff
+     +                  )
           zsym_diff = zsym_diff + 2.0*zoff_diff
           ysym_diff = ysym_diff + 2.0*yoff_diff
           CALL POPCONTROL2B(branch)
@@ -391,9 +394,9 @@ C
 
 C  Differentiation of vorvelc in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: y1 y2 rcore u v w x y z z1
-C                z2 x1 x2
+C                z2 x1 x2 beta
 C   with respect to varying inputs: y1 y2 rcore x y z z1 z2 x1
-C                x2
+C                x2 beta
 C VORVEL
 C
 C
@@ -401,9 +404,9 @@ C
 C
       SUBROUTINE VORVELC_B(x, x_diff, y, y_diff, z, z_diff, lbound, x1, 
      +                     x1_diff, y1, y1_diff, z1, z1_diff, x2, 
-     +                     x2_diff, y2, y2_diff, z2, z2_diff, beta, u, 
-     +                     u_diff, v, v_diff, w, w_diff, rcore, 
-     +                     rcore_diff)
+     +                     x2_diff, y2, y2_diff, z2, z2_diff, beta, 
+     +                     beta_diff, u, u_diff, v, v_diff, w, w_diff, 
+     +                     rcore, rcore_diff)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
 C----------------------------------------------------------
@@ -442,13 +445,13 @@ C
       REAL bdi_diff
       REAL temp
       REAL temp_diff
+      REAL temp_diff0
       REAL temp0
       REAL temp1
-      REAL temp_diff0
       REAL temp_diff1
+      REAL temp_diff2
       REAL temp2
       REAL temp3
-      REAL temp_diff2
       REAL temp_diff3
       REAL temp_diff4
       INTEGER ii1
@@ -480,6 +483,7 @@ C
       REAL x2
       REAL x2_diff
       REAL beta
+      REAL beta_diff
       REAL pi4inv
 C
       DATA pi4inv /0.079577472/
@@ -498,6 +502,7 @@ C
       amag = SQRT(asq)
       bmag = SQRT(bsq)
 C
+      u = 0.
 C
 C---- contribution from the transverse bound leg
       IF (lbound .AND. amag*bmag .NE. 0.0) THEN
@@ -515,6 +520,7 @@ C        T = (AMAG+BMAG)*(1.0 - ADB/AB) / (AXBSQ + ALSQ*RCORE**2)
         t = ((bsq-adb)/SQRT(bsq+rcore**2)+(asq-adb)/SQRT(asq+rcore**2))/
      +    (axbsq+alsq*rcore**2)
 C
+        u = axb(1)*t
         CALL PUSHCONTROL1B(0)
       ELSE
         CALL PUSHCONTROL1B(1)
@@ -549,13 +555,15 @@ C
       END IF
       w_diff = pi4inv*w_diff
       v_diff = pi4inv*v_diff
-      u_diff = pi4inv*u_diff/beta
+      temp_diff4 = pi4inv*u_diff/beta
+      u_diff = temp_diff4
+      beta_diff = beta_diff - u*temp_diff4/beta
       CALL POPCONTROL1B(branch)
       IF (branch .EQ. 0) THEN
         t_diff = b(3)*v_diff - b(2)*w_diff
-        temp_diff3 = t_diff/(rsq+rcore**2)
-        temp_diff2 = -((1.0-bdi/bmag)*temp_diff3/(rsq+rcore**2))
-        rsq_diff = temp_diff2
+        temp_diff4 = t_diff/(rsq+rcore**2)
+        temp_diff3 = -((1.0-bdi/bmag)*temp_diff4/(rsq+rcore**2))
+        rsq_diff = temp_diff3
         bxisq_diff = rsq_diff
         DO ii1=1,3
           b_diff(ii1) = 0.D0
@@ -563,9 +571,9 @@ C
         b_diff(2) = b_diff(2) + 2*b(2)*bxisq_diff - t*w_diff
         b_diff(3) = b_diff(3) + t*v_diff + 2*b(3)*bxisq_diff
         CALL POPREAL8(t)
-        bdi_diff = -(temp_diff3/bmag)
-        bmag_diff = bdi*temp_diff3/bmag**2
-        rcore_diff = rcore_diff + 2*rcore*temp_diff2
+        bdi_diff = -(temp_diff4/bmag)
+        bmag_diff = bdi*temp_diff4/bmag**2
+        rcore_diff = rcore_diff + 2*rcore*temp_diff3
         b_diff(1) = b_diff(1) + bdi_diff
       ELSE
         bmag_diff = 0.D0
@@ -581,12 +589,12 @@ C
           a_diff(ii1) = 0.D0
         ENDDO
         t_diff = a(3)*v_diff - a(2)*w_diff
-        temp_diff3 = -(t_diff/(rsq+rcore**2))
-        adi_diff = -(temp_diff3/amag)
-        amag_diff = adi*temp_diff3/amag**2
-        temp_diff2 = -((1.0-adi/amag)*temp_diff3/(rsq+rcore**2))
-        rsq_diff = temp_diff2
-        rcore_diff = rcore_diff + 2*rcore*temp_diff2
+        temp_diff4 = -(t_diff/(rsq+rcore**2))
+        adi_diff = -(temp_diff4/amag)
+        amag_diff = adi*temp_diff4/amag**2
+        temp_diff3 = -((1.0-adi/amag)*temp_diff4/(rsq+rcore**2))
+        rsq_diff = temp_diff3
+        rcore_diff = rcore_diff + 2*rcore*temp_diff3
         axisq_diff = rsq_diff
         a_diff(2) = a_diff(2) + 2*a(2)*axisq_diff - t*w_diff
         a_diff(3) = a_diff(3) + t*v_diff + 2*a(3)*axisq_diff
@@ -606,33 +614,33 @@ C
         temp1 = (bsq-adb)/temp0
         temp2 = SQRT(asq + rcore*rcore)
         temp3 = (asq-adb)/temp2
-        temp_diff = t_diff/temp
-        temp_diff4 = -((temp1+temp3)*temp_diff/temp)
-        axbsq_diff = temp_diff4
+        temp_diff0 = t_diff/temp
+        temp_diff = -((temp1+temp3)*temp_diff0/temp)
+        axbsq_diff = temp_diff
         DO ii1=1,3
           axb_diff(ii1) = 0.D0
         ENDDO
         axb_diff(3) = axb_diff(3) + t*w_diff + 2*axb(3)*axbsq_diff
         axb_diff(2) = axb_diff(2) + t*v_diff + 2*axb(2)*axbsq_diff
         axb_diff(1) = axb_diff(1) + t*u_diff + 2*axb(1)*axbsq_diff
-        temp_diff0 = temp_diff/temp0
-        temp_diff2 = temp_diff/temp2
-        alsq_diff = rcore**2*temp_diff4
-        adb_diff = -temp_diff2 - temp_diff0 - 2.0*alsq_diff
+        temp_diff1 = temp_diff0/temp0
+        temp_diff3 = temp_diff0/temp2
+        alsq_diff = rcore**2*temp_diff
+        adb_diff = -temp_diff3 - temp_diff1 - 2.0*alsq_diff
         IF (asq + rcore**2 .EQ. 0.D0) THEN
-          temp_diff3 = 0.D0
+          temp_diff4 = 0.D0
         ELSE
-          temp_diff3 = -(temp3*temp_diff2/(2.0*temp2))
+          temp_diff4 = -(temp3*temp_diff3/(2.0*temp2))
         END IF
-        asq_diff = temp_diff2 + temp_diff3 + alsq_diff
+        asq_diff = temp_diff3 + temp_diff4 + alsq_diff
         IF (bsq + rcore**2 .EQ. 0.D0) THEN
-          temp_diff1 = 0.D0
+          temp_diff2 = 0.D0
         ELSE
-          temp_diff1 = -(temp1*temp_diff0/(2.0*temp0))
+          temp_diff2 = -(temp1*temp_diff1/(2.0*temp0))
         END IF
-        rcore_diff = rcore_diff + 2*rcore*alsq*temp_diff4 + 2*rcore*
-     +    temp_diff3 + 2*rcore*temp_diff1
-        bsq_diff = temp_diff0 + temp_diff1 + alsq_diff
+        rcore_diff = rcore_diff + 2*rcore*alsq*temp_diff + 2*rcore*
+     +    temp_diff4 + 2*rcore*temp_diff2
+        bsq_diff = temp_diff1 + temp_diff2 + alsq_diff
         a_diff(1) = a_diff(1) + b(1)*adb_diff + b(2)*axb_diff(3) - b(3)*
      +    axb_diff(2)
         b_diff(1) = b_diff(1) + a(1)*adb_diff + a(3)*axb_diff(2) - a(2)*
@@ -667,12 +675,17 @@ C
       y2_diff = y2_diff + b_diff(2)
       y_diff = y_diff - b_diff(2) - a_diff(2)
       b_diff(2) = 0.D0
-      x2_diff = x2_diff + b_diff(1)/beta
-      x_diff = x_diff - b_diff(1)/beta - a_diff(1)/beta
+      temp_diff = b_diff(1)/beta
+      x2_diff = x2_diff + temp_diff
+      x_diff = x_diff - temp_diff
+      beta_diff = beta_diff - (x2-x)*temp_diff/beta
       z1_diff = z1_diff + a_diff(3)
       a_diff(3) = 0.D0
       y1_diff = y1_diff + a_diff(2)
       a_diff(2) = 0.D0
-      x1_diff = x1_diff + a_diff(1)/beta
+      temp_diff = a_diff(1)/beta
+      x1_diff = x1_diff + temp_diff
+      x_diff = x_diff - temp_diff
+      beta_diff = beta_diff - (x1-x)*temp_diff/beta
       END
 

@@ -64,17 +64,19 @@ class TestGeom(unittest.TestCase):
         assert self.avl_solver.get_mesh_size() == 780
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("alpha"),
+            self.avl_solver.get_case_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("beta"),
+            self.avl_solver.get_case_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
+        
+        coefs = self.avl_solver.get_case_total_data()
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("CL"),
+            coefs["CL"],
             5.407351081559913,
             rtol=1e-8,
         )
@@ -91,17 +93,19 @@ class TestGeom(unittest.TestCase):
         self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("alpha"),
+            self.avl_solver.get_case_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("beta"),
+            self.avl_solver.get_case_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
+        
+        coefs = self.avl_solver.get_case_total_data()
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("CL"),
+            coefs["CL"],
             5.407351081559913,
             rtol=1e-8,
         )

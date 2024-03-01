@@ -621,13 +621,15 @@ C
       subroutine set_par_and_cons(NITER, IR)
       include 'AVL.INC'
       integer NITER, IR
+      
+      call set_params(IR)
+      ! Additionally set the reference point to be at the cg
       XYZREF(1) = PARVAL(IPXCG,IR)
       XYZREF(2) = PARVAL(IPYCG,IR)
       XYZREF(3) = PARVAL(IPZCG,IR)
 C
       CDREF = PARVAL(IPCD0,IR)
 C
-      MACH = PARVAL(IPMACH,IR)
 C
       IF(MACH.NE.AMACH) THEN
 C----- new Mach number invalidates close to everything that's stored

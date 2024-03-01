@@ -12,26 +12,41 @@ class AVLGroup(om.Group):
         self.options.declare("write_grid", types=bool, default=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
 
+        self.options.declare("input_param_vals", types=bool, default=False)
+        self.options.declare("input_ref_vals", types=bool, default=False)
+        
         self.options.declare("output_stabililty_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
 
     def setup(self):
         geom_file = self.options["geom_file"]
         mass_file = self.options["mass_file"]
+        
+        input_param_vals = self.options["input_param_vals"]
+        input_ref_vals = self.options["input_ref_vals"]
+        
         output_stabililty_derivs = self.options["output_stabililty_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
         avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
-        self.add_subsystem("solver", AVLSolverComp(avl=avl), promotes=["*"])
+        self.add_subsystem("solver", AVLSolverComp(avl=avl, 
+                                    input_param_vals=input_param_vals,
+                                    input_ref_vals=input_ref_vals),
+                                    promotes=["*"])
         self.add_subsystem("funcs", AVLFuncsComp(avl=avl,
+                                    input_param_vals=input_param_vals,
+                                    input_ref_vals=input_ref_vals,
                                     output_stabililty_derivs=output_stabililty_derivs,
                                     output_con_surf_derivs=output_con_surf_derivs),
                                     promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
-                "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"]), promotes=["*"]
-            )
+                "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"]),
+                                                    input_param_vals=input_param_vals,
+                                                    input_ref_vals=input_ref_vals,
+                                                    promotes=["*"]
+                                                )
 
 # helper functions used by the AVL components
 def add_avl_controls_as_inputs(self, avl):
@@ -58,6 +73,21 @@ def add_avl_conditions_as_inputs(sys, avl):
         
     sys.add_input("alpha", val=0.0, units="deg", tags="flt_cond")
     sys.add_input("beta", val=0.0, units="deg" , tags="flt_cond")
+
+
+def add_avl_params_as_inputs(sys, avl):
+    # TODO: add all par vals with the analysis is supported
+    
+    # only adding the ones people would use for now
+    for param in ["CD0", "Mach", "X cg", "Y cg", "Z cg"]:
+        val = avl.get_case_parameter(param)
+        sys.add_input(param, val=val, tags="param")
+
+def add_avl_refs_as_inputs(sys, avl):
+    ref_data = avl.get_reference_data()
+    
+    for key, val in ref_data.items():
+        sys.add_input(key, val=val, tags="ref_val")
 
 
 def om_input_to_surf_dict(sys, inputs):
@@ -92,6 +122,26 @@ def om_surf_dict_to_input(surf_dict):
 
     return input_data
 
+def om_set_avl_inputs(sys, inputs):
+    for c_name in sys.control_names:
+        sys.avl.add_constraint(c_name, inputs[c_name][0])
+
+    sys.avl.add_constraint("alpha", inputs["alpha"][0])
+    sys.avl.add_constraint("beta", inputs["beta"][0])
+
+    # add the parameters to the run
+    for param in sys.avl.param_idx_dict:
+        if param in inputs:
+            val = inputs[param][0]
+            sys.avl.set_case_parameter(param, val)
+    
+    # add the parameters to the run
+    for ref in sys.avl.ref_var_to_fort_var:
+        if ref in inputs:
+            val = inputs[ref][0]
+            sys.avl.set_reference_data({ref: val})
+    
+
 
 class AVLSolverComp(om.ImplicitComponent):
     """
@@ -100,9 +150,15 @@ class AVLSolverComp(om.ImplicitComponent):
 
     def initialize(self):
         self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("input_param_vals", types=bool, default=False)
+        self.options.declare("input_ref_vals", types=bool, default=False)
+        
 
     def setup(self):
         self.avl = self.options["avl"]
+        input_param_vals = self.options["input_param_vals"]
+        input_ref_vals = self.options["input_ref_vals"]
+        
         self.num_states = self.avl.get_mesh_size()
         self.num_cs = self.avl.get_num_control_surfs()
 
@@ -111,16 +167,18 @@ class AVLSolverComp(om.ImplicitComponent):
         
         add_avl_conditions_as_inputs(self, self.avl)
         
+        if input_param_vals:
+            add_avl_params_as_inputs(self, self.avl)
+        
+        if input_ref_vals:
+            add_avl_refs_as_inputs(self, self.avl)
+        
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_vars(self, self.avl, add_as="inputs")
 
     def apply_nonlinear(self, inputs, outputs, residuals):
-        for c_name in self.control_names:
-            self.avl.add_constraint(c_name, inputs[c_name][0])
-
-        self.avl.add_constraint("alpha", inputs["alpha"][0])
-        self.avl.add_constraint("beta", inputs["beta"][0])
-
+        om_set_avl_inputs(self, inputs)
+        
         surf_data = om_input_to_surf_dict(self, inputs)
         self.avl.set_surface_params(surf_data)
 
@@ -147,11 +205,7 @@ class AVLSolverComp(om.ImplicitComponent):
 
     def solve_nonlinear(self, inputs, outputs):
         start_time = time.time()
-        for c_name in self.control_names:
-            self.avl.add_constraint(c_name, inputs[c_name][0])
-
-        self.avl.add_constraint("alpha", inputs["alpha"][0])
-        self.avl.add_constraint("beta", inputs["beta"][0])
+        om_set_avl_inputs(self, inputs)
 
         # update the surface parameters
         surf_data = om_input_to_surf_dict(self, inputs)
@@ -188,8 +242,20 @@ class AVLSolverComp(om.ImplicitComponent):
                     con_seeds[con_key] = d_inputs[con_key]
                     
             geom_seeds = om_input_to_surf_dict(self, d_inputs)
+            
+            
+            param_seeds = {}
+            for param in self.avl.param_idx_dict:
+                if param in d_inputs:
+                    param_seeds[param] = d_inputs[param]
+                
+            ref_seeds = {}
+            for ref in self.avl.ref_var_to_fort_var:
+                if ref in d_inputs:
+                    ref_seeds[ref] = d_inputs[ref]
 
-            _, res_seeds, _, res_d_seeds = self.avl.execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds)
+            _, res_seeds, _, res_d_seeds = self.avl.execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds,
+                                                                           param_seeds=param_seeds, ref_seeds=ref_seeds)
 
             d_residuals["gamma"] += res_seeds
             d_residuals["gamma_d"] += res_seeds
@@ -200,7 +266,7 @@ class AVLSolverComp(om.ImplicitComponent):
                 res_seeds = d_residuals["gamma"]
                 res_d_seeds = d_residuals["gamma_d"]
 
-                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds = self.avl.execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
                     res_seeds=res_seeds, res_d_seeds=res_d_seeds
                 )
 
@@ -215,10 +281,15 @@ class AVLSolverComp(om.ImplicitComponent):
                 for d_input in d_inputs:
                     if d_input in d_input_geom:
                         d_inputs[d_input] += d_input_geom[d_input]
-                    if d_input in ["alpha", "beta"]:
+                    elif d_input in ["alpha", "beta"]:
                         d_inputs[d_input] += con_seeds[d_input]
-                    if d_input in self.control_names:
+                    elif d_input in self.control_names:
                         d_inputs[d_input] += con_seeds[d_input]
+                    elif d_input in param_seeds:
+                        d_inputs[d_input] += param_seeds[d_input]
+                    elif d_input in ref_seeds:
+                        d_inputs[d_input] += ref_seeds[d_input]
+
                   
 
     def solve_linear(self, d_outputs, d_residuals, mode):
@@ -239,17 +310,28 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.options.declare("avl", types=AVLSolver, recordable=False)
         self.options.declare("output_stabililty_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
+        self.options.declare("input_param_vals", types=bool, default=False)
+        self.options.declare("input_ref_vals", types=bool, default=False)
+        
 
     def setup(self):
         self.avl = self.options["avl"]
         self.num_states = self.avl.get_mesh_size()
         self.num_cs = self.avl.get_num_control_surfs()
-
+        input_param_vals = self.options["input_param_vals"]
+        input_ref_vals = self.options["input_ref_vals"]
+        
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
 
         add_avl_conditions_as_inputs(self, self.avl)
 
+        if input_param_vals:
+            add_avl_params_as_inputs(self, self.avl)
+        
+        if input_ref_vals:
+            add_avl_refs_as_inputs(self, self.avl)
+            
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_vars(self, self.avl, add_as="inputs")
 
@@ -280,13 +362,7 @@ class AVLFuncsComp(om.ExplicitComponent):
 
         # TODO: add_constraint does not correctly do derives yet
         start_time = time.time()
-        
-        for c_name in self.control_names:
-            self.avl.add_constraint(c_name, inputs[c_name][0])
-
-        # 0 to convert the 1 element arr to a scalar
-        self.avl.add_constraint("alpha", inputs["alpha"][0])
-        self.avl.add_constraint("beta", inputs["beta"][0])
+        om_set_avl_inputs(self, inputs)
 
         # update the surface parameters
         surf_data = om_input_to_surf_dict(self, inputs)
@@ -337,6 +413,7 @@ class AVLFuncsComp(om.ExplicitComponent):
             for con_key in ["alpha", "beta"]:
                 if con_key in d_inputs:
                     con_seeds[con_key] = d_inputs[con_key]
+            
             for con_key in self.control_names:
                 if con_key in d_inputs:
                     con_seeds[con_key] = d_inputs[con_key]
@@ -350,11 +427,22 @@ class AVLFuncsComp(om.ExplicitComponent):
                 gamma_d_seeds = d_inputs["gamma_d"]
             else:
                 gamma_d_seeds = None
+                
+            param_seeds = {}
+            for param in self.avl.param_idx_dict:
+                if param in d_inputs:
+                    param_seeds[param] = d_inputs[param]
+                
+            ref_seeds = {}
+            for ref in self.avl.ref_var_to_fort_var:
+                if ref in d_inputs:
+                    ref_seeds[ref] = d_inputs[ref]
 
             geom_seeds = self.om_input_to_surf_dict(self, d_inputs)
 
             func_seeds, _, csd_seeds, _ = self.avl.execute_jac_vec_prod_fwd(
-                con_seeds=con_seeds, geom_seeds=geom_seeds, gamma_seeds=gamma_seeds, gamma_d_seeds=gamma_d_seeds
+                con_seeds=con_seeds, geom_seeds=geom_seeds, gamma_seeds=gamma_seeds, gamma_d_seeds=gamma_d_seeds,
+                param_seeds=param_seeds, ref_seeds=ref_seeds
             )
 
             for func_key in func_seeds:
@@ -390,7 +478,7 @@ class AVLFuncsComp(om.ExplicitComponent):
                             # print(var_name, csd_seeds[func_key][con_name])
                             print(f'  running rev mode derivs for {func_key}:{con_name}')
                         
-            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds = self.avl.execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
                 func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds
             )
 
@@ -405,8 +493,12 @@ class AVLFuncsComp(om.ExplicitComponent):
             for d_input in d_inputs:
                 if d_input in d_input_geom:
                     d_inputs[d_input] += d_input_geom[d_input]
-                if d_input in ["alpha", "beta"] or d_input in self.control_names:
+                elif d_input in ["alpha", "beta"] or d_input in self.control_names:
                     d_inputs[d_input] += con_seeds[d_input]
+                elif d_input in param_seeds:
+                    d_inputs[d_input] += param_seeds[d_input]
+                elif d_input in ref_seeds:
+                    d_inputs[d_input] += ref_seeds[d_input]
 
 
 # Optional components
@@ -414,17 +506,28 @@ class AVLPostProcessComp(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("avl", types=AVLSolver, recordable=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
-
+        self.options.declare("input_param_vals", types=bool, default=False)
+        self.options.declare("input_ref_vals", types=bool, default=False)
+        
     def setup(self):
         self.avl = self.options["avl"]
         self.num_states = self.avl.get_mesh_size()
         self.num_cs = self.avl.get_num_control_surfs()
+        input_param_vals = self.options["input_param_vals"]
+        input_ref_vals = self.options["input_ref_vals"]
+        
 
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
 
         add_avl_conditions_as_inputs(self, self.avl)
-
+        
+        if input_param_vals:
+            add_avl_params_as_inputs(self, self.avl)
+        
+        if input_ref_vals:
+            add_avl_refs_as_inputs(self, self.avl)
+            
         add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_vars(self, self.avl, add_as="inputs")
 
@@ -436,8 +539,7 @@ class AVLPostProcessComp(om.ExplicitComponent):
         #     self.avl.add_constraint(c_name, inputs[c_name][0])
         # def_dict = self.avl.get_control_deflections()
 
-        self.avl.add_constraint("alpha", inputs["alpha"][0])
-        self.avl.add_constraint("beta", inputs["beta"][0])
+        om_set_avl_inputs(self, inputs)
 
         # update the surface parameters
         surf_data = om_input_to_surf_dict(self, inputs)
