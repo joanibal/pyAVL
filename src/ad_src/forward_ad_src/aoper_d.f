@@ -212,13 +212,14 @@ C        WRITE(*,8401) XNP
 
 C  Differentiation of get_res in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: alfa beta vinf delcon xyzref
-C                mach res res_d wv_gam
-C   with respect to varying inputs: ysym zsym conval xyzref rv1
+C                mach cdref res res_d wv_gam
+C   with respect to varying inputs: ysym zsym parval conval rv1
 C                rv2 rv rc chordv enc enc_d gam gam_d
 C   RW status of diff variables: ysym:in zsym:in alfa:out beta:out
-C                vinf:out conval:in delcon:out xyzref:in-out mach:out
-C                rv1:in rv2:in rv:in rc:in chordv:in enc:in enc_d:in
-C                gam:in gam_d:in res:out res_d:out wv_gam:out
+C                vinf:out parval:in conval:in delcon:out xyzref:out
+C                mach:out cdref:out rv1:in rv2:in rv:in rc:in chordv:in
+C                enc:in enc_d:in gam:in gam_d:in res:out res_d:out
+C                wv_gam:out
 C
 C ======================== res and Adjoint for GAM ========      
       SUBROUTINE GET_RES_D()
@@ -229,8 +230,11 @@ C
       REAL rhs_d(nvor)
       REAL rhs_d_diff(nvor)
       REAL betm
+      REAL betm_diff
       INTRINSIC SQRT
       REAL(kind=8) arg1
+      REAL(kind=8) arg1_diff
+      REAL(kind=avl_real) temp
       INTEGER ii1
       INTEGER ii2
       CALL SET_PAR_AND_CONS_D(nitmax, irun)
@@ -240,13 +244,21 @@ C      CALL build_AIC
 C end if
 C---  
       CALL BUILD_AIC_D()
+      amach_diff = mach_diff
       amach = mach
+      arg1_diff = -(2*amach*amach_diff)
       arg1 = 1.0 - amach**2
-      betm = SQRT(arg1)
-      CALL VVOR_D(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
-     +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
-     +            chordv, chordv_diff, nvor, rv, rv_diff, nsurfv, .true.
-     +            , wv_gam, wv_gam_diff, nvmax)
+      temp = SQRT(arg1)
+      IF (arg1 .EQ. 0.D0) THEN
+        betm_diff = 0.D0
+      ELSE
+        betm_diff = arg1_diff/(2.0*temp)
+      END IF
+      betm = temp
+      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
+     +            nsurfv, .true., wv_gam, wv_gam_diff, nvmax)
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB_D()
       CALL SET_VEL_RHS_D()
@@ -280,6 +292,5 @@ C  RHS_D(:) = 0.D0
           ENDDO
         END IF
       ENDDO
-      mach_diff = 0.D0
       END
 

@@ -73,7 +73,7 @@ class TestFunctionPartials(unittest.TestCase):
             self.avl_solver.clear_ad_seeds_fast()
 
             for func_key in self.avl_solver.case_var_to_fort_var:
-                con_seeds_rev, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
+                con_seeds_rev, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
                 # print(f"{func_key} wrt {con_key}", "fwd ", func_seeds_fwd[func_key], "rev", con_seeds_rev[con_key])
                 tol = 1e-14
 
@@ -139,7 +139,7 @@ class TestFunctionPartials(unittest.TestCase):
 
         sens_dict_rev = {}
         for func_key in self.avl_solver.case_var_to_fort_var:
-            _, sens_dict_rev[func_key], _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
+            _, sens_dict_rev[func_key], _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
         self.avl_solver.clear_ad_seeds_fast()
 
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -214,7 +214,7 @@ class TestFunctionPartials(unittest.TestCase):
         self.avl_solver.clear_ad_seeds_fast()
 
         for func_key in self.avl_solver.case_var_to_fort_var:
-            _, _, gamma_seeds_rev, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
+            _, _, gamma_seeds_rev, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
 
             rev_sum = np.sum(gamma_seeds_rev * gamma_seeds_fwd)
             fwd_sum = np.sum(func_seeds_fwd[func_key])
@@ -236,7 +236,7 @@ class TestFunctionPartials(unittest.TestCase):
             )
 
             for func_key in func_seeds:
-                # print(f"{func_key} wrt {param_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                print(f"{func_key} wrt {param_key}", func_seeds[func_key], func_seeds_FD[func_key])
                 tol = 1e-13
                 if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
                     # If either value is basically zero, use an absolute tolerance
@@ -253,7 +253,91 @@ class TestFunctionPartials(unittest.TestCase):
                         rtol=1e-5,
                         err_msg=f"func_key {func_key} w.r.t. {param_key}",
                     )
-   
+
+    def test_rev_param(self):
+        for param_key in self.avl_solver.param_idx_dict:
+            self.avl_solver.clear_ad_seeds_fast()
+
+            func_seeds_fwd, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})
+            self.avl_solver.clear_ad_seeds_fast()
+
+            for func_key in self.avl_solver.case_var_to_fort_var:
+                _, _, _, _, param_seeds_rev ,_ = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
+                # print(f"{func_key} wrt {param_key}", "fwd ", func_seeds_fwd[func_key], "rev", param_seeds_rev[param_key])
+                tol = 1e-14
+
+                if np.abs(func_seeds_fwd[func_key]) < tol or np.abs(param_seeds_rev[param_key]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        func_seeds_fwd[func_key],
+                        param_seeds_rev[param_key],
+                        atol=1e-14,
+                        err_msg=f"func_key {func_key} w.r.t. {param_key}",
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        func_seeds_fwd[func_key],
+                        param_seeds_rev[param_key],
+                        rtol=1e-12,
+                        err_msg=f"func_key {func_key} w.r.t. {param_key}",
+                    )
+
+
+    def test_fwd_ref(self):
+        for ref_key in self.avl_solver.ref_var_to_fort_var:
+            func_seeds, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})
+
+            func_seeds_FD, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
+                ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
+            )
+
+            for func_key in func_seeds:
+                print(f"{func_key} wrt {ref_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                tol = 1e-13
+                if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        func_seeds[func_key],
+                        func_seeds_FD[func_key],
+                        atol=1e-6,
+                        err_msg=f"func_key {func_key} w.r.t. {ref_key}",
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        func_seeds[func_key],
+                        func_seeds_FD[func_key],
+                        rtol=1e-5,
+                        err_msg=f"func_key {func_key} w.r.t. {ref_key}",
+                    )
+
+    def test_rev_ref(self):
+        for ref_key in self.avl_solver.ref_var_to_fort_var:
+            self.avl_solver.clear_ad_seeds_fast()
+
+            func_seeds_fwd, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})
+            self.avl_solver.clear_ad_seeds_fast()
+
+            for func_key in self.avl_solver.case_var_to_fort_var:
+                _, _, _, _, _, ref_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
+                
+                print(f"{func_key} wrt {ref_key}", "fwd ", func_seeds_fwd[func_key], "rev", ref_seeds_rev[ref_key])
+                tol = 1e-14
+
+                if np.abs(func_seeds_fwd[func_key]) < tol or np.abs(ref_seeds_rev[ref_key]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        func_seeds_fwd[func_key],
+                        ref_seeds_rev[ref_key],
+                        atol=1e-14,
+                        err_msg=f"func_key {func_key} w.r.t. {ref_key}",
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        func_seeds_fwd[func_key],
+                        ref_seeds_rev[ref_key],
+                        rtol=1e-12,
+                        err_msg=f"func_key {func_key} w.r.t. {ref_key}",
+                    )
 
 
 class TestResidualPartials(unittest.TestCase):
@@ -292,7 +376,7 @@ class TestResidualPartials(unittest.TestCase):
     def test_rev_aero_constraint(self):
         num_res = self.avl_solver.get_mesh_size()
         res_seeds_rev = np.random.rand(num_res)
-        con_seeds_rev, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)
+        con_seeds_rev, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)
 
         self.avl_solver.clear_ad_seeds_fast()
 
@@ -338,7 +422,7 @@ class TestResidualPartials(unittest.TestCase):
         num_res = self.avl_solver.get_mesh_size()
         res_seeds_rev = np.random.seed(111)
         res_seeds_rev = np.random.rand(num_res)
-        _, geom_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)
+        _, geom_seeds_rev, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)
 
         self.avl_solver.clear_ad_seeds_fast()
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -376,6 +460,86 @@ class TestResidualPartials(unittest.TestCase):
             res_seeds_FD,
             rtol=1e-5,
         )
+
+
+    def test_fwd_param(self):
+        for param_key in self.avl_solver.param_idx_dict:
+            _, res_seeds, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})
+
+            _, res_seeds_FD, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
+                param_seeds={param_key: 1.0}, mode="FD", step=1e-7
+            )
+
+            # print(f"res wrt {param_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
+            np.testing.assert_allclose(
+                res_seeds,
+                res_seeds_FD,
+                atol=1e-6,
+                err_msg=f"d(res) w.r.t.{param_key}"
+            )
+
+    def test_rev_param(self):
+        num_res = self.avl_solver.get_mesh_size()
+        res_seeds_rev = np.random.rand(num_res)
+        _, _, _, _, param_seeds_rev, _ = self.avl_solver.execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)
+
+        self.avl_solver.clear_ad_seeds_fast()
+
+        for param_key in self.avl_solver.param_idx_dict:
+            _, res_seeds_fwd, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})
+
+            # do dot product
+            res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
+            param_sum = np.sum(param_seeds_rev[param_key])
+
+            # print(f"res wrt {param_key}", "rev", param_sum, "fwd", res_sum)
+            np.testing.assert_allclose(
+                res_sum,
+                param_sum,
+                atol=1e-14,
+                err_msg=f"func_key res w.r.t. {param_key}",
+            )
+            
+
+    def test_fwd_ref(self):
+        for ref_key in self.avl_solver.ref_var_to_fort_var:
+            _, res_seeds, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})
+            _, res_seeds_FD, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
+                ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
+            )
+
+            # print(f"res wrt {ref_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
+            np.testing.assert_allclose(
+                res_seeds,
+                res_seeds_FD,
+                atol=1e-6,
+                err_msg=f"d(res) w.r.t.{ref_key}"
+            )
+
+    def test_rev_ref(self):
+        num_res = self.avl_solver.get_mesh_size()
+        res_seeds_rev = np.random.rand(num_res)
+        _, _, _, _, _, ref_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)
+
+        self.avl_solver.clear_ad_seeds_fast()
+
+        for ref_key in self.avl_solver.ref_var_to_fort_var:
+            _, res_seeds_fwd, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})
+            # do dot product
+            res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
+            ref_sum = np.sum(ref_seeds_rev[ref_key])
+
+            # print(f"res wrt {ref_key}", "rev", ref_sum, "fwd", res_sum)
+            np.testing.assert_allclose(
+                res_sum,
+                ref_sum,
+                atol=1e-14,
+                err_msg=f"func_key res w.r.t. {ref_key}",
+            )
+            
+
+
+
 
 
 if __name__ == "__main__":

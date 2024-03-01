@@ -115,6 +115,7 @@ C MAKESURF
             GOTO 100
           ELSE
 C this surface has already been created
+C it was probably duplicated from the previous one
             CALL MAKESURF_D(isurf)
           END IF
         ELSE
@@ -383,10 +384,11 @@ C---- section arc lengths of wing trace in y-z plane
           yzlen_diff(isec) = yzlen_diff(isec-1) + result1_diff
           yzlen(isec) = yzlen(isec-1) + result1
         ENDDO
+C we can not rely on the original condition becuase NVS(ISURF) is filled 
+C and we may want to rebuild the surface later
+C IF(NVS(ISURF).EQ.0) THEN
 C
-C
-        ! IF (nvs(isurf) .EQ. 0) THEN
-        IF(LSURFSPACING(ISURF) .EQV. .FALSE.) THEN
+        IF (lsurfspacing(isurf) .EQV. .false.) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
           DO isec=1,nsec(isurf)-1
             nvs(isurf) = nvs(isurf) + nspans(isec, isurf)
@@ -1244,7 +1246,8 @@ C
       REAL rsgn
       INTEGER nn
       REAL ypt
-C 
+C
+C     
       nni = nn + 1
       IF (nni .GT. nfmax) THEN
         WRITE(*, *) 'SDUPL: Surface array overflow. Increase NFMAX.'
@@ -1268,8 +1271,9 @@ C
 C---- same various logical flags
         lfwake(nni) = lfwake(nn)
         lfalbe(nni) = lfalbe(nn)
-C IFRST(NNI) = NVOR   + 1
         lfload(nni) = lfload(nn)
+C IFRST(NNI) = NVOR   + 1
+        lsurfspacing(nni) = lsurfspacing(nn)
 C
 C---- accumulate stuff for new image surface 
         ifrst(nni) = ifrst(nni-1) + nk(nni-1)*nj(nni-1)

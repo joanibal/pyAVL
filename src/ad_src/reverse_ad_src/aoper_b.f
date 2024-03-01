@@ -85,15 +85,16 @@ C        WRITE(*,8401) XNP
 
 C  Differentiation of get_res in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: alfa beta vinf delcon xyzref
-C                rv1 rv2 rv rc gam gam_d res res_d wv_gam
-C   with respect to varying inputs: ysym zsym alfa beta vinf conval
-C                delcon xyzref mach rv1 rv2 rv rc chordv enc enc_d
-C                gam gam_d res res_d wv_gam
+C                mach cdref rv1 rv2 rv rc gam gam_d res res_d wv_gam
+C   with respect to varying inputs: ysym zsym alfa beta vinf parval
+C                conval delcon xyzref mach cdref rv1 rv2 rv rc
+C                chordv enc enc_d gam gam_d res res_d wv_gam
 C   RW status of diff variables: ysym:out zsym:out alfa:in-out
-C                beta:in-out vinf:in-out conval:out delcon:in-out
-C                xyzref:in-out mach:zero rv1:incr rv2:incr rv:incr
-C                rc:incr chordv:out enc:out enc_d:out gam:incr
-C                gam_d:incr res:in-zero res_d:in-out wv_gam:in-out
+C                beta:in-out vinf:in-out parval:out conval:out
+C                delcon:in-out xyzref:in-out mach:in-zero cdref:in-zero
+C                rv1:incr rv2:incr rv:incr rc:incr chordv:out enc:out
+C                enc_d:out gam:incr gam_d:incr res:in-zero res_d:in-out
+C                wv_gam:in-out
 C
 C ======================== res and Adjoint for GAM ========      
       SUBROUTINE GET_RES_B()
@@ -104,6 +105,7 @@ C
       REAL rhs_d(nvor)
       REAL rhs_d_diff(nvor)
       REAL betm
+      REAL betm_diff
       INTRINSIC SQRT
       INTEGER ii1
       INTEGER ii2
@@ -174,13 +176,20 @@ C$BWD-OF II-LOOP
       DO ii1=1,nvor
         chordv_diff(ii1) = 0.D0
       ENDDO
-      CALL VVOR_B(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
-     +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
-     +            chordv, chordv_diff, nvor, rv, rv_diff, nsurfv, .true.
-     +            , wv_gam, wv_gam_diff, nvmax)
+      CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
+     +            nsurfv, .true., wv_gam, wv_gam_diff, nvmax)
+      IF (1.0 - amach**2 .EQ. 0.D0) THEN
+        amach_diff = 0.D0
+      ELSE
+        amach_diff = -(2*amach*betm_diff/(2.0*SQRT(1.0-amach**2)))
+      END IF
+      mach_diff = mach_diff + amach_diff
       ! CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
       CALL BUILD_AIC_B()
       CALL SET_PAR_AND_CONS_B(nitmax, irun)
       mach_diff = 0.D0
+      cdref_diff = 0.D0
       END
 

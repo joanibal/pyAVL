@@ -3,7 +3,7 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of tpforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: clff cyff cdff spanef
-C   with respect to varying inputs: sref rv1 rv2 rc gam
+C   with respect to varying inputs: sref bref rv1 rv2 rc gam
 C***********************************************************************
 C    Module:  atpforc.f
 C 
@@ -480,7 +480,7 @@ C---- Double the X,Z forces, zero Y force for a Y symmetric case
 C
 C---- aspect ratio
       temp2 = bref*bref/sref
-      ar_diff = -(temp2*sref_diff/sref)
+      ar_diff = (2*bref*bref_diff-temp2*sref_diff)/sref
       ar = temp2
 C
 C---- span efficiency

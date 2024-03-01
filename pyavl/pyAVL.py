@@ -42,15 +42,22 @@ from . import MExt
 
 class AVLSolver(object):
 
+    # these at technically parameters, but they are also specified as contraints
+    # These are not included in the derivatives but you can set and get them still
+    # In the code these are only used to save the state for mode analysis
+    # regardless they can be useful for getting the values after a trim solve
+    state_param_idx_dict = {
+        "alpha": 0, 
+        "beta": 1,
+        "roll rate": 2,
+        "pitch rate": 3,
+        "yaw rate": 4,
+        # Not a supported way to set CL as a contraint or get it as an output
+        # "CL": 5, 
+    }
+
     param_idx_dict = {
         # these aero state parameters
-        # are commented out becuase they are only used to save the state for mode analysis
-        # "alpha": 0, 
-        # "beta": 1,
-        # "roll rate": 2,
-        # "pitch rate": 3,
-        # "yaw rate": 4,
-        # "CL": 5,
         "CD0": 6,
         "bank": 7,
         "elevation": 8,
@@ -586,8 +593,16 @@ class AVLSolver(object):
         """
         parvals = self.get_avl_fort_arr("CASE_R", "PARVAL")
 
+        # the key could be in one of two dicts
+        if param_key in self.param_idx_dict:
+            idx_param = self.param_idx_dict[param_key]
+        elif param_key in self.state_param_idx_dict:
+            idx_param = self.state_param_idx_dict[param_key]
+        else:
+            raise ValueError(f"param '{param_key}' not in possilbe list\n" 
+                             f"{[k for k in self.param_idx_dict] + [k for k in self.state_param_idx_dict]}")
         # [0] because pyavl only supports 1 run case
-        param_val = parvals[0][self.param_idx_dict[param_key]]
+        param_val = parvals[0][idx_param]
 
         return param_val
 
@@ -1199,7 +1214,6 @@ class AVLSolver(object):
                 val = self.get_avl_fort_arr(blk, var, slicer=slicer)
                 val += parm_seeds[param_key] * scale
             
-            print(blk, var, val, slicer)
             self.set_avl_fort_arr(blk, var, val, slicer=slicer)
  
     def get_parameter_ad_seeds(self) -> Dict[str, float]:
@@ -1218,10 +1232,12 @@ class AVLSolver(object):
         param_seeds = {}
         for key, idx in self.param_idx_dict.items():
             param_seeds[key] = parval_seeds_arr[idx]
+        
+        return param_seeds
     
     def set_reference_ad_seeds(self, ref_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for ref_key in ref_seeds:
-            blk, val = self.ref_var_to_fort_var[ref_key]
+            blk, var = self.ref_var_to_fort_var[ref_key]
 
             if mode == "AD":
                 blk += self.ad_suffix
@@ -1231,19 +1247,20 @@ class AVLSolver(object):
                 val = self.get_avl_fort_arr(blk, var)
                 val += ref_seeds[ref_key] * scale
             
-            print(blk, var, val)
             self.set_avl_fort_arr(blk, var, val)
             
     def get_reference_ad_seeds(self) -> Dict[str, float]:
         ref_seeds = {}
         for ref_key in self.ref_var_to_fort_var:
-            blk, val = self.ref_var_to_fort_var[ref_key]
+            blk, var = self.ref_var_to_fort_var[ref_key]
         
             blk += self.ad_suffix
             var += self.ad_suffix
-                
-            ref_seeds[ref_key] = self.set_avl_fort_arr(blk, var, val)
- 
+            
+            val = self.get_avl_fort_arr(blk, var)
+            ref_seeds[ref_key] = copy.deepcopy(val)
+        
+        return ref_seeds
         
     def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:
         geom_seeds = {}
@@ -1668,7 +1685,7 @@ class AVLSolver(object):
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
-            _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -1685,7 +1702,7 @@ class AVLSolver(object):
             dfdR = self.get_residual_ad_seeds()
             dfdR_d = self.get_residual_d_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
                 func_seeds={func: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
             )
             if print_timings:
@@ -1694,6 +1711,8 @@ class AVLSolver(object):
 
             sens[func].update(con_seeds)
             sens[func].update(geom_seeds)
+            sens[func].update(param_seeds)
+            sens[func].update(ref_seeds)
 
         if consurf_derivs is not None:
             if print_timings:
@@ -1711,7 +1730,7 @@ class AVLSolver(object):
 
                     # get the RHS of the adjiont equation (pFpU)
                     # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, pf_pU_d = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+                    _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
                     if print_timings:
                         print(f"Time to get RHS: {time.time() - time_last}")
                         time_last = time.time()
@@ -1729,7 +1748,7 @@ class AVLSolver(object):
                     dfdR = self.get_residual_ad_seeds()
                     dfdR_d = self.get_residual_d_ad_seeds()
                     # self.clear_ad_seeds()
-                    con_seeds, geom_seeds, _, _ = self.execute_jac_vec_prod_rev(
+                    con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
                         consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
                     )
                     if print_timings:
@@ -1738,6 +1757,8 @@ class AVLSolver(object):
 
                     sens[func_key][cs_key].update(con_seeds)
                     sens[func_key][cs_key].update(geom_seeds)
+                    sens[func_key][cs_key].update(param_seeds)
+                    sens[func_key][cs_key].update(ref_seeds)
                     cs_deriv_seeds[func_key][cs_key] = 0.0
 
         return sens

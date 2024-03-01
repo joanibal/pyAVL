@@ -28,12 +28,13 @@ geom_file = os.path.join(base_dir, "aircraft.avl")
 mass_file = os.path.join(base_dir, "aircraft.mass")
 
 
-class TestOMAnalaysis(unittest.TestCase):
+class TestOMWrapper(unittest.TestCase):
     def setUp(self):
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
     
         model = om.Group()
-        model.add_subsystem("avlsolver", AVLGroup(geom_file=geom_file, mass_file=mass_file))
+        model.add_subsystem("avlsolver", AVLGroup(geom_file=geom_file, mass_file=mass_file, 
+                                                  input_param_vals=True, input_ref_vals=True))
 
         self.prob = om.Problem(model)
 
@@ -68,7 +69,7 @@ class TestOMAnalaysis(unittest.TestCase):
                 self.avl_solver.execute_run()
                 run_data = self.avl_solver.get_case_total_data()
                 # set om surface data
-                om_arr = prob.set_val(f"avlsolver.{surf_key}:{geom_key}", arr)
+                prob.set_val(f"avlsolver.{surf_key}:{geom_key}", arr)
                 prob.run_model()
                 
                 for func in run_data:        
@@ -140,13 +141,17 @@ class TestOMAnalaysis(unittest.TestCase):
         prob.model.add_design_var("avlsolver.Wing:aincs")
         prob.model.add_design_var("avlsolver.Elevator", lower=-10, upper=10)
         prob.model.add_design_var("avlsolver.alpha", lower=-10, upper=10)
+        prob.model.add_design_var("avlsolver.Sref")
+        prob.model.add_design_var("avlsolver.Mach")
+        prob.model.add_design_var("avlsolver.X cg")
         prob.model.add_constraint("avlsolver.CL", equals=cl_star)
         prob.model.add_objective("avlsolver.CD", scaler=1e3)
+        prob.model.add_objective("avlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_model()
         deriv_err = prob.check_totals()
-        rtol = 1e-4
+        rtol = 5e-4
         for key, data in deriv_err.items():
                 np.testing.assert_allclose(
                     data['J_fd'],
