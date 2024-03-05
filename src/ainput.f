@@ -191,7 +191,7 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY, IBX,
+         CALL MAKEBODY(IBODY,
      &       NVB, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C
@@ -223,7 +223,7 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY, IBX,
+         CALL MAKEBODY(IBODY,
      &       NVB, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C
@@ -309,7 +309,7 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY, IBX,
+         CALL MAKEBODY(IBODY,
      &       NVB, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C
@@ -341,8 +341,10 @@ C       TODO: add XYZ vecotors for bodys
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         BTITLE(IBODY) = LINE(1:NLINE)
-C         WRITE(*,*)
-C         WRITE(*,*) '  Building body: ', BTITLE(IBODY)
+        if (lverbose)then
+           WRITE(*,*)
+           WRITE(*,*) '  Building body: ', BTITLE(IBODY)
+        endif
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         READ(LINE,*,ERR=990) NVB, BSPACE

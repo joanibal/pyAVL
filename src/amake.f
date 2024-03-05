@@ -677,7 +677,8 @@ C
         RL(3,NLNODE) = XYZTRAN_B(3,IBODY) + XYZSCAL_B(3,IBODY)*YVB
 C
         CALL AKIMA(XBOD,TBOD,NBOD,XVB,TVB,DRDX)
-        RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) * 0.5*TVB
+        RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) 
+     & * 0.5*TVB
       ENDDO
 C---- get surface length, area and volume
       VOLB = 0.0
