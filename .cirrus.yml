@@ -43,7 +43,7 @@ cirrus_wheels_macos_arm64_task:
 
   install_pre_requirements_script:
     - brew install python@3.10
-    - ln -s python3 /opt/homebrew/opt/python@3.10/bin/python
+    - ln -s python3.10 /opt/homebrew/opt/python@3.10/bin/python
 
   build_script:
     - which python
