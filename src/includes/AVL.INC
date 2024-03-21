@@ -365,10 +365,10 @@ C      !start added variables for python geometry minipulation
 
       LOGICAL LDUPL_B
       COMMON /BODY_GEOM_L/
-     & LDUPL_B(NBMAX)      ! T if surface is a duplicated
+     & LDUPL_B(NBMAX)      ! T if body is a duplicated
 c
       COMMON /BODY_GEOM_I/
-     & NSEC_B(NBMAX)  ! number of sections in surface
+     & NSEC_B(NBMAX)  ! number of sections in body
 
       REAL(kind=avl_real) XYZSCAL_B
       REAL(kind=avl_real) XYZTRAN_B
