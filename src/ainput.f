@@ -88,6 +88,7 @@ C
 C
 C---- initialize all entity counters
       NSEC = 0
+      NSEC_B = 0
 C
       NSURF = 0
       NVOR = 0
@@ -324,7 +325,7 @@ C------ new body  (IBODY.ne.0 denotes body accumulation is active)
         NBODY = NBODY + 1
         IBODY = MIN( NBODY , NBMAX )
 C
-        NSEC = 0
+        NSEC_B(IBODY) = 0
         ISEC = 0
         NBOD = 0
 C
