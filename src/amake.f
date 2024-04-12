@@ -612,7 +612,6 @@ c--------------------------------------------------------------
 
 
       SUBROUTINE MAKEBODY(IBODY,
-     &       NVB1, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C--------------------------------------------------------------
 C     Sets up all stuff for body IBODY,
@@ -631,43 +630,43 @@ c       WRITE(*,*) '*** Need at least 2 sections per body.'
 c       STOP
 c      ENDIF
 C
-      NVB = NVB1
 C
-      IF(NVB.GT.KLMAX) THEN
-       WRITE(*,*) '* MAKEBODY: Array overflow.  Increase KLMAX to', NVB
-       NVB = KLMAX
+      IF(NVB(IBODY).GT.KLMAX) THEN
+       WRITE(*,*) '* MAKEBODY: Array overflow.  Increase KLMAX to',
+     & NVB(IBODY)
+       NVB(IBODY) = KLMAX
       ENDIF
 C
 C
       LFRST(IBODY) = NLNODE + 1 
-      NL(IBODY) = NVB
+      NL(IBODY) = NVB(IBODY)
 C
-      IF(NLNODE+NVB.GT.NLMAX) THEN
+      IF(NLNODE+NVB(IBODY).GT.NLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase NLMAX to',
-     &             NLNODE+NVB
+     &             NLNODE+NVB(IBODY)
        STOP
       ENDIF
 C
 C-----------------------------------------------------------------
 C---- set lengthwise spacing fraction arrays
-      NSPACE = NVB + 1
+      NSPACE = NVB(IBODY) + 1
       IF(NSPACE.GT.KLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase KLMAX to', 
      &             NSPACE
        STOP
       ENDIF
-      CALL SPACER(NSPACE,BSPACE,FSPACE)
+      CALL SPACER(NSPACE,BSPACE(IBODY),FSPACE)
 C
-      DO IVB = 1, NVB
+      DO IVB = 1, NVB(IBODY)
         XPT(IVB) = FSPACE(IVB)
       ENDDO
       XPT(1) = 0.0
-      XPT(NVB+1) = 1.0
+      XPT(NVB(IBODY)+1) = 1.0
 C
 C---- set body nodes and radii
       VOLB = 0.0
       SRFB = 0.0
-      DO IVB = 1, NVB+1
+      DO IVB = 1, NVB(IBODY)+1
         NLNODE = NLNODE + 1
 C
         XVB = XBOD(1) + (XBOD(NBOD)-XBOD(1))*XPT(IVB)
@@ -685,7 +684,7 @@ C---- get surface length, area and volume
       SRFB = 0.0
       XBMN = RL(1,LFRST(IBODY))
       XBMX = XBMN
-      DO IVB = 1, NVB
+      DO IVB = 1, NVB(IBODY)
         NL0 = LFRST(IBODY) + IVB-1
         NL1 = NL0 + 1
         X0 = RL(1,NL0)
@@ -900,17 +899,19 @@ C
         IF(BTITLE(NN)(K:K) .NE. ' ') GO TO 6
       ENDDO
  6    BTITLE(NNI) = BTITLE(NN)(1:K) // ' (' // MSG // ')'
+      if (lverbose) then
       WRITE(*,*) ' '
       WRITE(*,*) '  Building duplicate image-body: ',BTITLE(NNI)
+      endif
 C
       LFRST(NNI) = NLNODE + 1
       NL(NNI) = NL(NN)
 C
-      NVB = NL(NNI)
+      NVB(NNI) = NL(NNI)
 C
-      IF(NLNODE+NVB.GT.NLMAX) THEN
+      IF(NLNODE+NVB(NNI).GT.NLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase NLMAX to',
-     &             NLNODE+NVB
+     &             NLNODE+NVB(NNI)
        STOP
       ENDIF
 C
@@ -922,7 +923,7 @@ C
       YOFF = 2.0*Ypt
 C
 C---- set body nodes and radii
-      DO IVB = 1, NVB+1
+      DO IVB = 1, NVB(NNI)+1
         NLNODE = NLNODE + 1
 C
         LLI = LFRST(NNI) + IVB-1

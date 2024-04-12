@@ -12,9 +12,13 @@ Supra 3.4m F3J
 BODY
 Fuse pod
 28   2.0
+SCALE
+1 1 1 
+YDUPLICATE
+0.0
 #
 TRANSLATE
-0.0  0.0  -1.75
+0.0  1.0  -1.75
 #
 BFIL
 fuseSupra.dat
