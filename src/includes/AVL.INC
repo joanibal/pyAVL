@@ -58,6 +58,7 @@ C
       CHARACTER*120 TITLE
       CHARACTER*40 STITLE, BTITLE, RTITLE
       CHARACTER*120 AFILES
+      CHARACTER*120 BFILES
       
       CHARACTER*16 DNAME, GNAME
       CHARACTER*12 VARNAM, CONNAM
@@ -73,6 +74,7 @@ C
      & STITLE(NFMAX),  ! surface title
      & AFILES(NSMAX,NFMAX),  ! airfoil file names
      & BTITLE(NBMAX),  ! body title
+     & BFILES(NBMAX),  ! body file names
      & RTITLE(NRMAX),  ! run case title
      & DNAME(NDMAX),   ! control variable name
      & GNAME(NGMAX),   ! design  variable name
@@ -368,17 +370,20 @@ C      !start added variables for python geometry minipulation
      & LDUPL_B(NBMAX)      ! T if body is a duplicated
 c
       COMMON /BODY_GEOM_I/
-     & NSEC_B(NBMAX)  ! number of sections in body
+     & NSEC_B(NBMAX),  ! number of sections in body
+     & NVB(NFMAX)! number of body elements
 
       REAL(kind=avl_real) XYZSCAL_B
       REAL(kind=avl_real) XYZTRAN_B
       REAL(kind=avl_real) YDUPL_B
       REAL(kind=avl_real) XYZLES_B 
+      REAL(kind=avl_real) BSPACE
       COMMON /BODY_GEOM_R/
      & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
      & YDUPL_B(NBMAX), ! y duplicate
-     & XYZLES_B(3, NSMAX, NBMAX) ! leading edge cordinate vector
+     & XYZLES_B(3, NSMAX, NBMAX), ! leading edge cordinate vector
+     & BSPACE(NBMAX) ! body spacing
 c
       LOGICAL LDUPL
       LOGICAL LSURFSPACING

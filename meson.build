@@ -1,7 +1,7 @@
 project(
   'pyavl',
   'c',
-  version: '1.6.2',
+  version: '1.6.3',
   license: 'GPL-2.0',
   meson_version: '>= 0.64.0',
   default_options: [

@@ -206,6 +206,18 @@ class AVLSolver(object):
         
         #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
     }
+    
+
+    body_geom_to_fort_var = {
+        "scale": ["BODY_GEOM_R", "XYZSCAL_B"],
+        "translate": ["BODY_GEOM_R", "XYZTRAN_B"],
+        "yduplicate": ["BODY_GEOM_R", "YDUPL_B"],
+        "bfile": ["CASE_C", "BFILES"],
+        "nvb": ["BODY_GEOM_I", "NVB"],
+        "bspace": ["BODY_GEOM_R", "BSPACE"],
+
+    }
+    
     # fmt: on
 
     ad_suffix = "_DIFF"
@@ -359,6 +371,7 @@ class AVLSolver(object):
                 "nspans": ["SURF_GEOM_I", "NSPANS", slice_surf_secs],
                 "yduplicate": ["SURF_GEOM_R", "YDUPL", slice_idx_surf],
                 "use surface spacing": ["SURF_GEOM_L", "LSURFSPACING", slice_idx_surf],
+                "component": ["SURF_I", "LSCOMP", slice_idx_surf],
             }
 
             icontd_slices = []
@@ -774,6 +787,28 @@ class AVLSolver(object):
         else:
             return surf_names
 
+    def get_body_names(self, remove_dublicated=False) -> List[str]:
+        """get the body names from the geometry"""
+        fort_names = self.get_avl_fort_arr("CASE_C", "BTITLE")
+        body_names = self._convertFortranStringArrayToList(fort_names)
+
+        if remove_dublicated:
+            # imags = self.get_avl_fort_arr("BODY_GEOM_L", "LDUPL_B")
+            # print(imags)
+            unique_body_names = []
+            
+            for body_name in body_names:
+                # get bodyaces that have not been duplicated
+                
+                # HACK: It is best not rely on this but, this is a quick fix for 
+                # bodies which I discourage people from using anyways
+                if not body_name.endswith("(YDUP)"):
+                    unique_body_names.append(body_name)
+
+            return unique_body_names
+        else:
+            return body_names
+
     def get_con_surf_param(self, surf_name, idx_slice, param):
         # the control surface and design variables need to be handeled differently because the number at each section is variable
         if param in self.con_surf_to_fort_var[surf_name].keys():
@@ -909,6 +944,26 @@ class AVLSolver(object):
                         self.set_con_surf_param(surf_name, idx_sec, var, surf_data[surf_name][var][idx_sec])
 
         self.avl.update_surfaces()
+    
+    def get_body_params(self) ->  Dict[str, Dict[str, Any]]:
+        
+        body_names = self.get_body_names()
+        unique_body_names = self.get_body_names(remove_dublicated=True)
+        body_data = {}
+
+        for body_name in unique_body_names:
+            idx_body = body_names.index(body_name)
+            body_data[body_name] = {}
+            
+            for var, fort_var in self.body_geom_to_fort_var.items():
+                val = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=idx_body)            # 
+                if var == "bfile":
+                    val = self.__decodeFortranString(val)
+                    
+                body_data[body_name][var] = val
+        
+        return body_data
+
 
     def write_geom_file(self, filename: str):
         """write the current avl geometry to a file"""
@@ -920,8 +975,13 @@ class AVLSolver(object):
             surf_data = self.get_surface_params(
                 include_geom=True, include_panneling=True, include_con_surf=True, include_airfoils=True
             )
+
             for surf_name in surf_data:
                 self.__write_surface(fid, surf_name, surf_data[surf_name])
+                
+            body_data = self.get_body_params()
+            for body_name in body_data:
+                self.__write_body(fid, body_name, body_data[body_name])
 
     def __write_fort_vars(self, fid, common_block: str, fort_var: str, newline: bool = True) -> None:
         var = self.get_avl_fort_arr(common_block, fort_var)
@@ -983,7 +1043,20 @@ class AVLSolver(object):
         # ======================================================
         # ------------------- Geometry File --------------------
         # ======================================================
-
+    def __write_body(self, fid, body_name, data):
+        self.__write_banner(fid, body_name)
+        fid.write(f"BODY\n")
+        fid.write(f"{body_name}\n")
+        fid.write(f"#N  Bspace\n")
+        fid.write(f"{data['nvb']} {data['bspace']}\n")
+        fid.write("SCALE\n")
+        fid.write(f"{data['scale'][0]} {data['scale'][1]} {data['scale'][2]}\n")
+        fid.write("TRANSLATE\n")
+        fid.write(f"{data['translate'][0]} {data['translate'][1]} {data['translate'][2]}\n")
+        if data['bfile'] != '':
+            fid.write(f"BFILE\n")
+            fid.write(f"{data['bfile']}\n")
+        
     def __write_surface(self, fid, surf_name, data):
         """write a surface to a file"""
         # TODO add NACA and CLAF keyword support
@@ -1023,6 +1096,13 @@ class AVLSolver(object):
             fid.write("YDUPLICATE\n")
             __write_data(["yduplicate"])
 
+        idx_surf = self.get_surface_index(surf_name)
+        if idx_surf+1 != data["component"]:
+            # only add component keys if we have to to avoid freaking 
+            # people out who don't expect to see them
+            fid.write("COMPONENT\n")
+            __write_data(["component"])
+        
         fid.write("SCALE\n")
         __write_data(["scale"])
 
@@ -1106,10 +1186,14 @@ class AVLSolver(object):
         """Get the number of surfaces in the geometry"""
         return self.get_avl_fort_arr("CASE_I", "NSURF")
 
-    def get_num_sections(self, surf_name) -> int:
-        """Get the number of surfaces in the geometry"""
+    def get_surface_index(self, surf_name) -> int:
         surf_names = self.get_surface_names()
         idx_surf = surf_names.index(surf_name)
+        return idx_surf
+
+    def get_num_sections(self, surf_name) -> int:
+        """Get the number of surfaces in the geometry"""
+        idx_surf = self.get_surface_index(surf_name)
         slice_idx_surf = (idx_surf,)
         return self.get_avl_fort_arr("SURF_GEOM_I", "NSEC", slicer=slice_idx_surf)
 

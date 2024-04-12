@@ -193,7 +193,6 @@ C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY,
-     &       NVB, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C
          IF(LDUPL_B(IBODY)) THEN
@@ -225,7 +224,6 @@ C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY,
-     &       NVB, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C
          IF(LDUPL_B(IBODY)) THEN
@@ -311,7 +309,6 @@ C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY,
-     &       NVB, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C
          IF(LDUPL_B(IBODY)) THEN
@@ -348,7 +345,7 @@ C
         endif
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ(LINE,*,ERR=990) NVB, BSPACE
+        READ(LINE,*,ERR=990) NVB(IBODY), BSPACE(IBODY)
 C
 C===========================================================================
       ELSEIF(KEYWD.EQ.'YDUP') THEN
@@ -798,7 +795,10 @@ CCC         WRITE(*,*) '     Using data in normalized range ',XFMIN,XFMAX
         ENDIF
 C
         CALL STRIP(CNAME,NCN)
-        WRITE(*,*) '    Reading body shape from file: ',CNAME(1:NCN)
+        if (lverbose) then 
+            WRITE(*,*) '    Reading body shape from file: ',CNAME(1:NCN)
+        endif
+        BFILES(IBODY) = CNAME(1:NCN)
         NBLDS = 1
         CALL READBL(CNAME,IBX,NBLDS,XB,YB,NB,NBL,
      &               ANAME,XINL,XOUT,YBOT,YTOP)
