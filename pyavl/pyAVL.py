@@ -1146,7 +1146,7 @@ class AVLSolver(object):
                 fid.write(" AFILE\n")
                 fid.write(f" {afile}\n")
             # output claf and  clcd if not default
-            if data["claf"][idx_sec]!= 0.0:
+            if data["claf"][idx_sec]!= 1.0:
                 fid.write(" CLAF\n")
                 fid.write(f" {data['claf'][idx_sec]}\n")
 
