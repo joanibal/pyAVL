@@ -1145,6 +1145,14 @@ class AVLSolver(object):
             if afile:
                 fid.write(" AFILE\n")
                 fid.write(f" {afile}\n")
+            # output claf and  clcd if not default
+            if data["claf"][idx_sec]!= 0.0:
+                fid.write(" CLAF\n")
+                fid.write(f" {data['claf'][idx_sec]}\n")
+
+            if (data["clcdsec"][idx_sec] != 0.0).any():
+                fid.write(" CLCD\n")
+                fid.write(f" {data['clcd'][idx_sec]}\n")
 
             # check for control surfaces
 
