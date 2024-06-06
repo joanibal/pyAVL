@@ -362,7 +362,8 @@ C
      &                  SRC_U,DBL_U )
 C----------------------------------------------------------
 C     Sets strengths of source+doublet line segments
-C     for each unit freestream and rotation component
+C     for 6 "unit" flow components consisting of:
+C     3 unit (X,Y,Z) freestream and 3 unit (X,Y,Z) rotations
 C
 C Input
 C -----
@@ -567,6 +568,8 @@ C
      &                   U,V,W, RCORE)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
+C     Uses Scully (also Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
 C----------------------------------------------------------
       LOGICAL LBOUND
 C
