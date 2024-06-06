@@ -3,7 +3,7 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of build_aic in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: aicn
-C   with respect to varying inputs: ysym zsym rv1 rv2 rc chordv
+C   with respect to varying inputs: ysym zsym mach rv1 rv2 rc chordv
 C                enc
 C SETUP
 C
@@ -12,6 +12,7 @@ C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       REAL betm
+      REAL betm_diff
       INTRINSIC SQRT
       INTEGER j
       INTEGER i
@@ -22,16 +23,26 @@ C
       INTEGER iv
       INTEGER jv
       REAL(kind=8) arg1
+      REAL(kind=8) arg1_diff
+      REAL(kind=avl_real) temp
       INTEGER ii2
       INTEGER ii1
+      amach_diff = mach_diff
       amach = mach
+      arg1_diff = -(2*amach*amach_diff)
       arg1 = 1.0 - amach**2
-      betm = SQRT(arg1)
+      temp = SQRT(arg1)
+      IF (arg1 .EQ. 0.D0) THEN
+        betm_diff = 0.D0
+      ELSE
+        betm_diff = arg1_diff/(2.0*temp)
+      END IF
+      betm = temp
       IF (lverbose) WRITE(*, *) ' Building normalwash AIC matrix...'
-      CALL VVOR_D(betm, iysym, ysym, ysym_diff, izsym, zsym, zsym_diff, 
-     +            vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff, nsurfv, 
-     +            chordv, chordv_diff, nvor, rc, rc_diff, nsurfv, 
-     +            .false., wc_gam, wc_gam_diff, nvmax)
+      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rc, rc_diff, 
+     +            nsurfv, .false., wc_gam, wc_gam_diff, nvmax)
       DO ii1=1,nvor
         DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
@@ -158,7 +169,8 @@ C
 
 C  Differentiation of set_par_and_cons in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: alfa beta wrot delcon xyzref
-C   with respect to varying inputs: conval xyzref
+C                mach cdref
+C   with respect to varying inputs: parval conval
 C WSENS
       SUBROUTINE SET_PAR_AND_CONS_D(niter, ir)
       INCLUDE 'AVL.INC'
@@ -168,16 +180,21 @@ C WSENS
       INTEGER iv
       INTEGER ic
       INTEGER ii1
-      xyzref_diff(1) = 0.D0
+      CALL SET_PARAMS_D(ir)
+C Additionally set the reference point to be at the cg
+      DO ii1=1,3
+        xyzref_diff(ii1) = 0.D0
+      ENDDO
+      xyzref_diff(1) = parval_diff(ipxcg, ir)
       xyzref(1) = parval(ipxcg, ir)
-      xyzref_diff(2) = 0.D0
+      xyzref_diff(2) = parval_diff(ipycg, ir)
       xyzref(2) = parval(ipycg, ir)
-      xyzref_diff(3) = 0.D0
+      xyzref_diff(3) = parval_diff(ipzcg, ir)
       xyzref(3) = parval(ipzcg, ir)
 C
+      cdref_diff = parval_diff(ipcd0, ir)
       cdref = parval(ipcd0, ir)
 C
-      mach = parval(ipmach, ir)
 C
       IF (mach .NE. amach) THEN
 C----- new Mach number invalidates close to everything that's stored

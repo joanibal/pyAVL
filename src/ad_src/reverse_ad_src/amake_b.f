@@ -36,6 +36,7 @@ C MAKESURF
             GOTO 100
           ELSE
 C this surface has already been created
+C it was probably duplicated from the previous one
             CALL PUSHREAL8ARRAY(chord, nsmax)
             CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
             CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
@@ -63,6 +64,7 @@ C this surface has already been created
           CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
           CALL PUSHINTEGER4ARRAY(nvs, nfmax)
           CALL PUSHINTEGER4ARRAY(nvc, nfmax)
+          CALL PUSHBOOLEANARRAY(lsurfspacing, nfmax)
           CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
           CALL PUSHINTEGER4ARRAY(nk, nfmax)
           CALL PUSHINTEGER4ARRAY(nj, nfmax)
@@ -135,6 +137,7 @@ C this surface has already been created
             CALL POPINTEGER4ARRAY(nj, nfmax)
             CALL POPINTEGER4ARRAY(nk, nfmax)
             CALL POPINTEGER4ARRAY(jfrst, nfmax)
+            CALL POPBOOLEANARRAY(lsurfspacing, nfmax)
             CALL POPINTEGER4ARRAY(nvc, nfmax)
             CALL POPINTEGER4ARRAY(nvs, nfmax)
             CALL POPINTEGER4ARRAY(ijfrst, nsmax)
@@ -406,9 +409,11 @@ C---- section arc lengths of wing trace in y-z plane
           yzlen(isec) = yzlen(isec-1) + SQRT(dy*dy + dz*dz)
         ENDDO
         CALL PUSHINTEGER4(isec - 1)
+C we can not rely on the original condition becuase NVS(ISURF) is filled 
+C and we may want to rebuild the surface later
+C IF(NVS(ISURF).EQ.0) THEN
 C
-C
-        IF (nvs(isurf) .EQ. 0) THEN
+        IF (lsurfspacing(isurf) .EQV. .false.) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
           DO isec=1,nsec(isurf)-1
             nvs(isurf) = nvs(isurf) + nspans(isec, isurf)
@@ -2237,7 +2242,8 @@ C
       INTEGER nn
       REAL ypt
 C
-      nni = nsurf + 1
+C     
+      nni = nn + 1
       IF (nni .GT. nfmax) THEN
         STOP
       ELSE

@@ -87,6 +87,7 @@ C
 C
 C---- initialize all entity counters
       NSEC = 0
+      NSEC_B = 0
 C
       NSURF = 0
       NVOR = 0
@@ -196,8 +197,7 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY, IBX,
-     &       NVB, BSPACE,
+         CALL MAKEBODY(IBODY,
      &       XBOD,YBOD,TBOD,NBOD)
 C
          IF(LDUPL_B(IBODY)) THEN
@@ -228,8 +228,7 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY, IBX,
-     &       NVB, BSPACE,
+         CALL MAKEBODY(IBODY,
      &       XBOD,YBOD,TBOD,NBOD)
 C
          IF(LDUPL_B(IBODY)) THEN
@@ -289,9 +288,11 @@ C
         IF(NINPUT.GE.4) THEN
          NVS(ISURF) = INT( RINPUT(3) + 0.001 )
          SSPACE(ISURF) = RINPUT(4)
+         LSURFSPACING(ISURF) = .TRUE.
         ELSE
          NVS(ISURF) = 0
          SSPACE(ISURF) = 0.0
+         LSURFSPACING(ISURF) = .FALSE.
         ENDIF
 C
 C===========================================================================
@@ -312,8 +313,7 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY, IBX,
-     &       NVB, BSPACE,
+         CALL MAKEBODY(IBODY,
      &       XBOD,YBOD,TBOD,NBOD)
 C
          IF(LDUPL_B(IBODY)) THEN
@@ -327,7 +327,7 @@ C------ new body  (IBODY.ne.0 denotes body accumulation is active)
         NBODY = NBODY + 1
         IBODY = MIN( NBODY , NBMAX )
 C
-        NSEC = 0
+        NSEC_B(IBODY) = 0
         ISEC = 0
         NBOD = 0
 C
@@ -344,13 +344,13 @@ C       TODO: add XYZ vecotors for bodys
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         BTITLE(IBODY) = LINE(1:NLINE)
-        if (lverbose) then
-          WRITE(*,*)
-          WRITE(*,*) '  Building body: ', BTITLE(IBODY)
+        if (lverbose)then
+           WRITE(*,*)
+           WRITE(*,*) '  Building body: ', BTITLE(IBODY)
         endif
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ(LINE,*,ERR=990) NVB, BSPACE
+        READ(LINE,*,ERR=990) NVB(IBODY), BSPACE(IBODY)
 C
 C===========================================================================
       ELSEIF(KEYWD.EQ.'YDUP') THEN
@@ -931,7 +931,10 @@ C     double quotes checked to delimit file name to allow blanks in name
 
 
         CALL STRIP(CNAME,NCN)
-        WRITE(*,*) '    Reading body shape from file: ',CNAME(1:NCN)
+        if (lverbose) then 
+            WRITE(*,*) '    Reading body shape from file: ',CNAME(1:NCN)
+        endif
+        BFILES(IBODY) = CNAME(1:NCN)
         NBLDS = 1
         CALL READBL(CNAME,IBX,NBLDS,XB,YB,NB,NBL,
      &               ANAME,XINL,XOUT,YBOT,YTOP)

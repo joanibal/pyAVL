@@ -35,12 +35,12 @@ class TestConstraints(unittest.TestCase):
         self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("alpha"),
+            self.avl_solver.get_case_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("beta"),
+            self.avl_solver.get_case_constraint("beta"),
             2.0,
             rtol=1e-8,
         )

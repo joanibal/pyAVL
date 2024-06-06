@@ -71,9 +71,11 @@ C
 C------ current case has CL=0 ... set it using CL constraint, if it's present
         DO IV = 1, NVTOT
           IF(ICON(IV,IR) .EQ. ICCL) THEN
-           WRITE(*,*)
-           WRITE(*,*)'       Setting trim CL from current CL constraint'
-           PARVAL(IPCL,IR) = CONVAL(ICCL,IR)
+            if(LVERBOSE) then 
+      WRITE(*,*)
+      WRITE(*,*)'       Setting trim CL from current CL constraint'
+            endif
+            PARVAL(IPCL,IR) = CONVAL(ICCL,IR)
            GO TO 101
           ENDIF
         ENDDO

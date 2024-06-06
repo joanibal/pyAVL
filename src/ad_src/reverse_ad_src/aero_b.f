@@ -6,24 +6,25 @@ C   gradient     of useful results: clff cyff cdff spanef cdtot
 C                cltot cxtot cytot cztot crtot cmtot cntot crsax
 C                cnsax cdvtot cdtot_d cltot_d cxtot_d cytot_d cztot_d
 C                crtot_d cmtot_d cntot_d
-C   with respect to varying inputs: alfa vinf sref xyzref mach
-C                clff cyff cdff spanef cdtot cltot cxtot cytot
-C                cztot crtot cmtot cntot crsax cnsax cdvtot cdtot_d
-C                cltot_d cxtot_d cytot_d cztot_d crtot_d cmtot_d
-C                cntot_d rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz xsref ysref zsref rv1 rv2 rv rc gam
-C                gam_d wv
-C   RW status of diff variables: alfa:out vinf:out sref:out xyzref:out
-C                mach:out clff:in-zero cyff:in-zero cdff:in-zero
-C                spanef:in-zero cdtot:in-zero cltot:in-zero cxtot:in-zero
-C                cytot:in-zero cztot:in-zero crtot:in-zero cmtot:in-zero
-C                cntot:in-zero crsax:in-zero cnsax:in-zero cdvtot:in-zero
-C                cdtot_d:in-out cltot_d:in-out cxtot_d:in-out cytot_d:in-out
-C                cztot_d:in-out crtot_d:in-out cmtot_d:in-out cntot_d:in-out
-C                rle:out chord:out rle1:out chord1:out rle2:out
-C                chord2:out wstrip:out ensy:out ensz:out xsref:out
-C                ysref:out zsref:out rv1:out rv2:out rv:out rc:out
-C                gam:out gam_d:out wv:out
+C   with respect to varying inputs: alfa vinf sref cref bref xyzref
+C                mach cdref clff cyff cdff spanef cdtot cltot cxtot
+C                cytot cztot crtot cmtot cntot crsax cnsax cdvtot
+C                cdtot_d cltot_d cxtot_d cytot_d cztot_d crtot_d
+C                cmtot_d cntot_d rle chord rle1 chord1 rle2 chord2
+C                wstrip ensy ensz xsref ysref zsref rv1 rv2 rv
+C                rc gam gam_d wv
+C   RW status of diff variables: alfa:out vinf:out sref:out cref:out
+C                bref:out xyzref:out mach:out cdref:out clff:in-zero
+C                cyff:in-zero cdff:in-zero spanef:in-zero cdtot:in-zero
+C                cltot:in-zero cxtot:in-zero cytot:in-zero cztot:in-zero
+C                crtot:in-zero cmtot:in-zero cntot:in-zero crsax:in-zero
+C                cnsax:in-zero cdvtot:in-zero cdtot_d:in-out cltot_d:in-out
+C                cxtot_d:in-out cytot_d:in-out cztot_d:in-out crtot_d:in-out
+C                cmtot_d:in-out cntot_d:in-out rle:out chord:out
+C                rle1:out chord1:out rle2:out chord2:out wstrip:out
+C                ensy:out ensz:out xsref:out ysref:out zsref:out
+C                rv1:out rv2:out rv:out rc:out gam:out gam_d:out
+C                wv:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -156,8 +157,8 @@ C
 C
 C
       CALL CALCST_B()
-      vmag_diff = vinf(3)*cdref*cztot_diff + vinf(2)*cdref*cytot_diff + 
-     +  vinf(1)*cdref*cxtot_diff
+      vmag_diff = cdref*vinf(3)*cztot_diff + cdref*vinf(2)*cytot_diff + 
+     +  cdref*vinf(1)*cxtot_diff
       IF (vsq .EQ. 0.D0) THEN
         vsq_diff = cdref*cdtot_diff + cdref*cdvtot_diff
       ELSE
@@ -167,11 +168,13 @@ C
       DO ii1=1,3
         vinf_diff(ii1) = 0.D0
       ENDDO
-      vinf_diff(3) = vinf_diff(3) + vmag*cdref*cztot_diff + 2*vinf(3)*
+      vinf_diff(3) = vinf_diff(3) + cdref*vmag*cztot_diff + 2*vinf(3)*
      +  vsq_diff
-      vinf_diff(2) = vinf_diff(2) + vmag*cdref*cytot_diff + 2*vinf(2)*
+      cdref_diff = vmag*vinf(3)*cztot_diff + vmag*vinf(2)*cytot_diff + 
+     +  vmag*vinf(1)*cxtot_diff + vsq*cdtot_diff + vsq*cdvtot_diff
+      vinf_diff(2) = vinf_diff(2) + cdref*vmag*cytot_diff + 2*vinf(2)*
      +  vsq_diff
-      vinf_diff(1) = vinf_diff(1) + vmag*cdref*cxtot_diff + 2*vinf(1)*
+      vinf_diff(1) = vinf_diff(1) + cdref*vmag*cxtot_diff + 2*vinf(1)*
      +  vsq_diff
       DO k=ncontrol,1,-1
         cntot_d_diff(k) = dir*cntot_d_diff(k)
@@ -225,15 +228,15 @@ C
       END
 
 C  Differentiation of sfforc in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: alfa vinf sref xyzref cdtot
-C                cltot cxtot cytot cztot crtot cmtot cntot cdvtot
+C   gradient     of useful results: alfa vinf sref cref bref xyzref
+C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
+C                cdvtot cdtot_d cltot_d cxtot_d cytot_d cztot_d
+C                crtot_d cmtot_d cntot_d rv1 rv2 gam
+C   with respect to varying inputs: alfa vinf sref cref bref xyzref
 C                cdtot_d cltot_d cxtot_d cytot_d cztot_d crtot_d
-C                cmtot_d cntot_d rv1 rv2 gam
-C   with respect to varying inputs: alfa vinf sref xyzref cdtot_d
-C                cltot_d cxtot_d cytot_d cztot_d crtot_d cmtot_d
-C                cntot_d rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_d
-C                wv
+C                cmtot_d cntot_d rle chord rle1 chord1 rle2 chord2
+C                wstrip ensy ensz xsref ysref zsref rv1 rv2 rv
+C                gam gam_d wv
 C AERO
 C
 C
@@ -379,9 +382,10 @@ C
       REAL result1_diff
       REAL result2
       REAL(kind=8) temp_diff
-      REAL temp_diff0
-      INTEGER ii1
+      REAL(kind=avl_real) temp_diff0
       REAL temp_diff1
+      INTEGER ii1
+      REAL temp_diff2
       INTEGER branch
       INTEGER ad_to
       INTEGER ii2
@@ -1410,28 +1414,33 @@ C    zero out the asymmetric forces and double the symmetric ones
           sr_diff = 0.D0
           cr_diff = 0.D0
           DO n=ncontrol,1,-1
-            temp_diff = cns_d_diff(is, n)/(bref*sref)
+            temp_diff = cns_d_diff(is, n)/(sref*bref)
             cnst_d_diff(j, n) = cnst_d_diff(j, n) + sr*cr*temp_diff
-            temp_diff0 = cnst_d(j, n)*temp_diff
-            sref_diff = sref_diff - cnst_d(j, n)*sr*cr*temp_diff/sref
-            sr_diff = sr_diff + cr*temp_diff0
-            cr_diff = cr_diff + sr*temp_diff0
-            temp_diff = cms_d_diff(is, n)/(cref*sref)
+            temp_diff1 = cnst_d(j, n)*temp_diff
+            temp_diff0 = -(cnst_d(j, n)*sr*cr*temp_diff/(sref*bref))
+            sref_diff = sref_diff + bref*temp_diff0
+            bref_diff = bref_diff + sref*temp_diff0
+            sr_diff = sr_diff + cr*temp_diff1
+            cr_diff = cr_diff + sr*temp_diff1
+            temp_diff = cms_d_diff(is, n)/(sref*cref)
             cmst_d_diff(j, n) = cmst_d_diff(j, n) + sr*cr*temp_diff
-            temp_diff0 = cmst_d(j, n)*temp_diff
-            sref_diff = sref_diff - cmst_d(j, n)*sr*cr*temp_diff/sref
-            sr_diff = sr_diff + cr*temp_diff0
-            cr_diff = cr_diff + sr*temp_diff0
-            temp_diff = crs_d_diff(is, n)/(bref*sref)
+            temp_diff1 = cmst_d(j, n)*temp_diff
+            temp_diff0 = -(cmst_d(j, n)*sr*cr*temp_diff/(sref*cref))
+            sref_diff = sref_diff + cref*temp_diff0
+            cref_diff = cref_diff + sref*temp_diff0
+            sr_diff = sr_diff + cr*temp_diff1
+            cr_diff = cr_diff + sr*temp_diff1
+            temp_diff = crs_d_diff(is, n)/(sref*bref)
             crst_d_diff(j, n) = crst_d_diff(j, n) + sr*cr*temp_diff
-            temp_diff0 = crst_d(j, n)*temp_diff
-            sref_diff = sref_diff - crst_d(j, n)*sr*cr*temp_diff/sref
-            cr_diff = cr_diff + sr*temp_diff0
+            temp_diff1 = crst_d(j, n)*temp_diff
+            temp_diff0 = -(crst_d(j, n)*sr*cr*temp_diff/(sref*bref))
+            bref_diff = bref_diff + sref*temp_diff0
+            cr_diff = cr_diff + sr*temp_diff1
             czst_d_diff(j, n) = czst_d_diff(j, n) + sr*czs_d_diff(is, n)
      +        /sref
             temp_diff = czst_d(j, n)*czs_d_diff(is, n)/sref
-            sr_diff = sr_diff + cr*temp_diff0 + temp_diff
-            sref_diff = sref_diff - sr*temp_diff/sref
+            sref_diff = sref_diff + bref*temp_diff0 - sr*temp_diff/sref
+            sr_diff = sr_diff + cr*temp_diff1 + temp_diff
             cyst_d_diff(j, n) = cyst_d_diff(j, n) + sr*cys_d_diff(is, n)
      +        /sref
             temp_diff = cyst_d(j, n)*cys_d_diff(is, n)/sref
@@ -1458,25 +1467,30 @@ C    zero out the asymmetric forces and double the symmetric ones
           temp_diff = cdv_lstrp(j)*cdvsurf_diff(is)/sref
           sr_diff = sr_diff + temp_diff
           sref_diff = sref_diff - sr*temp_diff/sref
-          temp_diff = cnsurf_diff(is)/(bref*sref)
+          temp_diff = cnsurf_diff(is)/(sref*bref)
           cnstrp_diff(j) = cnstrp_diff(j) + sr*cr*temp_diff
           sr_diff = sr_diff + cr*cnstrp(j)*temp_diff
           cr_diff = cr_diff + sr*cnstrp(j)*temp_diff
-          sref_diff = sref_diff - cnstrp(j)*sr*cr*temp_diff/sref
-          temp_diff = cmsurf_diff(is)/(cref*sref)
+          temp_diff0 = -(cnstrp(j)*sr*cr*temp_diff/(sref*bref))
+          sref_diff = sref_diff + bref*temp_diff0
+          bref_diff = bref_diff + sref*temp_diff0
+          temp_diff = cmsurf_diff(is)/(sref*cref)
           cmstrp_diff(j) = cmstrp_diff(j) + sr*cr*temp_diff
           sr_diff = sr_diff + cr*cmstrp(j)*temp_diff
           cr_diff = cr_diff + sr*cmstrp(j)*temp_diff
-          sref_diff = sref_diff - cmstrp(j)*sr*cr*temp_diff/sref
-          temp_diff = crsurf_diff(is)/(bref*sref)
+          temp_diff0 = -(cmstrp(j)*sr*cr*temp_diff/(sref*cref))
+          sref_diff = sref_diff + cref*temp_diff0
+          cref_diff = cref_diff + sref*temp_diff0
+          temp_diff = crsurf_diff(is)/(sref*bref)
           crstrp_diff(j) = crstrp_diff(j) + sr*cr*temp_diff
           sr_diff = sr_diff + cr*crstrp(j)*temp_diff
           cr_diff = cr_diff + sr*crstrp(j)*temp_diff
-          sref_diff = sref_diff - crstrp(j)*sr*cr*temp_diff/sref
+          temp_diff0 = -(crstrp(j)*sr*cr*temp_diff/(sref*bref))
+          bref_diff = bref_diff + sref*temp_diff0
           czstrp_diff(j) = czstrp_diff(j) + sr*czsurf_diff(is)/sref
           temp_diff = czstrp(j)*czsurf_diff(is)/sref
+          sref_diff = sref_diff + bref*temp_diff0 - sr*temp_diff/sref
           sr_diff = sr_diff + temp_diff
-          sref_diff = sref_diff - sr*temp_diff/sref
           cystrp_diff(j) = cystrp_diff(j) + sr*cysurf_diff(is)/sref
           temp_diff = cystrp(j)*cysurf_diff(is)/sref
           sr_diff = sr_diff + temp_diff
@@ -2226,57 +2240,57 @@ C
         cr_diff = 0.D0
         DO n=ncontrol,1,-1
           cmz_d_diff(n) = cmz_d_diff(n) + cnst_d_diff(j, n)
-          temp_diff1 = cnst_d_diff(j, n)/cr
+          temp_diff2 = cnst_d_diff(j, n)/cr
           cnst_d_diff(j, n) = 0.D0
-          cfy_d_diff(n) = cfy_d_diff(n) + r(1)*temp_diff1
-          r_diff(1) = r_diff(1) + cfy_d(n)*temp_diff1
-          cfx_d_diff(n) = cfx_d_diff(n) - r(2)*temp_diff1
-          r_diff(2) = r_diff(2) - cfx_d(n)*temp_diff1
-          cr_diff = cr_diff - (cfy_d(n)*r(1)-cfx_d(n)*r(2))*temp_diff1/
+          cfy_d_diff(n) = cfy_d_diff(n) + r(1)*temp_diff2
+          r_diff(1) = r_diff(1) + cfy_d(n)*temp_diff2
+          cfx_d_diff(n) = cfx_d_diff(n) - r(2)*temp_diff2
+          r_diff(2) = r_diff(2) - cfx_d(n)*temp_diff2
+          cr_diff = cr_diff - (cfy_d(n)*r(1)-cfx_d(n)*r(2))*temp_diff2/
      +      cr
           cmy_d_diff(n) = cmy_d_diff(n) + cmst_d_diff(j, n)
-          temp_diff1 = cmst_d_diff(j, n)/cr
+          temp_diff2 = cmst_d_diff(j, n)/cr
           cmst_d_diff(j, n) = 0.D0
-          cfx_d_diff(n) = cfx_d_diff(n) + r(3)*temp_diff1
-          r_diff(3) = r_diff(3) + cfx_d(n)*temp_diff1
-          cfz_d_diff(n) = cfz_d_diff(n) - r(1)*temp_diff1
-          r_diff(1) = r_diff(1) - cfz_d(n)*temp_diff1
-          cr_diff = cr_diff - (cfx_d(n)*r(3)-cfz_d(n)*r(1))*temp_diff1/
+          cfx_d_diff(n) = cfx_d_diff(n) + r(3)*temp_diff2
+          r_diff(3) = r_diff(3) + cfx_d(n)*temp_diff2
+          cfz_d_diff(n) = cfz_d_diff(n) - r(1)*temp_diff2
+          r_diff(1) = r_diff(1) - cfz_d(n)*temp_diff2
+          cr_diff = cr_diff - (cfx_d(n)*r(3)-cfz_d(n)*r(1))*temp_diff2/
      +      cr
           cmx_d_diff(n) = cmx_d_diff(n) + crst_d_diff(j, n)
-          temp_diff1 = crst_d_diff(j, n)/cr
+          temp_diff2 = crst_d_diff(j, n)/cr
           crst_d_diff(j, n) = 0.D0
-          cfz_d_diff(n) = cfz_d_diff(n) + r(2)*temp_diff1
-          r_diff(2) = r_diff(2) + cfz_d(n)*temp_diff1
-          cfy_d_diff(n) = cfy_d_diff(n) - r(3)*temp_diff1
-          r_diff(3) = r_diff(3) - cfy_d(n)*temp_diff1
-          cr_diff = cr_diff - (cfz_d(n)*r(2)-cfy_d(n)*r(3))*temp_diff1/
+          cfz_d_diff(n) = cfz_d_diff(n) + r(2)*temp_diff2
+          r_diff(2) = r_diff(2) + cfz_d(n)*temp_diff2
+          cfy_d_diff(n) = cfy_d_diff(n) - r(3)*temp_diff2
+          r_diff(3) = r_diff(3) - cfy_d(n)*temp_diff2
+          cr_diff = cr_diff - (cfz_d(n)*r(2)-cfy_d(n)*r(3))*temp_diff2/
      +      cr
         ENDDO
         cmz_diff = cnstrp_diff(j)
-        temp_diff1 = cnstrp_diff(j)/cr
+        temp_diff2 = cnstrp_diff(j)/cr
         cnstrp_diff(j) = 0.D0
-        cfy_diff = r(1)*temp_diff1
-        r_diff(1) = r_diff(1) + cfy*temp_diff1
-        cfx_diff = -(r(2)*temp_diff1)
-        r_diff(2) = r_diff(2) - cfx*temp_diff1
-        cr_diff = cr_diff - (cfy*r(1)-cfx*r(2))*temp_diff1/cr
+        cfy_diff = r(1)*temp_diff2
+        r_diff(1) = r_diff(1) + cfy*temp_diff2
+        cfx_diff = -(r(2)*temp_diff2)
+        r_diff(2) = r_diff(2) - cfx*temp_diff2
+        cr_diff = cr_diff - (cfy*r(1)-cfx*r(2))*temp_diff2/cr
         cmy_diff = cmstrp_diff(j)
-        temp_diff1 = cmstrp_diff(j)/cr
+        temp_diff2 = cmstrp_diff(j)/cr
         cmstrp_diff(j) = 0.D0
-        cfx_diff = cfx_diff + r(3)*temp_diff1
-        r_diff(3) = r_diff(3) + cfx*temp_diff1
-        cfz_diff = -(r(1)*temp_diff1)
-        r_diff(1) = r_diff(1) - cfz*temp_diff1
-        cr_diff = cr_diff - (cfx*r(3)-cfz*r(1))*temp_diff1/cr
+        cfx_diff = cfx_diff + r(3)*temp_diff2
+        r_diff(3) = r_diff(3) + cfx*temp_diff2
+        cfz_diff = -(r(1)*temp_diff2)
+        r_diff(1) = r_diff(1) - cfz*temp_diff2
+        cr_diff = cr_diff - (cfx*r(3)-cfz*r(1))*temp_diff2/cr
         cmx_diff = crstrp_diff(j)
-        temp_diff1 = crstrp_diff(j)/cr
+        temp_diff2 = crstrp_diff(j)/cr
         crstrp_diff(j) = 0.D0
-        cfz_diff = cfz_diff + r(2)*temp_diff1
-        r_diff(2) = r_diff(2) + cfz*temp_diff1
-        cfy_diff = cfy_diff - r(3)*temp_diff1
-        r_diff(3) = r_diff(3) - cfy*temp_diff1
-        cr_diff = cr_diff - (cfz*r(2)-cfy*r(3))*temp_diff1/cr
+        cfz_diff = cfz_diff + r(2)*temp_diff2
+        r_diff(2) = r_diff(2) + cfz*temp_diff2
+        cfy_diff = cfy_diff - r(3)*temp_diff2
+        r_diff(3) = r_diff(3) - cfy*temp_diff2
+        cr_diff = cr_diff - (cfz*r(2)-cfy*r(3))*temp_diff2/cr
         CALL POPREAL8(r(3))
         zr_diff = zr_diff + r_diff(3)
         xyzref_diff(3) = xyzref_diff(3) - r_diff(3)
@@ -2328,24 +2342,24 @@ C
             dcvfy_d_diff = cfy_d_diff(n)
             CALL POPREAL8(cfx_d(n))
             dcvfx_d_diff = cfx_d_diff(n)
-            temp_diff1 = veff(3)*clv_d(n)*dcvfz_d_diff
-            temp_diff0 = veffmag*cdv_clv*dcvfz_d_diff
-            veff_diff(3) = veff_diff(3) + clv_d(n)*temp_diff0
-            clv_d_diff(n) = clv_d_diff(n) + veff(3)*temp_diff0
-            veffmag_diff = veffmag_diff + cdv_clv*temp_diff1
-            cdv_clv_diff = cdv_clv_diff + veffmag*temp_diff1
-            temp_diff1 = veff(2)*clv_d(n)*dcvfy_d_diff
-            temp_diff0 = veffmag*cdv_clv*dcvfy_d_diff
-            veff_diff(2) = veff_diff(2) + clv_d(n)*temp_diff0
-            clv_d_diff(n) = clv_d_diff(n) + veff(2)*temp_diff0
-            temp_diff0 = veff(1)*clv_d(n)*dcvfx_d_diff
-            veffmag_diff = veffmag_diff + cdv_clv*temp_diff1 + cdv_clv*
-     +        temp_diff0
-            cdv_clv_diff = cdv_clv_diff + veffmag*temp_diff1 + veffmag*
-     +        temp_diff0
-            temp_diff1 = veffmag*cdv_clv*dcvfx_d_diff
-            veff_diff(1) = veff_diff(1) + clv_d(n)*temp_diff1
-            clv_d_diff(n) = clv_d_diff(n) + veff(1)*temp_diff1
+            temp_diff2 = veff(3)*clv_d(n)*dcvfz_d_diff
+            temp_diff1 = veffmag*cdv_clv*dcvfz_d_diff
+            veff_diff(3) = veff_diff(3) + clv_d(n)*temp_diff1
+            clv_d_diff(n) = clv_d_diff(n) + veff(3)*temp_diff1
+            veffmag_diff = veffmag_diff + cdv_clv*temp_diff2
+            cdv_clv_diff = cdv_clv_diff + veffmag*temp_diff2
+            temp_diff2 = veff(2)*clv_d(n)*dcvfy_d_diff
+            temp_diff1 = veffmag*cdv_clv*dcvfy_d_diff
+            veff_diff(2) = veff_diff(2) + clv_d(n)*temp_diff1
+            clv_d_diff(n) = clv_d_diff(n) + veff(2)*temp_diff1
+            temp_diff1 = veff(1)*clv_d(n)*dcvfx_d_diff
+            veffmag_diff = veffmag_diff + cdv_clv*temp_diff2 + cdv_clv*
+     +        temp_diff1
+            cdv_clv_diff = cdv_clv_diff + veffmag*temp_diff2 + veffmag*
+     +        temp_diff1
+            temp_diff2 = veffmag*cdv_clv*dcvfx_d_diff
+            veff_diff(1) = veff_diff(1) + clv_d(n)*temp_diff2
+            clv_d_diff(n) = clv_d_diff(n) + veff(1)*temp_diff2
           ENDDO
           udrag_diff(1) = udrag_diff(1) + dcvfx*cdv_lstrp_diff(j)
           dcvfx_diff = udrag(1)*cdv_lstrp_diff(j) + cfx_diff
@@ -2371,12 +2385,12 @@ C
             cfy_d_diff(n) = cfy_d_diff(n) + ensy(j)*clv_d_diff(n)
             ensz_diff(j) = ensz_diff(j) + (cfz_d(n)*cosa-cfx_d(n)*sina)*
      +        clv_d_diff(n)
-            temp_diff0 = ensz(j)*clv_d_diff(n)
+            temp_diff1 = ensz(j)*clv_d_diff(n)
             clv_d_diff(n) = 0.D0
-            cfz_d_diff(n) = cfz_d_diff(n) + cosa*temp_diff0
-            cosa_diff = cosa_diff + cfz_d(n)*temp_diff0
-            cfx_d_diff(n) = cfx_d_diff(n) - sina*temp_diff0
-            sina_diff = sina_diff - cfx_d(n)*temp_diff0
+            cfz_d_diff(n) = cfz_d_diff(n) + cosa*temp_diff1
+            cosa_diff = cosa_diff + cfz_d(n)*temp_diff1
+            cfx_d_diff(n) = cfx_d_diff(n) - sina*temp_diff1
+            sina_diff = sina_diff - cfx_d(n)*temp_diff1
           ENDDO
           ulift_diff(1) = ulift_diff(1) + cfx*clv_diff
           cfx_diff = cfx_diff + ulift(1)*clv_diff
@@ -2385,14 +2399,14 @@ C
           ulift_diff(3) = ulift_diff(3) + cfz*clv_diff
           cfz_diff = cfz_diff + ulift(3)*clv_diff
           IF (veff(1)**2 + veff(2)**2 + veff(3)**2 .EQ. 0.D0) THEN
-            temp_diff0 = 0.D0
+            temp_diff1 = 0.D0
           ELSE
-            temp_diff0 = veffmag_diff/(2.0*SQRT(veff(1)**2+veff(2)**2+
+            temp_diff1 = veffmag_diff/(2.0*SQRT(veff(1)**2+veff(2)**2+
      +        veff(3)**2))
           END IF
-          veff_diff(1) = veff_diff(1) + 2*veff(1)*temp_diff0
-          veff_diff(2) = veff_diff(2) + 2*veff(2)*temp_diff0
-          veff_diff(3) = veff_diff(3) + 2*veff(3)*temp_diff0
+          veff_diff(1) = veff_diff(1) + 2*veff(1)*temp_diff1
+          veff_diff(2) = veff_diff(2) + 2*veff(2)*temp_diff1
+          veff_diff(3) = veff_diff(3) + 2*veff(3)*temp_diff1
           CALL POPREAL8(veff(3))
           vinf_diff(3) = vinf_diff(3) + veff_diff(3)
           vrot_diff(3) = vrot_diff(3) + veff_diff(3)
@@ -2443,29 +2457,29 @@ C$BWD-OF II-LOOP
                 dcfz_d = fgam_d(3, n)/sr
 C  
 C  
-                temp_diff1 = cmz_d_diff(n)/cr
-                dcfy_d_diff = r(1)*temp_diff1
-                r_diff(1) = r_diff(1) + dcfy_d*temp_diff1
-                dcfx_d_diff = -(r(2)*temp_diff1)
-                r_diff(2) = r_diff(2) - dcfx_d*temp_diff1
-                cr_diff = cr_diff - (dcfy_d*r(1)-dcfx_d*r(2))*temp_diff1
+                temp_diff2 = cmz_d_diff(n)/cr
+                dcfy_d_diff = r(1)*temp_diff2
+                r_diff(1) = r_diff(1) + dcfy_d*temp_diff2
+                dcfx_d_diff = -(r(2)*temp_diff2)
+                r_diff(2) = r_diff(2) - dcfx_d*temp_diff2
+                cr_diff = cr_diff - (dcfy_d*r(1)-dcfx_d*r(2))*temp_diff2
      +            /cr
-                temp_diff1 = cmy_d_diff(n)/cr
-                dcfx_d_diff = dcfx_d_diff + r(3)*temp_diff1 + cfx_d_diff
+                temp_diff2 = cmy_d_diff(n)/cr
+                dcfx_d_diff = dcfx_d_diff + r(3)*temp_diff2 + cfx_d_diff
      +            (n)
-                r_diff(3) = r_diff(3) + dcfx_d*temp_diff1
-                dcfz_d_diff = -(r(1)*temp_diff1)
-                r_diff(1) = r_diff(1) - dcfz_d*temp_diff1
-                cr_diff = cr_diff - (dcfx_d*r(3)-dcfz_d*r(1))*temp_diff1
+                r_diff(3) = r_diff(3) + dcfx_d*temp_diff2
+                dcfz_d_diff = -(r(1)*temp_diff2)
+                r_diff(1) = r_diff(1) - dcfz_d*temp_diff2
+                cr_diff = cr_diff - (dcfx_d*r(3)-dcfz_d*r(1))*temp_diff2
      +            /cr
-                temp_diff1 = cmx_d_diff(n)/cr
-                dcfz_d_diff = dcfz_d_diff + r(2)*temp_diff1 + cfz_d_diff
+                temp_diff2 = cmx_d_diff(n)/cr
+                dcfz_d_diff = dcfz_d_diff + r(2)*temp_diff2 + cfz_d_diff
      +            (n)
-                r_diff(2) = r_diff(2) + dcfz_d*temp_diff1
+                r_diff(2) = r_diff(2) + dcfz_d*temp_diff2
                 dcfy_d_diff = dcfy_d_diff + cfy_d_diff(n) - r(3)*
-     +            temp_diff1
-                r_diff(3) = r_diff(3) - dcfy_d*temp_diff1
-                cr_diff = cr_diff - (dcfz_d*r(2)-dcfy_d*r(3))*temp_diff1
+     +            temp_diff2
+                r_diff(3) = r_diff(3) - dcfy_d*temp_diff2
+                cr_diff = cr_diff - (dcfz_d*r(2)-dcfy_d*r(3))*temp_diff2
      +            /cr
                 fgam_d_diff(3, n) = fgam_d_diff(3, n) + dcfz_d_diff/sr
                 sr_diff = sr_diff - fgam_d(3, n)*dcfz_d_diff/sr**2 - 
@@ -2476,25 +2490,25 @@ C
               ENDDO
               dcfx = fgam(1)/sr
               dcfy = fgam(2)/sr
-              temp_diff0 = cmz_diff/cr
-              dcfy_diff = r(1)*temp_diff0
-              r_diff(1) = r_diff(1) + dcfy*temp_diff0
-              dcfx_diff = -(r(2)*temp_diff0)
-              r_diff(2) = r_diff(2) - dcfx*temp_diff0
-              cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff0/cr
+              temp_diff1 = cmz_diff/cr
+              dcfy_diff = r(1)*temp_diff1
+              r_diff(1) = r_diff(1) + dcfy*temp_diff1
+              dcfx_diff = -(r(2)*temp_diff1)
+              r_diff(2) = r_diff(2) - dcfx*temp_diff1
+              cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff1/cr
               dcfz = fgam(3)/sr
-              temp_diff0 = cmy_diff/cr
-              dcfx_diff = dcfx_diff + r(3)*temp_diff0 + cfx_diff
-              r_diff(3) = r_diff(3) + dcfx*temp_diff0
-              dcfz_diff = -(r(1)*temp_diff0)
-              r_diff(1) = r_diff(1) - dcfz*temp_diff0
-              cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff0/cr
-              temp_diff0 = cmx_diff/cr
-              dcfz_diff = dcfz_diff + r(2)*temp_diff0 + cfz_diff
-              r_diff(2) = r_diff(2) + dcfz*temp_diff0
-              dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff0
-              r_diff(3) = r_diff(3) - dcfy*temp_diff0
-              cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff0/cr
+              temp_diff1 = cmy_diff/cr
+              dcfx_diff = dcfx_diff + r(3)*temp_diff1 + cfx_diff
+              r_diff(3) = r_diff(3) + dcfx*temp_diff1
+              dcfz_diff = -(r(1)*temp_diff1)
+              r_diff(1) = r_diff(1) - dcfz*temp_diff1
+              cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff1/cr
+              temp_diff1 = cmx_diff/cr
+              dcfz_diff = dcfz_diff + r(2)*temp_diff1 + cfz_diff
+              r_diff(2) = r_diff(2) + dcfz*temp_diff1
+              dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff1
+              r_diff(3) = r_diff(3) - dcfy*temp_diff1
+              cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff1/cr
               fgam_diff(3) = fgam_diff(3) + dcfz_diff/sr
               sr_diff = sr_diff - fgam(3)*dcfz_diff/sr**2 - fgam(2)*
      +          dcfy_diff/sr**2 - fgam(1)*dcfx_diff/sr**2
@@ -2693,24 +2707,24 @@ C$BWD-OF II-LOOP
             dcfz_d = fgam_d(3, n)/sr
 C
 C
-            temp_diff1 = cmz_d_diff(n)/cr
-            dcfy_d_diff = r(1)*temp_diff1
-            r_diff(1) = r_diff(1) + dcfy_d*temp_diff1
-            dcfx_d_diff = -(r(2)*temp_diff1)
-            r_diff(2) = r_diff(2) - dcfx_d*temp_diff1
-            cr_diff = cr_diff - (dcfy_d*r(1)-dcfx_d*r(2))*temp_diff1/cr
-            temp_diff1 = cmy_d_diff(n)/cr
-            dcfx_d_diff = dcfx_d_diff + r(3)*temp_diff1 + cfx_d_diff(n)
-            r_diff(3) = r_diff(3) + dcfx_d*temp_diff1
-            dcfz_d_diff = -(r(1)*temp_diff1)
-            r_diff(1) = r_diff(1) - dcfz_d*temp_diff1
-            cr_diff = cr_diff - (dcfx_d*r(3)-dcfz_d*r(1))*temp_diff1/cr
-            temp_diff1 = cmx_d_diff(n)/cr
-            dcfz_d_diff = dcfz_d_diff + r(2)*temp_diff1 + cfz_d_diff(n)
-            r_diff(2) = r_diff(2) + dcfz_d*temp_diff1
-            dcfy_d_diff = dcfy_d_diff + cfy_d_diff(n) - r(3)*temp_diff1
-            r_diff(3) = r_diff(3) - dcfy_d*temp_diff1
-            cr_diff = cr_diff - (dcfz_d*r(2)-dcfy_d*r(3))*temp_diff1/cr
+            temp_diff2 = cmz_d_diff(n)/cr
+            dcfy_d_diff = r(1)*temp_diff2
+            r_diff(1) = r_diff(1) + dcfy_d*temp_diff2
+            dcfx_d_diff = -(r(2)*temp_diff2)
+            r_diff(2) = r_diff(2) - dcfx_d*temp_diff2
+            cr_diff = cr_diff - (dcfy_d*r(1)-dcfx_d*r(2))*temp_diff2/cr
+            temp_diff2 = cmy_d_diff(n)/cr
+            dcfx_d_diff = dcfx_d_diff + r(3)*temp_diff2 + cfx_d_diff(n)
+            r_diff(3) = r_diff(3) + dcfx_d*temp_diff2
+            dcfz_d_diff = -(r(1)*temp_diff2)
+            r_diff(1) = r_diff(1) - dcfz_d*temp_diff2
+            cr_diff = cr_diff - (dcfx_d*r(3)-dcfz_d*r(1))*temp_diff2/cr
+            temp_diff2 = cmx_d_diff(n)/cr
+            dcfz_d_diff = dcfz_d_diff + r(2)*temp_diff2 + cfz_d_diff(n)
+            r_diff(2) = r_diff(2) + dcfz_d*temp_diff2
+            dcfy_d_diff = dcfy_d_diff + cfy_d_diff(n) - r(3)*temp_diff2
+            r_diff(3) = r_diff(3) - dcfy_d*temp_diff2
+            cr_diff = cr_diff - (dcfz_d*r(2)-dcfy_d*r(3))*temp_diff2/cr
             fgam_d_diff(3, n) = fgam_d_diff(3, n) + dcfz_d_diff/sr
             sr_diff = sr_diff - fgam_d(3, n)*dcfz_d_diff/sr**2 - fgam_d(
      +        2, n)*dcfy_d_diff/sr**2 - fgam_d(1, n)*dcfx_d_diff/sr**2
@@ -2718,24 +2732,24 @@ C
             fgam_d_diff(1, n) = fgam_d_diff(1, n) + dcfx_d_diff/sr
           ENDDO
           CALL POPINTEGER4(n)
-          temp_diff1 = cmz_diff/cr
-          dcfy_diff = r(1)*temp_diff1
-          r_diff(1) = r_diff(1) + dcfy*temp_diff1
-          dcfx_diff = -(r(2)*temp_diff1)
-          r_diff(2) = r_diff(2) - dcfx*temp_diff1
-          cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff1/cr
-          temp_diff1 = cmy_diff/cr
-          dcfx_diff = dcfx_diff + r(3)*temp_diff1 + cfx_diff
-          r_diff(3) = r_diff(3) + dcfx*temp_diff1
-          dcfz_diff = -(r(1)*temp_diff1)
-          r_diff(1) = r_diff(1) - dcfz*temp_diff1
-          cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff1/cr
-          temp_diff1 = cmx_diff/cr
-          dcfz_diff = dcfz_diff + r(2)*temp_diff1 + cfz_diff
-          r_diff(2) = r_diff(2) + dcfz*temp_diff1
-          dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff1
-          r_diff(3) = r_diff(3) - dcfy*temp_diff1
-          cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff1/cr
+          temp_diff2 = cmz_diff/cr
+          dcfy_diff = r(1)*temp_diff2
+          r_diff(1) = r_diff(1) + dcfy*temp_diff2
+          dcfx_diff = -(r(2)*temp_diff2)
+          r_diff(2) = r_diff(2) - dcfx*temp_diff2
+          cr_diff = cr_diff - (dcfy*r(1)-dcfx*r(2))*temp_diff2/cr
+          temp_diff2 = cmy_diff/cr
+          dcfx_diff = dcfx_diff + r(3)*temp_diff2 + cfx_diff
+          r_diff(3) = r_diff(3) + dcfx*temp_diff2
+          dcfz_diff = -(r(1)*temp_diff2)
+          r_diff(1) = r_diff(1) - dcfz*temp_diff2
+          cr_diff = cr_diff - (dcfx*r(3)-dcfz*r(1))*temp_diff2/cr
+          temp_diff2 = cmx_diff/cr
+          dcfz_diff = dcfz_diff + r(2)*temp_diff2 + cfz_diff
+          r_diff(2) = r_diff(2) + dcfz*temp_diff2
+          dcfy_diff = dcfy_diff + cfy_diff - r(3)*temp_diff2
+          r_diff(3) = r_diff(3) - dcfy*temp_diff2
+          cr_diff = cr_diff - (dcfz*r(2)-dcfy*r(3))*temp_diff2/cr
           fgam_diff(3) = fgam_diff(3) + dcfz_diff/sr
           sr_diff = sr_diff - fgam(3)*dcfz_diff/sr**2 - fgam(2)*
      +      dcfy_diff/sr**2 - fgam(1)*dcfx_diff/sr**2
@@ -2861,10 +2875,11 @@ C$BWD-OF II-LOOP
       END
 
 C  Differentiation of bdforc in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: alfa vinf sref cdtot cltot
+C   gradient     of useful results: alfa vinf sref bref cdtot cltot
 C                cxtot cytot cztot crtot cmtot cntot
-C   with respect to varying inputs: alfa vinf sref xyzref mach
-C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
+C   with respect to varying inputs: alfa vinf sref cref bref xyzref
+C                mach cdtot cltot cxtot cytot cztot crtot cmtot
+C                cntot
 C SFFORC
 C
 C
@@ -2912,6 +2927,7 @@ C
       REAL temp_diff
       INTEGER ii1
       REAL(kind=8) temp_diff0
+      REAL(kind=avl_real) temp_diff1
       INTEGER branch
       INTEGER ad_to
 C
@@ -2991,6 +3007,7 @@ C
         ENDDO
         CALL PUSHINTEGER4(ilseg - 1)
       ENDDO
+      cref_diff = 0.D0
       DO ii1=1,3
         xyzref_diff(ii1) = 0.D0
       ENDDO
@@ -3053,18 +3070,24 @@ C
         cdbdy_diff(ib) = cdbdy_diff(ib) + cdtot_diff
         CALL POPINTEGER4(ad_to)
         DO ilseg=ad_to,1,-1
-          temp_diff0 = 2.0*cnbdy_diff(ib)/(bref*sref)
+          temp_diff0 = 2.0*cnbdy_diff(ib)/(sref*bref)
           mb_diff(3) = mb_diff(3) + temp_diff0
-          sref_diff = sref_diff - mb(3)*temp_diff0/sref
-          temp_diff0 = 2.0*cmbdy_diff(ib)/(cref*sref)
+          temp_diff1 = -(mb(3)*temp_diff0/(sref*bref))
+          sref_diff = sref_diff + bref*temp_diff1
+          bref_diff = bref_diff + sref*temp_diff1
+          temp_diff0 = 2.0*cmbdy_diff(ib)/(sref*cref)
           mb_diff(2) = mb_diff(2) + temp_diff0
-          sref_diff = sref_diff - mb(2)*temp_diff0/sref
-          temp_diff0 = 2.0*crbdy_diff(ib)/(bref*sref)
+          temp_diff1 = -(mb(2)*temp_diff0/(sref*cref))
+          sref_diff = sref_diff + cref*temp_diff1
+          cref_diff = cref_diff + sref*temp_diff1
+          temp_diff0 = 2.0*crbdy_diff(ib)/(sref*bref)
           mb_diff(1) = mb_diff(1) + temp_diff0
-          sref_diff = sref_diff - mb(1)*temp_diff0/sref
+          temp_diff1 = -(mb(1)*temp_diff0/(sref*bref))
+          bref_diff = bref_diff + sref*temp_diff1
           temp_diff0 = 2.0*czbdy_diff(ib)/sref
+          sref_diff = sref_diff + bref*temp_diff1 - fb(3)*temp_diff0/
+     +      sref
           fb_diff(3) = fb_diff(3) + temp_diff0
-          sref_diff = sref_diff - fb(3)*temp_diff0/sref
           temp_diff0 = 2.0*cybdy_diff(ib)/sref
           fb_diff(2) = fb_diff(2) + temp_diff0
           sref_diff = sref_diff - fb(2)*temp_diff0/sref

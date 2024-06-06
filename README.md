@@ -83,9 +83,6 @@ for alpha in range(10):
         f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
     )
 
-
-avl_solver.CLSweep(0.6, 1.6)
-
 print("----------------- CL sweep ----------------")
 print("   Angle        Cl           Cd          Cdff          Cdv          Cm")
 for cl in np.arange(0.6,1.6,0.1):
