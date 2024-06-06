@@ -281,33 +281,38 @@ CCC           DZ2 = ZCNTR - (ZOFF-RT2(3,JV)+ALFA*RT2(1,JV))
 C
    30   CONTINUE
 C
-C...Trefftz-plane drag is kinetic energy in crossflow
         DWWAKE(JC) = -(NY*VY + NZ*VZ)
 C
-        CLFF = CLFF + 2.0*GAMS(JC)*          DYT    /SREF
-        CYFF = CYFF - 2.0*GAMS(JC)* DZT             /SREF
-        CDFF = CDFF +     GAMS(JC)*(DZT*VY - DYT*VZ)/SREF
-        DO N = 1, NUMAX
-          CLFF_U(N) = CLFF_U(N) + 2.0*GAMS_U(JC,N)*DYT/SREF
-          CYFF_U(N) = CYFF_U(N) - 2.0*GAMS_U(JC,N)*DZT/SREF
-          CDFF_U(N) = CDFF_U(N)
+C...Trefftz-plane drag is kinetic energy in crossflow
+C
+        ISURF = NSURFS(JC)
+        IF(LFLOAD(ISURF)) THEN   
+C-------add load from this strip only if it contributes to total load
+         CLFF = CLFF + 2.0*GAMS(JC)*          DYT    /SREF
+         CYFF = CYFF - 2.0*GAMS(JC)* DZT             /SREF
+         CDFF = CDFF +     GAMS(JC)*(DZT*VY - DYT*VZ)/SREF
+         DO N = 1, NUMAX
+           CLFF_U(N) = CLFF_U(N) + 2.0*GAMS_U(JC,N)*DYT/SREF
+           CYFF_U(N) = CYFF_U(N) - 2.0*GAMS_U(JC,N)*DZT/SREF
+           CDFF_U(N) = CDFF_U(N)
      &              + (  GAMS_U(JC,N)*(DZT*VY      - DYT*VZ     )
      &                 + GAMS(JC)    *(DZT*VY_U(N) - DYT*VZ_U(N)) )/SREF
-        ENDDO
-        DO N = 1, NCONTROL
-          CLFF_D(N) = CLFF_D(N) + 2.0*GAMS_D(JC,N)*DYT/SREF
-          CYFF_D(N) = CYFF_D(N) - 2.0*GAMS_D(JC,N)*DZT/SREF
-          CDFF_D(N) = CDFF_D(N)
+         ENDDO
+         DO N = 1, NCONTROL
+           CLFF_D(N) = CLFF_D(N) + 2.0*GAMS_D(JC,N)*DYT/SREF
+           CYFF_D(N) = CYFF_D(N) - 2.0*GAMS_D(JC,N)*DZT/SREF
+           CDFF_D(N) = CDFF_D(N)
      &              + (  GAMS_D(JC,N)*(DZT*VY      - DYT*VZ     )
      &                 + GAMS(JC)    *(DZT*VY_D(N) - DYT*VZ_D(N)) )/SREF
-        ENDDO
-        DO N = 1, NDESIGN
-          CLFF_G(N) = CLFF_G(N) + 2.0*GAMS_G(JC,N)*DYT/SREF
-          CYFF_G(N) = CYFF_G(N) - 2.0*GAMS_G(JC,N)*DZT/SREF
-          CDFF_G(N) = CDFF_G(N)
+         ENDDO
+         DO N = 1, NDESIGN
+           CLFF_G(N) = CLFF_G(N) + 2.0*GAMS_G(JC,N)*DYT/SREF
+           CYFF_G(N) = CYFF_G(N) - 2.0*GAMS_G(JC,N)*DZT/SREF
+           CDFF_G(N) = CDFF_G(N)
      &              + (  GAMS_G(JC,N)*(DZT*VY      - DYT*VZ     )
      &                 + GAMS(JC)    *(DZT*VY_G(N) - DYT*VZ_G(N)) )/SREF
-        ENDDO
+         ENDDO
+        ENDIF
    40 CONTINUE
 C
 C---- Double the X,Z forces, zero Y force for a Y symmetric case

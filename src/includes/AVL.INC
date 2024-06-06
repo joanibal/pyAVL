@@ -54,7 +54,7 @@ C---- unit values, names, and namelengths
       COMMON /UN_C/UNCHL,UNCHM,UNCHT,UNCHF,UNCHS,UNCHV,UNCHA,UNCHI,UNCHD
       COMMON /UN_I/NUL  ,NUM  ,NUT  ,NUF  ,NUS  ,NUV  ,NUA  ,NUI  ,NUD
 C
-      CHARACTER*120  FRNDEF, FPRDEF, FEVDEF
+      CHARACTER*256  FILDEF, FRNDEF, FPRDEF, FEVDEF
       CHARACTER*120 TITLE
       CHARACTER*40 STITLE, BTITLE, RTITLE
       CHARACTER*120 AFILES
@@ -65,6 +65,7 @@ C
       CHARACTER*10 PARNAM
       CHARACTER*32 PARUNCH
       COMMON /CASE_C/
+     & FILDEF,         ! default configuration save file
      & FRNDEF,         ! default run case save file
      & FPRDEF,         ! default dimensional parameter file
      & FEVDEF,         ! default eigenvalue save file
@@ -410,12 +411,17 @@ c
       REAL(kind=avl_real) SSPACE
       REAL(kind=avl_real) SSPACES
       REAL(kind=avl_real) XYZLES
+      REAL(kind=avl_real) XLASEC
+      REAL(kind=avl_real) ZLASEC
+      REAL(kind=avl_real) XUASEC
+      REAL(kind=avl_real) ZUASEC
       REAL(kind=avl_real) CHORDS
       REAL(kind=avl_real) AINCS
       REAL(kind=avl_real) XASEC
       REAL(kind=avl_real) SASEC
       REAL(kind=avl_real) TASEC
       REAL(kind=avl_real) CLCDSEC
+      REAL(kind=avl_real) CLCDSRF
       REAL(kind=avl_real) CLAF
       REAL(kind=avl_real) XHINGED
       REAL(kind=avl_real) VHINGED
@@ -431,12 +437,17 @@ c
      & SSPACE(NFMAX), ! spanwise spacing
      & SSPACES(NSMAX, NFMAX), ! spanwise spacing vector
      & XYZLES(3, NSMAX, NFMAX), ! leading edge cordinate vector
+     & XLASEC(IBX, NSMAX, NFMAX),
+     & ZLASEC(IBX, NSMAX, NFMAX),
+     & XUASEC(IBX, NSMAX, NFMAX),
+     & ZUASEC(IBX, NSMAX, NFMAX),
      & CHORDS(NSMAX, NFMAX), ! chord length vectorm
      & AINCS(NSMAX, NFMAX), ! incidence angle vector
      & XASEC(IBX, NSMAX, NFMAX),  ! the x coordinate aifoil section
      & SASEC(IBX, NSMAX, NFMAX),  ! slope of camber line at xasec
      & TASEC(IBX, NSMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSMAX, NFMAX),
+     & CLCDSRF(6, NFMAX),
      & CLAF(NSMAX, NFMAX),
      & XHINGED(ICONX, NSMAX, NFMAX), ! hinge location
      & VHINGED(3, ICONX, NSMAX, NFMAX), ! hinge vector
@@ -626,7 +637,7 @@ C
      & WCSRD_U(3,NVMAX,NUMAX),
 cc#ifdef USE_CPOML
      & WVSRD_U(3,NVMAX,NUMAX),
-     & CPT(NVMAX)                ! thickness-based Cp at panel midpoint
+     & CPT(NVMAX),                ! thickness-based Cp at panel midpoint
 cc#else
      & RHS(NVMAX),               ! RHS (flow normal to surface) for linear system
      & RES(NVMAX),               ! residual for linear system res = Ax-b

@@ -25,7 +25,7 @@ C     NOTE:  only works for single surface at at time (ie. V,BM on each panel)
 C
       INCLUDE 'AVL.INC'
       REAL V(NSMAX), BM(NSMAX), YSTRP(NSMAX)
-      CHARACTER*72 FNAMVB
+      CHARACTER*256 FNAMVB
 C
     1 FORMAT(A)
     2 FORMAT(A,I3,A)

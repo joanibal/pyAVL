@@ -29,8 +29,8 @@ C
       CHARACTER*1 ITEM, ANS, CHKEY
       CHARACTER*2 OPT, CHPLOT
       CHARACTER*4 COMAND, ITEMC
-      CHARACTER*120 FNOUT, FNNEW, FNSYS
-      CHARACTER*120 LINE, FNVB, COMARG, PROMPT, RTNEW
+      CHARACTER*256 FNOUT, FNNEW, FNSYS, FNVB 
+      CHARACTER*120 LINE, COMARG, PROMPT, RTNEW
       CHARACTER SATYPE*50, ROTTYPE*50
 C
       LOGICAL LPROOT(JEMAX,NRMAX),
@@ -81,6 +81,11 @@ c      EYEPTX = 0.
 c      ROBINV = 0.
 C
       OVERLAY = .FALSE.
+
+      if (LVERBOSE) then 
+            write(*,*) 3, parnam(ipixx), '  ', parunch(ipixx)
+      endif
+
 C
 C=================================================================
 C---- start of user interaction loop
@@ -95,7 +100,7 @@ C
 C
 C
 C
-      WRITE(*,1052)
+      WRITE(*,1052) LSVMOV
  1052 FORMAT(
      &   ' =========================================================='
      & //' "#" select run case for eigenmode analysis (0 = all)'
@@ -108,6 +113,7 @@ C
      & //'  A nnotate current plot'
      &  /'  H ardcopy current plot'
      &  /'  T ime-integration parameters'
+     &  /'  G enerate hardcopy movie toggle', L3
      & //'  S ystem matrix output'
      &  /'  W rite eigenvalues to file'
      &  /'  D ata file overlay toggle'
@@ -115,7 +121,7 @@ C
      &  /'  U nzoom')
 C
 C   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-C   x x   x       x         x x   x   x x x x   x x   x
+C   x x x x     x x         x x   x   x x x x   x x   x
 
  810  CONTINUE
       CALL ASKC(' .MODE^',COMAND,COMARG)
@@ -205,7 +211,7 @@ C------ execute eigenmode calculation
           ENDIF
 C
           NITER = 10
-          INFO = 0
+          INFO = 1
           CALL EXEC(NITER,INFO,IR)
 C
           IF(COMAND .EQ. 'N   ') THEN
@@ -463,6 +469,10 @@ C
         ENDIF
         GO TO 70
 C
+C-----------------------------------------------------------------------
+      ELSEIF(COMAND.EQ.'G   ') THEN
+       LSVMOV = .NOT. LSVMOV
+C
 C-------------------------------------------------------------------
 C---- write system matrices
       ELSEIF(COMAND.EQ.'S   ' .OR.
@@ -489,7 +499,7 @@ C
           CDREF     = PARVAL(IPCD0,IR)
 C
           NITER = 10
-          INFO = 0
+          INFO = 1
           CALL EXEC(NITER,INFO,IR)
 C
           IF(COMAND.EQ.'S   ') THEN
@@ -528,25 +538,25 @@ C
 C
 C-------------------------------------------------------------------
 C---- write eigenvalues
-C       ELSEIF(COMAND.EQ.'W   ') THEN
-C        IF(FEVDEF(1:1).EQ.' ') THEN
-C C------ set default filename
-C         KDOT = INDEX(FILDEF,'.')
-C         IF(KDOT.EQ.0) THEN
-C          CALL SLEN(FILDEF,NFIL)
-C          FEVDEF = FILDEF(1:NFIL) // '.eig'
-C         ELSE
-C          FEVDEF = FILDEF(1:KDOT) // 'eig'
-C         ENDIF
-C        ENDIF
-C C
-C        CALL SLEN(FEVDEF,NFE)
-C        NFE = MAX( NFE , 1 )
-C        WRITE(*,2040) FEVDEF(1:NFE)
-C  2040  FORMAT(' Enter eigenvalue save filename: ', A)
-C        READ (*,1000) FNNEW
-C        IF(FNNEW.NE.' ') FEVDEF = FNNEW
-C        CALL EIGOUT(FEVDEF, IRUN1,IRUN2, SAVED)
+      ELSEIF(COMAND.EQ.'W   ') THEN
+       IF(FEVDEF(1:1).EQ.' ') THEN
+C------ set default filename
+        KDOT = INDEX(FILDEF,'.')
+        IF(KDOT.EQ.0) THEN
+         CALL SLEN(FILDEF,NFIL)
+         FEVDEF = FILDEF(1:NFIL) // '.eig'
+        ELSE
+         FEVDEF = FILDEF(1:KDOT) // 'eig'
+        ENDIF
+       ENDIF
+C
+       CALL SLEN(FEVDEF,NFE)
+       NFE = MAX( NFE , 1 )
+       WRITE(*,2040) FEVDEF(1:NFE)
+ 2040  FORMAT(' Enter eigenvalue save filename: ', A)
+       READ (*,1000) FNNEW
+       IF(FNNEW.NE.' ') FEVDEF = FNNEW
+       CALL EIGOUT(FEVDEF, IRUN1,IRUN2, SAVED)
 C
 C-------------------------------------------------------------------
 C C---- toggle overlay flag
@@ -988,7 +998,7 @@ C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
      &         + RIINV(K,2)*WXH_U(2,IU)
      &         + RIINV(K,3)*WXH_U(3,IU)
         ENDDO
-C
+
         DO N = 1, NCONTROL
           MIF_D(K,N) = 
      &           MAINV(K,1)*CXTOT_D(N)*QS
@@ -1043,6 +1053,11 @@ C---- x-acceleration
       DO N = 1, NCONTROL
         BSYS(IEQ,N) =   MIF_D(K,N)
       ENDDO
+
+c      MIF_U(1,2)
+c      write(*,*)
+c      write(*,*) '* 1u', MIF_U(K,2), PRF_U(K,2)
+
 C
 C---- y-acceleration
       IEQ = JEV
@@ -1234,7 +1249,6 @@ C---- z-velocity
      &                  + TT_ANG(K,2,3)*VINF(2)
      &                  + TT_ANG(K,3,3)*VINF(3) )*VEE
 C
-
 c      write(*,*) 'H  ', H
 c      write(*,*) 'WxH', WXH
 c      write(*,*) 'I-1 M  ', RIM
@@ -1250,7 +1264,9 @@ C
 
       SUBROUTINE APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
 C------------------------------------------------------------------
-C     Computes system matrices for run case IR.
+C     Computes system matrices for run case IR,
+C     using the approximate expression in Etkin.
+C
 C     Current forces and derivatives are assumed to be correct.
 C------------------------------------------------------------------
       INCLUDE 'AVL.INC'
@@ -1526,11 +1542,22 @@ C
 
       SUBROUTINE SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
 C------------------------------------------------------------------
-C     Computes eigenvalues and eigenvectors for run case IR.
-C     Current forces and derivatives are assumed to be correct.
+C     Prints out state-system matrices "A" and "B" 
+C     In an organized manner.
 C------------------------------------------------------------------
       INCLUDE 'AVL.INC'
       REAL*8 ASYS(JEMAX,JEMAX),BSYS(JEMAX,NDMAX),RSYS(JEMAX)
+      REAL*8 USGN(JEMAX)
+C
+      DO I = 1, NSYS
+        USGN(I) = 1.0
+      ENDDO
+      USGN(JEU) = -1.0
+      USGN(JEW) = -1.0
+      USGN(JEP) = -1.0
+      USGN(JER) = -1.0
+      USGN(JEX) = -1.0
+      USGN(JEZ) = -1.0
 C
       WRITE(LU,*)
       WRITE(LU,1100)
@@ -1542,8 +1569,10 @@ C      1234567890123456789012345678901234567890
  1100 FORMAT(1X,A,A,A,1X,'|',2X,12A12)
 C
       DO I = 1, NSYS
-        WRITE(LU,1200) (ASYS(I,J), J=1, NSYS),
-     &                 (BSYS(I,N), N=1, NCONTROL)
+        WRITE(LU,1200) 
+     &     (ASYS(I,J)*USGN(I)*USGN(J), J=1, NSYS),
+     &     (BSYS(I,N)*USGN(I)        , N=1, NCONTROL)
+c     &   ,   RSYS(I)*USGN(I)
  1200   FORMAT(1X,12F10.4,3X,12G12.4)
       ENDDO
 C

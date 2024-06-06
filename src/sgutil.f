@@ -74,7 +74,13 @@ C              Interpolation by Local Polynomial Fit", LR 29244,
 C              Oct 30, 1979.
 C
 C
-      DIMENSION  X(N), Y(N), D(5), T(2)
+      ! INCLUDE 'AVL_kinds.INC'
+
+      Integer :: N
+      REAL  :: XX, YY, SLP
+      REAL  X(N), Y(N), D(5), T(2)
+
+      
 C 
 C
 C...Check for a degenerate case ( X(1)=X(N) ).    
@@ -259,7 +265,7 @@ C
       DATA  PI / 3.1415926535 /
 C
       PABS = ABS (PSPACE)
-      NABS = INT (PABS) + 1
+      NABS = IFIX (PABS) + 1
 C
       GO TO (10,20,30,30), NABS
 C
@@ -302,7 +308,7 @@ C
 C
 C---- set blending weights
       ACSP = ABS(CSPACE)
-      NCSP = INT(ACSP)
+      NCSP = IFIX(ACSP)
       IF    (NCSP.EQ.0) THEN
        F0 = 1.0 - ACSP
        F1 = ACSP

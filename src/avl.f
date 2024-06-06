@@ -17,44 +17,8 @@ C    You should have received a copy of the GNU General Public License
 C    along with this program; if not, write to the Free Software
 C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
- 
-C      SUBROUTINE AVL
 
-C       INCLUDE 'AVL_test.INC'
-
-
-C       DTR = PI/180.0
-
-C       PI = 3.14
-C       DTR = PI/180.0
-
-C       END
-
-C C FILE: COMMON_ex.F
-C       SUBROUTINE FOO
-C C       REAL PI
-C       INCLUDE 'AVL_test.INC'
-
-C C       INCLUDE 'AVL_test.INC'
-C C       COMMON/MASS/PI 
-
-C C C
-C C       PI = 4.0*ATAN(1.0)
-C C       PI = 3.14
-
-C       PRINT*, "PI=",PI
-C       PRINT*, "DTR=",DTR
-
-C       END
-C C END OF COMMON_ex.F
-C C       PROGRAM AVL
-
-
-
-
-
-
-
+C       PROGRAM AVL
       SUBROUTINE AVL
 C C=======================================================================
 C C     3-D Vortex Lattice code.
@@ -62,20 +26,18 @@ C C     See file avl_doc.txt for user guide.
 C C     See file version_notes.txt for most recent changes.
 C C=======================================================================
       INCLUDE 'AVL.INC'
-C       INCLUDE 'AVLPLT.INC'
-      LOGICAL ERROR
-
+C      INCLUDE 'AVLPLT.INC'
+      LOGICAL ERROR, LINPFILE
+C
       CHARACTER*4 COMAND
       CHARACTER*128 COMARG
-      CHARACTER*120 FNNEW
+      CHARACTER*256 FNNEW
 C
       REAL    RINPUT(20)
       INTEGER IINPUT(20)
 C
-     
-C       COMMON/CASE_R/PI
 
-      VERSION = 3.35
+      VERSION = 3.40
 
 C  1000 FORMAT(A)
 C
@@ -92,9 +54,10 @@ C C
 C
       PI = 4.0*ATAN(1.0)
       DTR = PI/180.0
-
-      
-
+C
+C---- Flag for having valid input data from file
+      LINPFILE = .FALSE.
+C
 C---- logical units
       LUINP = 4   ! configuration file
       LURUN = 7   ! run case file
@@ -105,9 +68,7 @@ C---- logical units
       LUSYS = 22  ! dynamic system matrix dump file
 C
 C---- set basic defaults
-
       CALL DEFINI
-
       CALL MASINI
 C
 C---- initialize Xplot, and AVL plot stuff
@@ -125,11 +86,16 @@ C C
 C C----- no valid geometry... skip reading run and mass files
 C        IF(ERROR) GO TO 100
 C C
+C C----- This is moved to the loadgeo function
+CC----- we have an input dataset to process
+C       LINPFILE = .TRUE.
+CC
 C C----- set up all parameters
 C        CALL PARSET
 C
 C----- process geometry to define strip and vortex data
        LPLTNEW = .TRUE.
+       ! TODO remove?
        CALL ENCALC
 C
 C----- initialize state
@@ -462,17 +428,12 @@ C       GO TO 500
 
       END 
 
-      SUBROUTINE loadGEO(FILDEF)
+      SUBROUTINE loadGEO(filename)
       INCLUDE 'AVL.INC'
-      CHARACTER*120 FILDEF
+      CHARACTER*256 filename
       LOGICAL ERROR
-C       LOGICAL LAIC
-C       LOGICAL LSRD
-C       LOGICAL LVEL
-C       LOGICAL LSOL
-C       LOGICAL LSEN 
-C       LOGICAL LPLTNEW
-C
+C     
+      FILDEF = filename
        CALL INPUT(LUINP,FILDEF,ERROR)
        IF(ERROR) THEN
         WRITE(*,*) 
@@ -502,13 +463,12 @@ C
        LVEL = .FALSE.
        LSOL = .FALSE.
        LSEN = .FALSE.
-C
-
+       
       END 
 
       SUBROUTINE loadMASS(FMSDEF)
       INCLUDE 'AVL.INC'
-      CHARACTER*120 FMSDEF
+      CHARACTER*256 FMSDEF
       LOGICAL ERROR
 C       LOGICAL LSOL      
 C       LOGICAL LSEN
@@ -546,14 +506,16 @@ C         WRITE(*,*) 'Mass distribution read ...'
 C C         CALL MASSHO(6)
 C
         CALL APPGET
-C         WRITE(*,*) 
-C      & '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
-C         CALL APPSHO(6,RHO0)
-C         WRITE(*,*) 'RHO0: ', RHO0
-C         WRITE(*,*)
-C         WRITE(*,*) 
-C      &    'Use MSET to apply these mass,inertias to run cases'
-C ccc        CALL MASPUT(1,NRMAX)
+        if (LVERBOSE) then
+        WRITE(*,*) 
+     & '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
+        CALL APPSHO(6,RHO0)
+C
+        WRITE(*,*)
+        WRITE(*,*) 
+     &    'Use MSET to apply these mass,inertias to run cases'
+ccc        CALL MASPUT(1,NRMAX)
+        endif 
        ENDIF
 
         IR1 = 0
@@ -566,7 +528,7 @@ C ccc        CALL MASPUT(1,NRMAX)
         IR2 = IR1
        ENDIF
 C
-       IF(IR1.LT.1 .OR. IR1.GT.NRUN) WRITE(*,*) "ERROR"
+       IF(IR1.LT.1 .OR. IR1.GT.NRUN) WRITE(*,*) "ERROR in avl.f"
 C
        CALL MASPUT(IR1,IR2)
 C
@@ -574,14 +536,7 @@ C
        LSEN = .FALSE.
 C
 
-      END  ! LOAFGEO
-C
-C       SUBROUTINE setALPHA(ANGLE)
-C       REAL ANGLE
-
-
-      ! loadGeo
-
+      END 
 
 C       SUBROUTINE PLINIT
 C C---- Initialize plotting variables
@@ -1078,23 +1033,11 @@ C------ index of default constraint for each variable
         ICON(IVROTY,IR) = ICROTY
         ICON(IVROTZ,IR) = ICROTZ
 C
-        
-c      !   if (lverbose)then 
-c      !       WRITE(*,*)  "========================="
-c      !   end if 
-
 C------ default constraint values
-c      !   if (lverbose)then 
-c            ! WRITE(*,*) "ICALFA", ICALFA
-c      !   end if
         DO IC = 1, ICTOT
           CONVAL(IC,IR) = 0.
-C           WRITE(*,*) "CONVAL(IC,IR)", CONVAL(IC,IR)
-C           WRITE(*,*) "IC", IC
-C           WRITE(*,*) "IR", IR
         ENDDO
-C         WRITE(*,*)  "========================="
-
+C
 C------ default run case titles
         RTITLE(IR) = ' -unnamed- '
 C
@@ -1353,4 +1296,3 @@ C
       RETURN
       END
 
-      END ! INTE

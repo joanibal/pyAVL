@@ -10,7 +10,7 @@ C
 C---------------------------------------------------------------------------
       IMPLICIT REAL(A-H,O-Z)
 
-      CHARACTER*120 ARGP1, ARGP2
+      CHARACTER*256 ARGP1, ARGP2
       CHARACTER*128 LINE
 C
       PI = 4.0*ATAN(1.0)

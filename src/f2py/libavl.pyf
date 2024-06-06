@@ -35,12 +35,12 @@ python module libavl ! in
         subroutine aero_b ! in :libavl:aero_b.f
         end subroutine aero_b
         
-        subroutine loadgeo(fildef) ! in :libavl:avl.f
-            character*120 :: fildef
+        subroutine loadgeo(filename) ! in :libavl:avl.f
+            character*256 :: filename
         end subroutine loadgeo
 
         subroutine loadmass(fmsdef) ! in :libavl:avl.f
-            character*120 :: fmsdef
+            character*256 :: fmsdef
         end subroutine loadmass
 
         
