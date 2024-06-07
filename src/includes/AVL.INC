@@ -54,7 +54,7 @@ C---- unit values, names, and namelengths
       COMMON /UN_C/UNCHL,UNCHM,UNCHT,UNCHF,UNCHS,UNCHV,UNCHA,UNCHI,UNCHD
       COMMON /UN_I/NUL  ,NUM  ,NUT  ,NUF  ,NUS  ,NUV  ,NUA  ,NUI  ,NUD
 C
-      CHARACTER*120  FRNDEF, FPRDEF, FEVDEF
+      CHARACTER*256 FILDEF, FRNDEF, FMSDEF, FPRDEF, FEVDEF
       CHARACTER*120 TITLE
       CHARACTER*40 STITLE, BTITLE, RTITLE
       CHARACTER*120 AFILES
@@ -67,7 +67,9 @@ C
       CHARACTER*10 PARNAM
       CHARACTER*32 PARUNCH
       COMMON /CASE_C/
+     & FILDEF,         ! default configuration save file
      & FRNDEF,         ! default run case save file
+     & FMSDEF,         ! default mass distribution file
      & FPRDEF,         ! default dimensional parameter file
      & FEVDEF,         ! default eigenvalue save file
      & TITLE,          ! configuration title

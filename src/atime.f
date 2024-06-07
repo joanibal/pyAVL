@@ -17,7 +17,9 @@ C    You should have received a copy of the GNU General Public License
 C    along with this program; if not, write to the Free Software
 C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
-
+C
+C     NOT USED IN CURRENT AVL CODE!!!
+C
       SUBROUTINE TIME
 C---------------------------------------------
 C     Time-domain integration driver
@@ -579,76 +581,76 @@ C
 
 
 
-!       SUBROUTINE TCOPY(IT1,IT2)
-!       INCLUDE 'AVL.INC'
-! C
-!       TLEV(IT2) = TLEV(IT1)
-!       DO J = 1, JETOT
-!         TPAR(J,IT2) = TPAR(J,IT1)
-!       ENDDO
-!       DO N = 1, NCONTROL
-!         TCON(N,IT2) = TCON(N,IT1)
-!       ENDDO
-! C
-!       RETURN
-!       END ! TCOPY
+      SUBROUTINE TCOPY(IT1,IT2)
+      INCLUDE 'AVL.INC'
+C
+      TLEV(IT2) = TLEV(IT1)
+      DO J = 1, JETOT
+        TPAR(J,IT2) = TPAR(J,IT1)
+      ENDDO
+      DO N = 1, NCONTROL
+        TCON(N,IT2) = TCON(N,IT1)
+      ENDDO
+C
+      RETURN
+      END ! TCOPY
 
 
 
-!       SUBROUTINE TDSET(ITIME,TIME,QTWT)
-!       REAL TIME(*), QTWT(3)
-! C
-!       REAL QTWT1(3), QTWT2(3)
-! C
-! C---- set differencing blending fraction
-! C
-! C-      F = 0   1st-order backward difference
-! C-      F = 1   2nd-order backward difference
-! C 
-!       DATA F / 1.0 /
-! ccc      DATA F / 0.0 /
-! C
-!       IF    (ITIME.LT.2) THEN
-!         QTWT1(1) = 0.
-!         QTWT1(2) = 0.
-!         QTWT1(3) = 0.
-!         QTWT2(1) = 0.
-!         QTWT2(2) = 0.
-!         QTWT2(3) = 0.
-! C
-!       ELSEIF(ITIME.EQ.2) THEN
-!         T0 = TIME(ITIME  )
-!         T1 = TIME(ITIME-1)
-! C
-!         QTWT1(1) =  1.0/(T0-T1)
-!         QTWT1(2) = -1.0/(T0-T1)
-!         QTWT1(3) = 0.
-! C
-!         QTWT2(1) =  1.0/(T0-T1)
-!         QTWT2(2) = -1.0/(T0-T1)
-!         QTWT2(3) = 0.
-! C
-!       ELSE
-!         T0 = TIME(ITIME  )
-!         T1 = TIME(ITIME-1)
-!         T2 = TIME(ITIME-2)
-! C
-!         QTWT1(1) =  1.0/(T0-T1)
-!         QTWT1(2) = -1.0/(T0-T1)
-!         QTWT1(3) = 0.
-! C
-!         QTWT2(1) =  1.0/(T0-T1) + 1.0/(T0-T2)
-!         QTWT2(2) = -1.0/(T0-T1) - 1.0/(T0-T2)
-!      &             -    (T0-T1)/((T0-T2)*(T1-T2))
-!         QTWT2(3) =      (T0-T1)/((T0-T2)*(T1-T2))
-! C
-!       ENDIF
-! C
-! C---- blend 1st and 2nd order differences
-!       QTWT(1) = (1.0-F)*QTWT1(1) + F*QTWT2(1)
-!       QTWT(2) = (1.0-F)*QTWT1(2) + F*QTWT2(2)
-!       QTWT(3) = (1.0-F)*QTWT1(3) + F*QTWT2(3)
-! C
-!       RETURN
-!       END ! TDSET
+      SUBROUTINE TDSET(ITIME,TIME,QTWT)
+      REAL TIME(*), QTWT(3)
+C
+      REAL QTWT1(3), QTWT2(3)
+C
+C---- set differencing blending fraction
+C
+C-      F = 0   1st-order backward difference
+C-      F = 1   2nd-order backward difference
+C 
+      DATA F / 1.0 /
+ccc      DATA F / 0.0 /
+C
+      IF    (ITIME.LT.2) THEN
+        QTWT1(1) = 0.
+        QTWT1(2) = 0.
+        QTWT1(3) = 0.
+        QTWT2(1) = 0.
+        QTWT2(2) = 0.
+        QTWT2(3) = 0.
+C
+      ELSEIF(ITIME.EQ.2) THEN
+        T0 = TIME(ITIME  )
+        T1 = TIME(ITIME-1)
+C
+        QTWT1(1) =  1.0/(T0-T1)
+        QTWT1(2) = -1.0/(T0-T1)
+        QTWT1(3) = 0.
+C
+        QTWT2(1) =  1.0/(T0-T1)
+        QTWT2(2) = -1.0/(T0-T1)
+        QTWT2(3) = 0.
+C
+      ELSE
+        T0 = TIME(ITIME  )
+        T1 = TIME(ITIME-1)
+        T2 = TIME(ITIME-2)
+C
+        QTWT1(1) =  1.0/(T0-T1)
+        QTWT1(2) = -1.0/(T0-T1)
+        QTWT1(3) = 0.
+C
+        QTWT2(1) =  1.0/(T0-T1) + 1.0/(T0-T2)
+        QTWT2(2) = -1.0/(T0-T1) - 1.0/(T0-T2)
+     &             -    (T0-T1)/((T0-T2)*(T1-T2))
+        QTWT2(3) =      (T0-T1)/((T0-T2)*(T1-T2))
+C
+      ENDIF
+C
+C---- blend 1st and 2nd order differences
+      QTWT(1) = (1.0-F)*QTWT1(1) + F*QTWT2(1)
+      QTWT(2) = (1.0-F)*QTWT1(2) + F*QTWT2(2)
+      QTWT(3) = (1.0-F)*QTWT1(3) + F*QTWT2(3)
+C
+      RETURN
+      END ! TDSET
 

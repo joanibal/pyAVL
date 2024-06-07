@@ -462,9 +462,9 @@ C       GO TO 500
 
       END 
 
-      SUBROUTINE loadGEO(FILDEF)
+      SUBROUTINE loadGEO(geom_file)
       INCLUDE 'AVL.INC'
-      CHARACTER*120 FILDEF
+      CHARACTER*256 geom_file
       LOGICAL ERROR
 C       LOGICAL LAIC
 C       LOGICAL LSRD
@@ -473,7 +473,7 @@ C       LOGICAL LSOL
 C       LOGICAL LSEN 
 C       LOGICAL LPLTNEW
 C
-       CALL INPUT(LUINP,FILDEF,ERROR)
+       CALL INPUT(LUINP,geom_file,ERROR)
        IF(ERROR) THEN
         WRITE(*,*) 
      &    '** File not processed. Current geometry may be corrupted.'
@@ -506,9 +506,9 @@ C
 
       END 
 
-      SUBROUTINE loadMASS(FMSDEF)
+      SUBROUTINE loadMASS(mass_file)
       INCLUDE 'AVL.INC'
-      CHARACTER*120 FMSDEF
+      CHARACTER*256 mass_file
       LOGICAL ERROR
 C       LOGICAL LSOL      
 C       LOGICAL LSEN
@@ -538,7 +538,7 @@ C C
 
 
 C        CALL STRIP(FMSDEF,NMS)
-       CALL MASGET(LUMAS,FMSDEF,ERROR)
+       CALL MASGET(LUMAS,mass_file,ERROR)
        IF(ERROR) THEN
        ELSE
 C         WRITE(*,*)
