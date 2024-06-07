@@ -311,11 +311,12 @@ C
      &   AINER(3,3)      ! apparent inertia/rho  | from geometry
 
 
-      LOGICAL LFWAKE, LFALBE, LFLOAD
+      LOGICAL LFWAKE, LFALBE, LFLOAD, LRANGE
       COMMON /SURF_L/
      & LFWAKE(NFMAX),   ! T if surface sheds a wake
      & LFALBE(NFMAX),   ! T if surface is to see freestream alpha,beta
-     & LFLOAD(NFMAX)    ! T if surface contributes to overall loads
+     & LFLOAD(NFMAX),   ! T if surface contributes to overall loads
+     & LRANGE(NFMAX)    ! T if surface determined using full airfoil range
 
       COMMON /SURF_I/
      & NJ(NFMAX),       ! number of elements along span  in surface
@@ -323,7 +324,12 @@ C
      & IFRST(NFMAX),    ! index of first element in surface
      & JFRST(NFMAX),    ! index of first strip in surface
      & IMAGS(NFMAX),    ! indicates whether surface is a YDUPlicated one
-     & LSCOMP(NFMAX)    ! logical surface component index
+cc#ifdef USE_CPOML
+     & LSCOMP(NFMAX),   ! logical surface component index
+     & ICNTFRST(NFMAX), ! index of first section counter in surface
+     & NCNTSEC(NFMAX)   ! number of section counters in surface
+cc#else
+
 
       REAL(kind=avl_real) CDSURF,CLSURF
       REAL(kind=avl_real) CXSURF,CYSURF,CZSURF
@@ -577,6 +583,7 @@ C
       REAL(kind=avl_real) RHS
       REAL(kind=avl_real) RES
       REAL(kind=avl_real) RES_D
+      REAL(kind=avl_real) CPT
       COMMON /VRTX_R/
      & RV1(3,NVMAX),    ! h.v. vortex left  points
      & RV2(3,NVMAX),    ! h.v. vortex right points
@@ -617,7 +624,8 @@ C
      & WVSRD_U(3,NVMAX,NUMAX),
      & RHS(NVMAX),             ! RHS (flow normal to surface) for linear system
      & RES(NVMAX),             ! residual for linear system res = Ax-b
-     & RES_D(NVMAX,NDMAX)             ! residual for gamma_d lin. sys 
+     & RES_D(NVMAX,NDMAX),             ! residual for gamma_d lin. sys 
+     & CPT(NVMAX)                ! thickness-based Cp at panel midpoint
 C
       COMMON /BODY_I/
      & NL(NBMAX),       ! number of source-line nodes in body
