@@ -114,8 +114,7 @@ class TestFortranLevelAPI(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file=geom_mod_file, mass_file=mass_file)
 
     def test_get_scalar(self):
-        avl_version = 3.35
-
+        avl_version = 3.40
         version = self.avl_solver.get_avl_fort_arr("CASE_R", "VERSION")
         self.assertEqual(version, avl_version)
 

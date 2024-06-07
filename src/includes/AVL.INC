@@ -93,6 +93,7 @@ C
      & LUOUT,             ! logical unit for output dump file
      & LUSTD,             ! logical unit for stability deriv. dump file
      & LUSYS,             ! logical unit for dynamic system matrix dump file
+     & LUMAS,             ! logical unit for mass file
      & IYSYM,IZSYM,       ! y,z image symm.  (0=no image, 1=image)
      & MATSYM,            ! matrix symmetry flag
      & NVOR,              ! number of horseshoe vortices
@@ -114,6 +115,7 @@ C
      & NEIGEN(NRMAX),     ! number of valid eigenmodes available for run case
      & NEIGENDAT(NRMAX),   ! number reference data eigenvalues
      & CPSCL                ! CP scaling factor for cp plot
+
 C
       LOGICAL LGEO,LENC,LAIC,LSRD,LVEL,LSOL,LSEN,
      &        LVISC,LMASS,

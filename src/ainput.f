@@ -268,7 +268,7 @@ C
         
         if(lverbose)then
                 WRITE(*,*)
-                WRITE(*,*) '  Building surface: ', STITLE(ISURF)
+                WRITE(*,*) '  Building surface: ', STITLE(ISURF), NSURF
         end if 
                 
 C
