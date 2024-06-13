@@ -1151,8 +1151,16 @@ class AVLSolver(object):
                 fid.write(f" {data['claf'][idx_sec]}\n")
 
             if (data["clcdsec"][idx_sec] != 0.0).any():
-                fid.write(" CLCD\n")
-                fid.write(f" {data['clcd'][idx_sec]}\n")
+                fid.write(" CDCL\n")
+                fid.write(
+                    f" {data['clcdsec'][idx_sec, 0]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 1]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 2]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 3]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 4]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 5]:.6f}\n"
+                )
+            
 
             # check for control surfaces
 

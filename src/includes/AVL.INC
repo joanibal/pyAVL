@@ -22,8 +22,8 @@ C    NTMAX   number of stored time levels
 C     
 C    ICONX   max number of control or design variable declaration lines per section (20)
       PARAMETER (NVMAX=5550,
-     &           NSMAX=400,
-     &           NFMAX=30,
+     &           NSMAX=350,
+     &           NFMAX=20,
      &           NLMAX=500,
      &           NBMAX=20,
      &           NUMAX=6,
@@ -31,8 +31,8 @@ C    ICONX   max number of control or design variable declaration lines per sect
      &           NGMAX=20,
      &           NRMAX=25,
      &           NTMAX=5000,
-     &           IBX=300,
-     &           ICONX=20)
+     &           IBX=250,
+     &           ICONX=15)
 C
 C   Derived array limits
 C
@@ -221,7 +221,7 @@ C
      & DTR,     PI,      ! 3.14159/180 ,  3.14159
      & YSYM,    ZSYM,    ! y- and z-locations of symmetry planes
      & ALFA,   BETA,        ! alpha, beta
-     & VINF(3),             ! freestream velocies in body axes
+     & VINF(3),             ! freestream velocity in body axes
      & VINF_A(3),           ! d(Vinf)/d(alpha)
      & VINF_B(3),           ! d(Vinf)/d(beta)
      & WROT(3),             ! rotation rates in body axes
@@ -245,7 +245,7 @@ C
      & CLFF_G(NGMAX),CYFF_G(NGMAX),CDFF_G(NGMAX), ! deriv wrt design
      & SPANEF,           ! span efficiency
      & SPANEF_A,         ! d(SPANEF)/d(alpha)
-     & SPANEF_U(NUMAX),  ! d(SPANEF)/d(beta)
+     & SPANEF_U(NUMAX),  ! d(SPANEF)/d(U,W))
      & SPANEF_D(NDMAX),  ! d(SPANEF)/d(control)
      & SPANEF_G(NGMAX),  ! d(SPANEF)/d(design)
      & CDTOT, CLTOT,          ! total CD,CL
@@ -268,10 +268,10 @@ C
      & CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX, CMTOT_RX, CNTOT_RX, ! stab derives wrt beta
      & CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY, CMTOT_RY, CNTOT_RY, ! stab derives wrt beta
      & CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ, CMTOT_RZ, CNTOT_RZ, ! stab derives wrt beta
-     & CHINGE(NDMAX),
-     & CHINGE_U(NDMAX,NUMAX),
-     & CHINGE_D(NDMAX,NDMAX),
-     & CHINGE_G(NDMAX,NGMAX),
+     & CHINGE(NDMAX), !hinge moment for control
+     & CHINGE_U(NDMAX,NUMAX), ! sens wrt U,W
+     & CHINGE_D(NDMAX,NDMAX), ! sens wrt control
+     & CHINGE_G(NDMAX,NGMAX), ! sens wrt design
      & DCL_A0, DCM_A0,   ! additional default CL_a, CM_a
      & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
      & XNP                ! x neutral point
@@ -333,7 +333,8 @@ cc#ifdef USE_CPOML
      & ICNTFRST(NFMAX), ! index of first section counter in surface
      & NCNTSEC(NFMAX)   ! number of section counters in surface
 cc#else
-
+cc     & LSCOMP(NFMAX)    ! logical surface component index
+cc#endif
 
       REAL(kind=avl_real) CDSURF,CLSURF
       REAL(kind=avl_real) CXSURF,CYSURF,CZSURF
@@ -354,19 +355,20 @@ cc#else
       REAL(kind=avl_real) SSURF, CAVESURF
       REAL(kind=avl_real) VBODY
       COMMON /SURF_R/
+C   Surface forces and moments referenced to SREF,CREF,BREF about XREF,YREF,ZREF
      & CDSURF(NFMAX),CLSURF(NFMAX),                ! surface CD,CL
      & CXSURF(NFMAX),CYSURF(NFMAX),CZSURF(NFMAX),  ! surface Cx,Cy,Cz
      & CRSURF(NFMAX),CNSURF(NFMAX),CMSURF(NFMAX),  ! surface Cl,Cm,Cn
      & CDVSURF(NFMAX),                             ! surface viscous CD
-     & CDS_A(NFMAX), CLS_A(NFMAX),
+     & CDS_A(NFMAX), CLS_A(NFMAX),                                 ! alpha sens.
      & CDS_U(NFMAX,NUMAX), CLS_U(NFMAX,NUMAX),
-     & CXS_U(NFMAX,NUMAX), CYS_U(NFMAX,NUMAX), CZS_U(NFMAX,NUMAX),
+     & CXS_U(NFMAX,NUMAX), CYS_U(NFMAX,NUMAX), CZS_U(NFMAX,NUMAX), ! velocity and rotation sens.
      & CRS_U(NFMAX,NUMAX), CNS_U(NFMAX,NUMAX), CMS_U(NFMAX,NUMAX),
      & CDS_D(NFMAX,NDMAX), CLS_D(NFMAX,NDMAX),
-     & CXS_D(NFMAX,NDMAX), CYS_D(NFMAX,NDMAX), CZS_D(NFMAX,NDMAX),
+     & CXS_D(NFMAX,NDMAX), CYS_D(NFMAX,NDMAX), CZS_D(NFMAX,NDMAX), ! control sens.
      & CRS_D(NFMAX,NDMAX), CNS_D(NFMAX,NDMAX), CMS_D(NFMAX,NDMAX),
      & CDS_G(NFMAX,NGMAX), CLS_G(NFMAX,NGMAX),
-     & CXS_G(NFMAX,NGMAX), CYS_G(NFMAX,NGMAX), CZS_G(NFMAX,NGMAX),
+     & CXS_G(NFMAX,NGMAX), CYS_G(NFMAX,NGMAX), CZS_G(NFMAX,NGMAX), ! design (incidence) sens.
      & CRS_G(NFMAX,NGMAX), CNS_G(NFMAX,NGMAX), CMS_G(NFMAX,NGMAX),
      & CF_SRF(3,NFMAX), CM_SRF(3,NFMAX),
      & CL_SRF(NFMAX), CD_SRF(NFMAX), CMLE_SRF(NFMAX),
@@ -420,12 +422,17 @@ c
       REAL(kind=avl_real) SSPACE
       REAL(kind=avl_real) SSPACES
       REAL(kind=avl_real) XYZLES
+      REAL(kind=avl_real) XLASEC
+      REAL(kind=avl_real) ZLASEC
+      REAL(kind=avl_real) XUASEC
+      REAL(kind=avl_real) ZUASEC
       REAL(kind=avl_real) CHORDS
       REAL(kind=avl_real) AINCS
       REAL(kind=avl_real) XASEC
       REAL(kind=avl_real) SASEC
       REAL(kind=avl_real) TASEC
       REAL(kind=avl_real) CLCDSEC
+      REAL(kind=avl_real) CLCDSRF
       REAL(kind=avl_real) CLAF
       REAL(kind=avl_real) XHINGED
       REAL(kind=avl_real) VHINGED
@@ -441,12 +448,17 @@ c
      & SSPACE(NFMAX), ! spanwise spacing
      & SSPACES(NSMAX, NFMAX), ! spanwise spacing vector
      & XYZLES(3, NSMAX, NFMAX), ! leading edge cordinate vector
+     & XLASEC(IBX, NSMAX, NFMAX),
+     & ZLASEC(IBX, NSMAX, NFMAX),
+     & XUASEC(IBX, NSMAX, NFMAX),
+     & ZUASEC(IBX, NSMAX, NFMAX),
      & CHORDS(NSMAX, NFMAX), ! chord length vectorm
      & AINCS(NSMAX, NFMAX), ! incidence angle vector
      & XASEC(IBX, NSMAX, NFMAX),  ! the x coordinate aifoil section
      & SASEC(IBX, NSMAX, NFMAX),  ! slope of camber line at xasec
      & TASEC(IBX, NSMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSMAX, NFMAX),
+     & CLCDSRF(6, NFMAX),
      & CLAF(NSMAX, NFMAX),
      & XHINGED(ICONX, NSMAX, NFMAX), ! hinge location
      & VHINGED(3, ICONX, NSMAX, NFMAX), ! hinge vector
@@ -460,7 +472,8 @@ C      !!--- end added variables for python geometry minipulation ---
       COMMON /STRP_I/
      & NSURFS(NSMAX),    ! index of surface which contains this strip
      & IJFRST(NSMAX),    ! index of first element in strip
-     & NVSTRP(NSMAX)     ! number of elements in strip
+     & NVSTRP(NSMAX),     ! number of elements in strip
+     & ICNTSEC(NSMAX)               ! section counters for surface
 
       LOGICAL LSTRIPOFF,LVISCSTRP,LJ1SECT,LJ2SECT
       COMMON /STRP_L/
@@ -539,6 +552,14 @@ C      !!--- end added variables for python geometry minipulation ---
      & CNC_D(NSMAX,NDMAX),
      & CNC_G(NSMAX,NGMAX)
 C
+C
+cc#ifdef USE_CPOML
+      REAL(kind=avl_real) AINC1
+      REAL(kind=avl_real) AINC2
+      COMMON /STRP_S/
+     & AINC1(NSMAX), AINC2(NSMAX)  ! left/right strip incidence twist angle
+cc#endif
+C
       LOGICAL LVNC, LVALBE
       COMMON /VRTX_L/
      & LVNC(NVMAX),    ! T if V.n=0 is to be enforced for this c.p.
@@ -599,37 +620,52 @@ C
      & CHORDV(NVMAX),            ! chord of element-containing strip
      & SLOPEV(NVMAX),            ! camber slopes at h.v. bound leg
      & SLOPEC(NVMAX),            ! camber slopes at c.p.
-     & DCONTROL(NVMAX,NDMAX),  ! d(normal angle)/dCONTROL
-     & VHINGE(3,NSMAX,NDMAX),  ! hinge vector for CONTROL rot. of normal
-     & PHINGE(3,NSMAX,NDMAX),  ! point on hingeline for hinge moment calculation
-     & VREFL(NSMAX,NDMAX),  !sign applied to hinge vec. of refl. surface
-     & ENC(3,NVMAX),           ! c.p. normal vector
-     & ENV(3,NVMAX),           ! h.v. normal vector
-     & ENC_D(3,NVMAX,NDMAX),   ! sensitivities
+     & DCONTROL(NVMAX,NDMAX),    ! d(normal angle)/dCONTROL
+     & VHINGE(3,NSMAX,NDMAX),    ! hinge vector for CONTROL rot. of normal
+     & PHINGE(3,NSMAX,NDMAX),    ! point on hingeline for hinge moment calculation
+     & VREFL(NSMAX,NDMAX),       ! sign applied to hinge vec. of refl. surface
+     & ENC(3,NVMAX),             ! control point normal vector
+     & ENV(3,NVMAX),             ! horseshoe vortex normal vector
+     & ENC_D(3,NVMAX,NDMAX),     ! control point normal vector sensitivities
      & ENC_G(3,NVMAX,NGMAX),
-     & ENV_D(3,NVMAX,NDMAX),
+     & ENV_D(3,NVMAX,NDMAX),     ! horseshoe vortex normal vector sensitivities
      & ENV_G(3,NVMAX,NGMAX),
-     & DCP(NVMAX),             ! delta(Cp) on vortex element
+     & DCP(NVMAX),               ! delta(Cp) on vortex element
      & DCP_U(NVMAX,NUMAX),
      & DCP_D(NVMAX,NDMAX),
      & DCP_G(NVMAX,NGMAX),
-     & GAM(NVMAX),             ! circulation of h.v. vortex
+     & GAM(NVMAX),               ! circulation of horseshoe vortex
      & GAM_U_0(NVMAX,NUMAX),
      & GAM_U_D(NVMAX,NUMAX,NDMAX),
      & GAM_U_G(NVMAX,NUMAX,NGMAX),
-     & GAM_U(NVMAX,NUMAX),
+     & GAM_U(NVMAX,NUMAX),       ! circulation sensitivities
      & GAM_D(NVMAX,NDMAX),
      & GAM_G(NVMAX,NGMAX),
-     & SRC(NLMAX),        ! source  strength of source+doublet line elem
-     & DBL(3,NLMAX),      ! doublet strength of source+doublet line elem
-     & SRC_U(NLMAX,NUMAX),
+     & SRC(NLMAX),               ! source  strength of source+doublet line elem
+     & DBL(3,NLMAX),             ! doublet strength of source+doublet line elem
+     & SRC_U(NLMAX,NUMAX),       ! sensitivities
      & DBL_U(3,NLMAX,NUMAX),
      & WCSRD_U(3,NVMAX,NUMAX),
+cc#ifdef USE_CPOML
      & WVSRD_U(3,NVMAX,NUMAX),
-     & RHS(NVMAX),             ! RHS (flow normal to surface) for linear system
-     & RES(NVMAX),             ! residual for linear system res = Ax-b
-     & RES_D(NVMAX,NDMAX),             ! residual for gamma_d lin. sys 
-     & CPT(NVMAX)                ! thickness-based Cp at panel midpoint
+     & CPT(NVMAX),                ! thickness-based Cp at panel midpoint
+cc#else
+     & RHS(NVMAX),               ! RHS (flow normal to surface) for linear system
+     & RES(NVMAX),               ! residual for linear system res = Ax-b
+     & RES_D(NVMAX,NDMAX)        ! residual for gamma_d lin. sys 
+
+cc#ifdef USE_CPOML
+      REAL(kind=avl_real) XYN1
+      REAL(kind=avl_real) XYN2
+      REAL(kind=avl_real) ZLON1
+      REAL(kind=avl_real) ZLON2
+      REAL(kind=avl_real) ZUPN1
+      REAL(kind=avl_real) ZUPN2
+      COMMON /VRTX_S/
+     & XYN1(2,NVMAX), XYN2(2,NVMAX),  ! left/right aft-node of element
+     & ZLON1(NVMAX), ZLON2(NVMAX),    ! left/right lower z-coord of aft-node
+     & ZUPN1(NVMAX), ZUPN2(NVMAX)     ! left/right upper z-coord of aft-node
+cc#endif
 C
       COMMON /BODY_I/
      & NL(NBMAX),       ! number of source-line nodes in body
@@ -643,9 +679,9 @@ C
       REAL(kind=avl_real) CXBDY,CYBDY,CZBDY
       REAL(kind=avl_real) CRBDY,CNBDY,CMBDY   
       COMMON /BODY_R/
-     & ELBDY(NBMAX),  ! body length
-     & SRFBDY(NBMAX), ! body surface area
-     & VOLBDY(NBMAX), ! body volume
+     & ELBDY(NBMAX),                            ! body length
+     & SRFBDY(NBMAX),                           ! body surface area
+     & VOLBDY(NBMAX),                           ! body volume
      & DCPB(3,NLMAX),                           ! dCp loading on sources
      & CDBDY(NBMAX),CLBDY(NBMAX),               ! body CD,CL
      & CXBDY(NBMAX),CYBDY(NBMAX),CZBDY(NBMAX),  ! body CX,CY,CZ
@@ -701,7 +737,8 @@ C
      & LPLTSURF(NFMAX),
      & LPLTBODY(NBMAX),
      & LSVMOV
-      COMMON /PLOT_I/ NTRI, IMARKSURF, NAXANN(3), IRCOLOR(NRMAX)
+      COMMON /PLOT_I/ NTRI, IMARKSURF, ICOLORSURF, NAXANN(3),
+     &                IRCOLOR(NRMAX)
 
       REAL(kind=avl_real)   TRI
       REAL(kind=avl_real)   AXMIN,AXMAX,AXDEL,AXSPAN

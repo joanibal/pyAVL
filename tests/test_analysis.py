@@ -130,9 +130,10 @@ class TestBodyAnalysis(unittest.TestCase):
         self.avl_solver.execute_run()
         coef_data = self.avl_solver.get_case_total_data()
         print(coef_data)
+        # the values are wonky here because of an unrealistic CDCL curve
         np.testing.assert_allclose(coef_data["CL"], 0.636031170179549, rtol=1e-8)
-        np.testing.assert_allclose(coef_data["CD"], 0.022842500250874982, rtol=1e-8)
-        np.testing.assert_allclose(coef_data["CM"], 0.00139609360952168, rtol=1e-8)
+        np.testing.assert_allclose(coef_data["CD"], 3.6953247032454204, rtol=1e-8)
+        np.testing.assert_allclose(coef_data["CM"], -0.5736410313952236, rtol=1e-8)
 
 class TestHingeMom(unittest.TestCase):
     def setUp(self):

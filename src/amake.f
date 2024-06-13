@@ -866,6 +866,7 @@ ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
 
 C
    80   CONTINUE
+        idx_strip = idx_strip + 1 
 C
   100 CONTINUE
 C

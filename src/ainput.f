@@ -835,12 +835,12 @@ C
 C
 C------ Trick: sum must be 6 so we can get the "other" index
         LMID = 6 - (LMIN+LMAX)
-        CLCDSEC(1,ISEC,ISUF) = CLX(LMIN)
-        CLCDSEC(2,ISEC,ISUF) = CDX(LMIN)
-        CLCDSEC(3,ISEC,ISUF) = CLX(LMID)
-        CLCDSEC(4,ISEC,ISUF) = CDX(LMID)
-        CLCDSEC(5,ISEC,ISUF) = CLX(LMAX)
-        CLCDSEC(6,ISEC,ISUF) = CDX(LMAX)
+        CLCDSEC(1,ISEC,ISURF) = CLX(LMIN)
+        CLCDSEC(2,ISEC,ISURF) = CDX(LMIN)
+        CLCDSEC(3,ISEC,ISURF) = CLX(LMID)
+        CLCDSEC(4,ISEC,ISURF) = CDX(LMID)
+        CLCDSEC(5,ISEC,ISURF) = CLX(LMAX)
+        CLCDSEC(6,ISEC,ISURF) = CDX(LMAX)
         
         if (LVERBOSE) then
                 WRITE(*,1700) CLX(LMIN),CDX(LMIN),

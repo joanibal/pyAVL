@@ -46,7 +46,7 @@ class TestOutput(unittest.TestCase):
         avl_solver.write_geom_file(geom_output_file)
         baseline_data = avl_solver.get_surface_params()
         baseline_data_body = avl_solver.get_body_params()
-        # import pdb; pdb.set_trace()
+
         del avl_solver
         avl_solver = AVLSolver(geo_file=geom_output_file)
         new_data = avl_solver.get_surface_params()
@@ -125,7 +125,7 @@ class TestFortranLevelAPI(unittest.TestCase):
     def test_get_array(self):
         chords = self.avl_solver.get_avl_fort_arr("SURF_GEOM_R", "CHORDS")
 
-        self.assertEqual(chords.shape, (30, 400))
+        self.assertEqual(chords.shape, (20, 350))
         np.testing.assert_array_equal(chords[0, :5], np.array([0.5, 0.4, 0.3, 0.2, 0.1]))
 
 
