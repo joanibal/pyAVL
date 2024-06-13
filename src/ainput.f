@@ -1,8 +1,8 @@
 C***********************************************************************
 C    Module:  ainput.f
-C 
+C
 C    Copyright (C) 2002 Mark Drela, Harold Youngren
-C 
+C
 C    This program is free software; you can redistribute it and/or modify
 C    it under the terms of the GNU General Public License as published by
 C    the Free Software Foundation; either version 2 of the License, or
@@ -28,8 +28,8 @@ C
       LOGICAL FERR
 C
       CHARACTER*4  KEYWD
-      CHARACTER*120 CNAME, ANAME
-      CHARACTER*128 LINE
+      CHARACTER*256 CNAME, ANAME
+      CHARACTER*256 LINE
       LOGICAL  LHINGE
 C
       REAL CLX(3), CDX(3)
@@ -40,7 +40,6 @@ C
       REAL XB(IBX), YB(IBX)
       REAL XIN(IBX), YIN(IBX), TIN(IBX)
       REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
-
 C
 C---- max number of control or design variable declaration lines per section
 C
@@ -53,13 +52,13 @@ C
 C
 C----------------------------------------------------
       FERR = .FALSE.
-C       
+C
       OPEN(UNIT=LUN,FILE=FNAME,STATUS='OLD',ERR=3)
       GO TO 6
 C
  3    CONTINUE
       CALL STRIP(FNAME,NFN)
-      WRITE(*,*) 
+      WRITE(*,*)
       WRITE(*,*) '** Open error on file: ', FNAME(1:NFN)
       FNAME = FNAME(1:NFN) // '.avl'
       WRITE(*,*) '   Trying alternative: ', FNAME(1:NFN+4)
@@ -68,7 +67,7 @@ C
 C
  4    CONTINUE
       CALL STRIP(FNAME,NFN)
-      WRITE(*,*) 
+      WRITE(*,*)
       WRITE(*,*) '** Open error on file: ', FNAME(1:NFN)
       FERR = .TRUE.
       RETURN
@@ -99,6 +98,12 @@ C
 C
       NCONTROL = 0
       NDESIGN = 0
+C---- clear surface polar data
+      DO K=1,NFMAX
+        DO L=1, 6
+          CLCDSRF(L,k) = 0.0
+        END DO
+      END DO 
 C
       LVISC  = .FALSE.
 C
@@ -268,7 +273,7 @@ C
         
         if(lverbose)then
                 WRITE(*,*)
-                WRITE(*,*) '  Building surface: ', STITLE(ISURF), NSURF
+                WRITE(*,*) '  Building surface: ', STITLE(ISURF)
         end if 
                 
 C
@@ -361,20 +366,29 @@ CC         WRITE(*,*) '  + duplicate body ',BTITLE(IBODY)
         ENDIF
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        
 C
         IF    (ISURF.NE.0) THEN
 CC         WRITE(*,*) '  + duplicate surface ',STITLE(ISURF)
            LDUPL(ISURF) = .TRUE.
            READ (LINE,*,ERR=990) YDUPL(ISURF)
+           IF(IYSYM.NE.0 .AND.  YDUPL(ISURF).EQ.0.0) THEN
+        WRITE(*,*) 'ERROR: Redundant y-symmetry specifications...'
+        WRITE(*,*) '       IYSYM /= 0'
+        WRITE(*,*) '       YDUPLICATE  0.0'
+        WRITE(*,*) 'Can use one or the other, but not both.'
+                STOP
+           ENDIF
         ELSEIF(IBODY.NE.0) THEN
 CC         WRITE(*,*) '  + duplicate body ',BTITLE(IBODY)
            LDUPL_B(IBODY) = .TRUE.
            READ (LINE,*,ERR=990) YDUPL_B(IBODY)
-        ENDIF
-C
-        IF(IYSYM.NE.0) THEN
-         WRITE(*,*)'** Warning: Y-duplicate AND Y-sym specified'
+           IF(IYSYM.NE.0 .AND.  YDUPL_B(IBODY).EQ.0.0) THEN
+        WRITE(*,*) 'ERROR: Redundant y-symmetry specifications...'
+        WRITE(*,*) '       IYSYM /= 0'
+        WRITE(*,*) '       YDUPLICATE  0.0'
+        WRITE(*,*) 'Can use one or the other, but not both.'
+        STOP
+           ENDIF
         ENDIF
 C
 C===========================================================================
@@ -445,6 +459,8 @@ C------ read surface angle change
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         READ (LINE,*,ERR=990) ADDINC(ISURF)
+        ! Don't do the conversion inplace! modified the other routines to 
+        ! include conversion
         ! ADDINC(ISURF) = ADDINC(ISURF)*DTR
         
 C
@@ -555,9 +571,20 @@ C    ...flat camberline
         SASEC(2,ISEC, ISURF)  = 0.0
         TASEC(1,ISEC, ISURF)  = 0.0
         TASEC(2,ISEC, ISURF)  = 0.0
-C    ...no polar data
+cc#ifdef USE_CPOML
+C
+        XLASEC(1,ISEC,ISURF) = 0
+        XLASEC(2,ISEC,ISURF) = 0
+        XUASEC(1,ISEC,ISURF) = 0
+        XUASEC(2,ISEC,ISURF) = 0
+        ZLASEC(1,ISEC,ISURF) = 0
+        ZLASEC(2,ISEC,ISURF) = 0
+        ZUASEC(1,ISEC,ISURF) = 0
+        ZUASEC(2,ISEC,ISURF) = 0
+cc#endif
+C    ...copy polar data from surface polar (if specified)
         DO L=1, 6
-          CLCDSEC(L,ISEC,ISURF) = 0.0
+          CLCDSEC(L,ISEC,ISURF) = CLCDSRF(L,ISURF)
         END DO
 C    ...no control
         NSCON(ISEC, ISURF) = 0
@@ -568,7 +595,7 @@ C    ...unity dCL/da factor
         CLAF(ISEC,ISURF) = 1.0
 C
 C===========================================================================
-      ELSEIF (KEYWD.EQ.'NACA') THEN 
+      ELSEIF (KEYWD.EQ.'NACA') THEN
 C------ input NACA camberline
 C
         IF(ISURF.EQ.0 .OR. ISEC.EQ.0) THEN
@@ -577,18 +604,35 @@ C
          GO TO 10
         ENDIF
 C
-        CALL RDLINE(LUN,LINE,NLINE,ILINE)
-C
-        IB = INDEX(LINE,' ')
-        READ(LINE(1:IB-1),*,ERR=990) IDES
-        IF(LINE(IB:NLINE).NE.' ') THEN
-         READ(LINE(IB:NLINE),*,ERR=990) XFMIN, XFMAX
-ccc           WRITE(*,*) '   Using data in normalized range ',XFMIN,XFMAX
-        ELSE
+C------ find blank (if any) after keyword
+        IB = INDEX(LINE(1:NLINE),' ')
+
+        IF(IB.EQ.0 .OR. IB.GE.NLINE-2) THEN
+C------- default airfoil x/c limits are the whole airfoil
          XFMIN = 0.
          XFMAX = 1.
+        ELSE
+C------- read optional airfoil x/c limits
+         NINPUT = 2
+         CALL GETFLT(LINE(IB:NLINE),RINPUT,NINPUT,ERROR)
+         IF(ERROR .OR. NINPUT.LT.2) THEN
+          XFMIN = 0.
+          XFMAX = 1.
+         ELSE
+          XFMIN = MAX( 0.0 , RINPUT(1) )
+          XFMAX = MIN( 1.0 , RINPUT(2) )
+         ENDIF
         ENDIF
 C
+        IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
+          LRANGE(ISURF) = .FALSE.
+        ENDIF
+C
+C------ read NACA 4-digit designator
+        CALL RDLINE(LUN,LINE,NLINE,ILINE)
+        READ(LINE,*,ERR=990) IDES
+
+C------ parse designator and set camber coordinates
         ICAM = IDES/1000
         IPOS = (IDES-1000*ICAM)/100
         ITHK =  IDES-1000*ICAM-100*IPOS
@@ -601,26 +645,43 @@ C
           XF = XFMIN +
      &        (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
 
-          XASEC(I,ISEC, ISURF) = XF
-          TASEC(I,ISEC, ISURF) = 
-     &        (   0.29690*SQRT(XF)
+          IF(XF .LT. P) THEN
+           SLP = C * 2.0*(P - XF) / P**2
+          ELSEIF(XF .GT. P) THEN
+           SLP = C * 2.0*(P - XF) / (1.0-P)**2
+          ELSE
+           SLP = 0
+          ENDIF
+          THK = (0.29690*SQRT(XF)
      &          - 0.12600*XF
      &          - 0.35160*XF**2
      &          + 0.28430*XF**3
-     &          - 0.10150*XF**4  ) * T * 10.0
-          IF    (XF .LT. P) THEN
-           SASEC(I,ISEC,ISURF) = C * 2.0*(P - XF) / P**2
-          ELSEIF(XF .GE. P) THEN
-           SASEC(I,ISEC,ISURF) = C * 2.0*(P - XF) / (1.0-P)**2
+     &          - 0.10150*XF**4) * T * 10.0
+C
+          XASEC(I,ISEC,ISURF) = XF
+          SASEC(I,ISEC,ISURF) = SLP
+          TASEC(I,ISEC,ISURF) = THK
+cc#ifdef USE_CPOML
+c...      lower/upper coordinates (for oml)
+          IF(XF .LT. P) THEN
+            ZF = C * (2*P*XF - 1)*XF / P**2
+          ELSEIF(XF .GT. P) THEN
+            ZF = C * ((1 - 2*P) + (2*P - XF)*XF) / (1-P)**2
           ELSE
-           SASEC(I,ISEC,ISURF) = 0.
+            ZF = 0
           ENDIF
+          TH = ATAN(SLP)
+          XLASEC(I,ISEC,ISURF) = XF + 0.5*THK*SIN(TH)
+          XUASEC(I,ISEC,ISURF) = XF - 0.5*THK*SIN(TH)
+          ZLASEC(I,ISEC,ISURF) = ZF - 0.5*THK*COS(TH)
+          ZUASEC(I,ISEC,ISURF) = ZF + 0.5*THK*COS(TH)
+cc#endif
         ENDDO
 
         CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
 C
 C===========================================================================
-      ELSE IF (KEYWD.EQ.'AIRF') THEN 
+      ELSE IF (KEYWD.EQ.'AIRF') THEN
 C------ input y(x) for an airfoil, get camber then slopes via spline
 C
         IF(ISURF.EQ.0 .OR. ISEC.EQ.0) THEN
@@ -628,12 +689,32 @@ C
          WRITE(*,*)    '** No active section for this airfoil'
          GO TO 10
         ENDIF
+
+C------ find blank (if any) after keyword
+        IB = INDEX(LINE(1:NLINE),' ')
+
+        IF(IB.EQ.0 .OR. IB.GE.NLINE-2) THEN
+C------- default airfoil x/c limits are the whole airfoil
+         XFMIN = 0.
+         XFMAX = 1.
+        ELSE
+C------- read optional airfoil x/c limits
+         NINPUT = 2
+         CALL GETFLT(LINE(IB:NLINE),RINPUT,NINPUT,ERROR)
+         IF(ERROR .OR. NINPUT.LT.2) THEN
+          XFMIN = 0.
+          XFMAX = 1.
+         ELSE
+          XFMIN = MAX( 0.0 , RINPUT(1) )
+          XFMAX = MIN( 1.0 , RINPUT(2) )
+         ENDIF
+        ENDIF
 C
-        CALL RDLINE(LUN,LINE,NLINE,ILINE)
+        IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
+          LRANGE(ISURF) = .FALSE.
+        ENDIF
 C
-        IB = INDEX(LINE,' ')
-        READ(LINE(IB:NLINE),*,ERR=990) XFMIN, XFMAX
-C
+C------ read airfoil coordinates
         DO I = 1, 123456
           IB = MIN(I,IBX)
 C
@@ -651,7 +732,7 @@ C
 C
  40     CONTINUE
         IF(I.GT.IBX) THEN
-         WRITE(*,*) 
+         WRITE(*,*)
      &    '*** AINPUT: Airfoil array overflow.  Increase IBX to', I
          STOP
         ENDIF
@@ -670,6 +751,14 @@ C------ store airfoil only if surface and section are active
      &               SASEC(I,ISEC,ISURF))
           CALL AKIMA(XIN,TIN,NIN,XASEC(I,ISEC,ISURF),
      &               TASEC(I,ISEC,ISURF),DUMMY)
+cc#ifdef USE_CPOML
+C...      lower/upper coordinates (for oml)
+          CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),ZC,DUMMY)
+          XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+          XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+          ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
+          ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
+cc#endif
         END DO
         CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
 C
@@ -677,7 +766,7 @@ C------ go to top of keyword-reading loop, with last-read line
         GO TO 11
 C
 C===========================================================================
-      ELSEIF (KEYWD.EQ.'AFIL') THEN 
+      ELSEIF (KEYWD.EQ.'AFIL') THEN
 C------ input y(x) from an airfoil coordinate file
 C
         IF(ISURF.EQ.0 .OR. ISEC.EQ.0) THEN
@@ -685,33 +774,50 @@ C
          WRITE(*,*)    '** No active section for this airfoil'
          GO TO 10
         ENDIF
-C
-        CALL RDLINE(LUN,LINE,NLINE,ILINE)
-C---- parse file name and optional parameters
-C     double quotes checked to delimit file name to allow blanks in name 
-        IDQ1 = INDEX(LINE,'"')
-        IF(IDQ1.NE.0) THEN
-         IDQ2 = INDEX(LINE(IDQ1+1:),'"')
-         IF(IDQ2.GT.1) THEN 
-           CNAME = LINE(IDQ1+1:IDQ2+IDQ1-1)
-           IB = IDQ2 + IDQ1 + 1
-         ELSE
-           WRITE(*,9000) '** Bad quotes in file name ',ILINE,
-     &                   LINE(1:NLINE)
-           GO TO 10
-         ENDIF
-        ELSE
-C---- Find blank after filename as delimiter for optional parameters
-         IB = INDEX(LINE,' ')
-         CNAME = LINE(1:IB)
-        ENDIF
-C
-        IF(LINE(IB:NLINE).NE.' ') THEN
-         READ(LINE(IB:NLINE),*,ERR=990) XFMIN, XFMAX
-CCC         WRITE(*,*) '     Using data in normalized range ',XFMIN,XFMAX
-        ELSE
+
+C------ find blank (if any) after keyword
+        IB = INDEX(LINE(1:NLINE),' ')
+
+        IF(IB.EQ.0 .OR. IB.GE.NLINE-2) THEN
+C------- default airfoil x/c limits are the whole airfoil
          XFMIN = 0.
          XFMAX = 1.
+        ELSE
+C------- read optional airfoil x/c limits
+         NINPUT = 2
+         CALL GETFLT(LINE(IB:NLINE),RINPUT,NINPUT,ERROR)
+         IF(ERROR .OR. NINPUT.LT.2) THEN
+          XFMIN = 0.
+          XFMAX = 1.
+         ELSE
+          XFMIN = MAX( 0.0 , RINPUT(1) )
+          XFMAX = MIN( 1.0 , RINPUT(2) )
+         ENDIF
+        ENDIF
+C
+        IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
+          LRANGE(ISURF) = .FALSE.
+        ENDIF
+C
+C------ read filename
+        CALL RDLINE(LUN,LINE,NLINE,ILINE)
+
+C------ parse file name
+C       double quotes checked to delimit file name to allow blanks in name
+        IDQ1 = INDEX(LINE(1:NLINE),'"')
+        IF(IDQ1.NE.0) THEN
+         IDQ2 = INDEX(LINE(IDQ1+1:NLINE),'"')
+         IF(IDQ2.GT.1) THEN
+          CNAME = LINE(IDQ1+1:IDQ2+IDQ1-1)
+         ELSE
+          WRITE(*,9000) '** Bad quotes in file name ',ILINE,
+     &                  LINE(1:NLINE)
+          GO TO 10
+         ENDIF
+
+        ELSE
+         CNAME = LINE(1:NLINE)
+
         ENDIF
 C
         CALL STRIP(CNAME,NCN)
@@ -728,13 +834,18 @@ C
         WRITE(*,*) '**   Airfoil file not found  : ',CNAME(1:NCN)
         WRITE(*,*) '**   Using default zero-camber airfoil'
         end if 
-
 C C
          NASEC(ISEC,ISURF) = MIN( 50 , IBX )
          DO I = 1, NASEC(ISEC,ISURF)
           XASEC(I,ISEC,ISURF) = FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
           SASEC(I,ISEC,ISURF) = 0.0
           TASEC(I,ISEC,ISURF) = 0.0
+cc#ifdef USE_CPOML
+          XLASEC(I,ISEC,ISURF) = 0
+          XUASEC(I,ISEC,ISURF) = 0
+          ZLASEC(I,ISEC,ISURF) = 0
+          ZUASEC(I,ISEC,ISURF) = 0
+cc#endif
          ENDDO
 C
         ELSE
@@ -752,12 +863,20 @@ C------- camberline slopes at specified locations from spline
      &               MMY,SASEC(I,ISEC,ISURF))
            CALL AKIMA(XIN,TIN,NIN,XASEC(I,ISEC,ISURF),
      &               TASEC(I,ISEC,ISURF),DUMMY)
+cc#ifdef USE_CPOML
+C...       lower/upper coordinates (for oml)
+           CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),ZC,DUMMY)
+           XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+           XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+           ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
+           ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
+cc#endif
          END DO
          CALL NRMLIZ (NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
         ENDIF
 C
 C===========================================================================
-      ELSEIF (KEYWD.EQ.'BFIL') THEN 
+      ELSEIF (KEYWD.EQ.'BFIL') THEN
 C------ input r(x) from an airfoil coordinate file
 C
         IF(IBODY.EQ.0) THEN
@@ -766,13 +885,38 @@ C
          GO TO 10
         ENDIF
 C
+C------ find blank (if any) after keyword
+        IB = INDEX(LINE(1:NLINE),' ')
+
+        IF(IB.EQ.0 .OR. IB.GE.NLINE-2) THEN
+C------- default x/c limits are the whole airfoil
+         XFMIN = 0.
+         XFMAX = 1.
+        ELSE
+C------- read optional x/c limits
+         NINPUT = 2
+         CALL GETFLT(LINE(IB:NLINE),RINPUT,NINPUT,ERROR)
+         IF(ERROR .OR. NINPUT.LT.2) THEN
+          XFMIN = 0.
+          XFMAX = 1.
+         ELSE
+          XFMIN = MAX( 0.0 , RINPUT(1) )
+          XFMAX = MIN( 1.0 , RINPUT(2) )
+         ENDIF
+        ENDIF
+C
+        IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
+          LRANGE(ISURF) = .FALSE.
+        ENDIF
+C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
+
 C---- parse file name and optional parameters
-C     double quotes checked to delimit file name to allow blanks in name 
-        IDQ1 = INDEX(LINE,'"')
+C     double quotes checked to delimit file name to allow blanks in name
+        IDQ1 = INDEX(LINE(1:NLINE),'"')
         IF(IDQ1.NE.0) THEN
-         IDQ2 = INDEX(LINE(IDQ1+1:),'"')
-         IF(IDQ2.GT.1) THEN 
+         IDQ2 = INDEX(LINE(IDQ1+1:NLINE),'"')
+         IF(IDQ2.GT.1) THEN
            CNAME = LINE(IDQ1+1:IDQ2+IDQ1-1)
            IB = IDQ2 + IDQ1 + 1
          ELSE
@@ -781,19 +925,11 @@ C     double quotes checked to delimit file name to allow blanks in name
            GO TO 10
          ENDIF
         ELSE
-C---- Find blank after filename as delimiter for optional parameters
-         IB = INDEX(LINE,' ')
-         CNAME = LINE(1:IB)
+         CNAME = LINE(1:NLINE)
+
         ENDIF
-C
-        IF(LINE(IB:NLINE).NE.' ') THEN
-         READ(LINE(IB:NLINE),*,ERR=990) XFMIN, XFMAX
-CCC         WRITE(*,*) '     Using data in normalized range ',XFMIN,XFMAX
-        ELSE
-         XFMIN = 0.
-         XFMAX = 1.
-        ENDIF
-C
+
+
         CALL STRIP(CNAME,NCN)
         if (lverbose) then 
             WRITE(*,*) '    Reading body shape from file: ',CNAME(1:NCN)
@@ -803,35 +939,80 @@ C
         CALL READBL(CNAME,IBX,NBLDS,XB,YB,NB,NBL,
      &               ANAME,XINL,XOUT,YBOT,YTOP)
 C
+        IF(NB.LE.2) THEN
+          WRITE(*,*)    '** Error reading body from ', CNAME(1:NCN)
+          WRITE(*,*)    '   Body not defined'
+          IBODY = 0
+          NBODY = NBODY - 1
+          GO TO 10
+        ELSE
 C------ set thread line y, and thickness t ( = 2r)
-        NBOD = MIN( 50 , IBX )
-        CALL GETCAM(XB,YB,NB,XBOD,YBOD,TBOD,NBOD,.FALSE.)
+          NBOD = MIN( 50 , IBX )
+          CALL GETCAM(XB,YB,NB,XBOD,YBOD,TBOD,NBOD,.FALSE.)
+        ENDIF
 C
 C===========================================================================
-      ELSEIF (KEYWD.EQ.'CDCL') THEN 
+      ELSEIF (KEYWD.EQ.'CDCL') THEN
 C------ input approximate CD(CL) polar defining data
 C
-        IF(ISURF.EQ.0 .OR. ISEC.EQ.0) THEN
+        IF(ISURF.EQ.0 .AND. ISEC.EQ.0) THEN
          WRITE(*,9000) '** Misplaced line', ILINE, LINE(1:NLINE)
-         WRITE(*,*)    '** No active section for this polar'
+         WRITE(*,*)    '** No active surface or section for this polar'
          GO TO 10
         ENDIF
-
+C
+C------ if defining surface before sections store polar for surface
+        IF(ISURF.NE.0 .AND. ISEC.EQ.0) THEN
+         if (lverbose) then
+         WRITE(*,*)    '** Polar data for surface (all sections)'
+         ENDIF
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
         READ(LINE,*,ERR=990) CLX(1),CDX(1),CLX(2),CDX(2),CLX(3),CDX(3)
 C
         LMAX = 1
         LMIN = 1
-        DO L = 2, 3 
+        DO L = 2, 3
           IF(CLX(L).GT.CLX(LMAX)) LMAX = L
           IF(CLX(L).LT.CLX(LMIN)) LMIN = L
         END DO
 C
-        IF(ISEC.GT.1) THEN
-         IF(CLCDSEC(4,ISEC-1,ISURF).LE.0.0) THEN
-          WRITE(*,*) '* AINPUT: previous section defined with no polar' 
+C------ Trick: sum must be 6 so we can get the "other" index
+         LMID = 6 - (LMIN+LMAX)
+         CLCDSRF(1,ISURF) = CLX(LMIN)
+         CLCDSRF(2,ISURF) = CDX(LMIN)
+         CLCDSRF(3,ISURF) = CLX(LMID)
+         CLCDSRF(4,ISURF) = CDX(LMID)
+         CLCDSRF(5,ISURF) = CLX(LMAX)
+         CLCDSRF(6,ISURF) = CDX(LMAX)
+         if (lverbose) then
+         WRITE(*,1700) CLX(LMIN),CDX(LMIN),
+     &                 CLX(LMID),CDX(LMID),
+     &                 CLX(LMAX),CDX(LMAX)
+         endif
+ 1700    FORMAT('    Reading CD(CL) data for surface',
+     &         /'     CLneg    = ',F8.3,'  CD@CLneg = ',F10.5,
+     &         /'     CL@CDmin = ',F8.3,'  CDmin    = ',F10.5,
+     &         /'     CLpos    = ',F8.3,'  CD@CLpos = ',F10.5)
+         LVISC = .TRUE.
+C
+C------ define polar for the current active section
+        ELSEIF(ISURF.NE.0 .AND. ISEC.NE.0) THEN
+C
+         CALL RDLINE(LUN,LINE,NLINE,ILINE)
+         READ(LINE,*,ERR=990) CLX(1),CDX(1),CLX(2),CDX(2),CLX(3),CDX(3)
+C
+         LMAX = 1
+         LMIN = 1
+         DO L = 2, 3
+           IF(CLX(L).GT.CLX(LMAX)) LMAX = L
+           IF(CLX(L).LT.CLX(LMIN)) LMIN = L
+         END DO
+C
+         IF(ISEC.GT.1) THEN
+          IF(CLCDSEC(4,ISEC-1,ISURF).LE.0.0) THEN
+           WRITE(*,*) '* AINPUT: previous section defined with no polar'
+          ENDIF
          ENDIF
-        ENDIF
 C
 C------ Trick: sum must be 6 so we can get the "other" index
         LMID = 6 - (LMIN+LMAX)
@@ -843,18 +1024,20 @@ C------ Trick: sum must be 6 so we can get the "other" index
         CLCDSEC(6,ISEC,ISURF) = CDX(LMAX)
         
         if (LVERBOSE) then
-                WRITE(*,1700) CLX(LMIN),CDX(LMIN),
+                WRITE(*,1701) CLX(LMIN),CDX(LMIN),
      &                CLX(LMID),CDX(LMID),
      &                CLX(LMAX),CDX(LMAX)
-1700   FORMAT('    Reading CD(CL) data for section',
+        endif
+ 1701    FORMAT('    Reading CD(CL) data for section',
      &         /'     CLneg    = ',F8.3,'  CD@CLneg = ',F10.5,
      &         /'     CL@CDmin = ',F8.3,'  CDmin    = ',F10.5,
      &         /'     CLpos    = ',F8.3,'  CD@CLpos = ',F10.5)
+         LVISC = .TRUE.
+C
         ENDIF
-        LVISC = .TRUE.
 C
 C===========================================================================
-      ELSEIF (KEYWD.EQ.'CLAF') THEN 
+      ELSEIF (KEYWD.EQ.'CLAF') THEN
 C------ input dCL/da scaling factor
 C
         IF(ISURF.EQ.0 .OR. ISEC.EQ.0) THEN
@@ -899,7 +1082,10 @@ C------ extract control name
 C
 C------ see if this control variable has already been declared
         DO N = 1, NCONTROL
-          IF(LINE(1:NNAME) .EQ. DNAME(N)(1:NNAME)) THEN
+          NDNAME = INDEX(DNAME(N),' ') - 1      ! added 18 Nov 2021  MD
+          IF(NNAME .EQ. NDNAME .AND.            ! added 18 Nov 2021  MD
+     &      LINE(1:NNAME) .EQ. DNAME(N)(1:NNAME)) THEN   ! modified 18 Nov 2021
+ccc          IF(LINE(1:NNAME) .EQ. DNAME(N)(1:NNAME)) THEN
            ICONTROL = N
            GO TO 62
           ENDIF
@@ -950,7 +1136,7 @@ C
         ENDIF
 C
 C===========================================================================
-      ELSEIF (KEYWD.EQ.'DESI') THEN 
+      ELSEIF (KEYWD.EQ.'DESI') THEN
 C------ link section to design variable and weight
 C
         IF(ISURF.EQ.0 .OR. ISEC.EQ.0) THEN
@@ -968,7 +1154,7 @@ C
 C------ extract design name
         NNAME = INDEX(LINE,' ') - 1
         IF(NNAME.LE.0) THEN
-         WRITE(*,9000) '   *** Bad design declaration line', 
+         WRITE(*,9000) '   *** Bad design declaration line',
      &                  ILINE, LINE(1:NLINE)
          STOP
         ENDIF
@@ -1015,7 +1201,10 @@ C---- normal end-of-file exit point
 C
 C*********************************************************************
 C
-C       WRITE (*,2018) MACH0,NBODY,NSURF,NSTRIP,NVOR
+      if (lverbose) then
+      WRITE (*,2018) MACH0,NBODY,NSURF,NSTRIP,NVOR
+      WRITE (*,2019) NCONTROL,NDESIGN
+      end if 
 C
       IF(IYSYM.GT.0) WRITE (*,2024) YSYM
       IF(IYSYM.LT.0) WRITE (*,2025) YSYM
@@ -1023,10 +1212,13 @@ C
       IF(IZSYM.LT.0) WRITE (*,2027) ZSYM
 C
  2018 FORMAT (/' Mach =',F10.4,'  (default)'
-     &        /' Nbody =',I4,5X,
-     &         ' Nsurf =',I4,5X,
-     &         ' Nstrp =',I4,5X,
-     &         ' Nvor  =',I4)
+     &       //1X,I4,' Bodies'
+     &        /1X,I4,' Solid surfaces'
+     &        /1X,I4,' Strips'
+     &        /1X,I4,' Vortices')
+ 2019 FORMAT (/1X,I4,' Control variables'
+     &        /1X,I4,' Design parameters')
+
  2024 FORMAT (/' Y Symmetry: Wall plane   at Ysym =',F10.4)
  2025 FORMAT (/' Y Symmetry: Free surface at Ysym =',F10.4)
  2026 FORMAT (/' Z Symmetry: Ground plane at Zsym =',F10.4)
@@ -1101,6 +1293,6 @@ C
  10   CONTINUE
 C
       RETURN
-      END 
+      END
 
 

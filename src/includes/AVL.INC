@@ -113,8 +113,8 @@ C
      & IRUNT,             ! target run case for time march initial state
      & ITRIM(NRMAX),      ! trim type used for run case (if any)
      & NEIGEN(NRMAX),     ! number of valid eigenmodes available for run case
-     & NEIGENDAT(NRMAX),   ! number reference data eigenvalues
-     & CPSCL                ! CP scaling factor for cp plot
+     & NEIGENDAT(NRMAX),  ! number reference data eigenvalues
+     & CPSCL              ! CP scaling factor for cp plot
 
 C
       LOGICAL LGEO,LENC,LAIC,LSRD,LVEL,LSOL,LSEN,
@@ -472,8 +472,8 @@ C      !!--- end added variables for python geometry minipulation ---
       COMMON /STRP_I/
      & NSURFS(NSMAX),    ! index of surface which contains this strip
      & IJFRST(NSMAX),    ! index of first element in strip
-     & NVSTRP(NSMAX),     ! number of elements in strip
-     & ICNTSEC(NSMAX)               ! section counters for surface
+     & NVSTRP(NSMAX),    ! number of elements in strip
+     & ICNTSEC(NSMAX)    ! section counters for surface
 
       LOGICAL LSTRIPOFF,LVISCSTRP,LJ1SECT,LJ2SECT
       COMMON /STRP_L/

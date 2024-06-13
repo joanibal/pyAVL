@@ -26,7 +26,6 @@ f77Files =\
 		eispack.f\
 		aoutmrf.f\
 		aoml.f\
-		unitset.f\
 		ad_src/forward_ad_src/aero_d.f\
 		ad_src/forward_ad_src/aic_d.f\
 		ad_src/forward_ad_src/cdcl_d.f\
