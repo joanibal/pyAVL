@@ -979,7 +979,9 @@ C---------------------------------------------------
 
 C
 C---- convergence epsilon, max angle limit (radians)
-      DATA EPS, DMAX / 0.00002, 1.0 /
+      ! EPS replaced by EXEC_TOL
+      ! DATA EPS, DMAX / 0.00002, 1.0 /
+      DATA DMAX / 1.0 /
 
 C
       IF(LNASA_SA) THEN
@@ -1193,7 +1195,8 @@ C------------------------------------
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             VSYS(IV,NV) = (CRTOT_D(N)*CA + CNTOT_D(N)*SA)*DIR
+             ! no *DIR here because we do *DIR in AERO now
+             VSYS(IV,NV) = (CRTOT_D(N)*CA + CNTOT_D(N)*SA)
            ENDDO
 C
 C------------------------------------
@@ -1236,7 +1239,8 @@ C------------------------------------
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             VSYS(IV,NV) = (CNTOT_D(N)*CA - CRTOT_D(N)*SA)*DIR
+             ! no *DIR here because we do *DIR in AERO now
+             VSYS(IV,NV) = (CNTOT_D(N)*CA - CRTOT_D(N)*SA)
            ENDDO
 C
 C------------------------------------
@@ -1404,7 +1408,7 @@ C------ convergence check
           DELMAX = MAX( DELMAX , ABS(DDC(K)) )
         ENDDO
 C
-        IF(DELMAX.LT.EPS) THEN
+        IF(DELMAX.LT.EXEC_TOL) THEN
          LSOL = .TRUE.
 C------- mark trim case as being converged
          ITRIM(IR) = IABS(ITRIM(IR))

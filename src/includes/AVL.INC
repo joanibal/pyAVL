@@ -215,7 +215,8 @@ C
       real(kind=avl_real) CHINGE_G
       real(kind=avl_real) DCL_A0, DCM_A0
       real(kind=avl_real) DCL_U0, DCM_U0
-      real(kind=avl_real) XNP                
+      real(kind=avl_real) XNP
+      real(kind=avl_real) EXEC_TOL                
       COMMON /CASE_R/
      & VERSION,          ! AVL version number
      & DTR,     PI,      ! 3.14159/180 ,  3.14159
@@ -274,7 +275,8 @@ C
      & CHINGE_G(NDMAX,NGMAX), ! sens wrt design
      & DCL_A0, DCM_A0,   ! additional default CL_a, CM_a
      & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
-     & XNP                ! x neutral point
+     & XNP,                ! x neutral point
+     & EXEC_TOL           ! tolerance of exec trim solve
       COMPLEX EVAL, EVEC, EVALDAT
       COMMON /CASE_Z/
      &  EVAL(JEMAX,NRMAX),       ! mode eigenvalue

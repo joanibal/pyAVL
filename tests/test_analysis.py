@@ -101,7 +101,8 @@ class TestAnalysisSweep(unittest.TestCase):
         cl_arr = np.arange(0.6, 1.7, 0.1)
         for idx_cl, cl in enumerate(cl_arr):
             self.avl_solver.add_trim_condition("CL", cl)
-            self.avl_solver.execute_run()
+            # the tight tolerance here helps catch small issues with the newton solver
+            self.avl_solver.execute_run(tol=1e-12)
             run_data = self.avl_solver.get_case_total_data()
 
             np.testing.assert_allclose(

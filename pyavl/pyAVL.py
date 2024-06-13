@@ -754,8 +754,9 @@ class AVLSolver(object):
         warnings.warn("executeRun is deprecated, use execute_run instead")
         self.execute_run()
 
-    def execute_run(self):
+    def execute_run(self, tol=0.00002):
         # run the analysis (equivalent to the avl command `x` in the oper menu)
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
         self.avl.oper()
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
