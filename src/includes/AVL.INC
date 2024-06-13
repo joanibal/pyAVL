@@ -21,9 +21,9 @@ C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
 C     
 C    ICONX   max number of control or design variable declaration lines per section (20)
-      PARAMETER (NVMAX=5550,
-     &           NSMAX=350,
-     &           NFMAX=20,
+      PARAMETER (NVMAX=5450,
+     &           NSMAX=400,
+     &           NFMAX=30,
      &           NLMAX=500,
      &           NBMAX=20,
      &           NUMAX=6,
@@ -31,8 +31,8 @@ C    ICONX   max number of control or design variable declaration lines per sect
      &           NGMAX=20,
      &           NRMAX=25,
      &           NTMAX=5000,
-     &           IBX=250,
-     &           ICONX=15)
+     &           IBX=300,
+     &           ICONX=20)
 C
 C   Derived array limits
 C
@@ -526,29 +526,33 @@ C      !!--- end added variables for python geometry minipulation ---
      & SAXFR,                       ! x/c of spanwise axis for Vperp def
      & ESS(3,NSMAX),                ! spanwise unit vector for Vperp def
      & ENSY(NSMAX), ENSZ(NSMAX),    ! strip normal vector in Trefftz-Pln
-     & XSREF(NSMAX),YSREF(NSMAX),ZSREF(NSMAX),
+     & XSREF(NSMAX),YSREF(NSMAX),ZSREF(NSMAX),   ! strip reference point
      & AINC(NSMAX),              ! strip's incidence twist angle
      & AINC_G(NSMAX,NGMAX),      ! dAINC/dG
-     & CDSTRP(NSMAX),   CLSTRP(NSMAX),                   ! strip forces
-     & CXSTRP(NSMAX),   CYSTRP(NSMAX),   CZSTRP(NSMAX),  ! strip forces
-     & CRSTRP(NSMAX),   CNSTRP(NSMAX),   CMSTRP(NSMAX),  ! strip moments
+C  Strip forces and moments
+     & CDSTRP(NSMAX),   CLSTRP(NSMAX),                   ! strip forces  in stability axes
+     & CXSTRP(NSMAX),   CYSTRP(NSMAX),   CZSTRP(NSMAX),  ! strip forces  in body axes
+     & CRSTRP(NSMAX),   CNSTRP(NSMAX),   CMSTRP(NSMAX),  ! strip moments in body axes about XREF,YREF,ZREF
+C
      & CDST_A(NSMAX),   CLST_A(NSMAX),                   ! alpha sens.
      & CDST_U(NSMAX,NUMAX), CLST_U(NSMAX,NUMAX),
-     & CXST_U(NSMAX,NUMAX), CYST_U(NSMAX,NUMAX), CZST_U(NSMAX,NUMAX),
+     & CXST_U(NSMAX,NUMAX), CYST_U(NSMAX,NUMAX), CZST_U(NSMAX,NUMAX),   ! freestream velocity and rotation sens.
      & CRST_U(NSMAX,NUMAX), CNST_U(NSMAX,NUMAX), CMST_U(NSMAX,NUMAX),
      & CDST_D(NSMAX,NDMAX), CLST_D(NSMAX,NDMAX),
-     & CXST_D(NSMAX,NDMAX), CYST_D(NSMAX,NDMAX), CZST_D(NSMAX,NDMAX),
+     & CXST_D(NSMAX,NDMAX), CYST_D(NSMAX,NDMAX), CZST_D(NSMAX,NDMAX),   ! control sens.
      & CRST_D(NSMAX,NDMAX), CNST_D(NSMAX,NDMAX), CMST_D(NSMAX,NDMAX),
      & CDST_G(NSMAX,NGMAX), CLST_G(NSMAX,NGMAX),
-     & CXST_G(NSMAX,NGMAX), CYST_G(NSMAX,NGMAX), CZST_G(NSMAX,NGMAX),
+     & CXST_G(NSMAX,NGMAX), CYST_G(NSMAX,NGMAX), CZST_G(NSMAX,NGMAX),   ! design (incidence) sens.
      & CRST_G(NSMAX,NGMAX), CNST_G(NSMAX,NGMAX), CMST_G(NSMAX,NGMAX),
-     & CF_STRP(3,NSMAX),   CM_STRP(3,NSMAX), ! strip forces, norm local
-     & CNRMSTRP(NSMAX),    CAXLSTRP(NSMAX),
-     & CD_LSTRP(NSMAX),  CL_LSTRP(NSMAX),
-     & CDV_LSTRP(NSMAX), CLTSTRP(NSMAX), CLASTRP(NSMAX),
-     & CMC4(NSMAX),        CMLE(NSMAX),
-     & CNC(NSMAX),         DWWAKE(NSMAX),
-     & CNC_U(NSMAX,NUMAX),
+C
+     & CF_STRP(3,NSMAX),   CM_STRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
+     & CNRMSTRP(NSMAX),    CAXLSTRP(NSMAX),     ! strip forces in local dihedral plane (normal and axial forces)
+     & CD_LSTRP(NSMAX),  CL_LSTRP(NSMAX),       ! strip forces in local dihedral plane (lift and drag forces)
+     & CDV_LSTRP(NSMAX),                        ! strip viscous drag in stability axes
+     & CLTSTRP(NSMAX), CLASTRP(NSMAX),          ! strip CL referenced to Vperp, CL referenced to total local velocity
+     & CMC4(NSMAX),        CMLE(NSMAX),         ! strip pitching moment about c/4 and pitching moment about LE vector
+     & CNC(NSMAX),         DWWAKE(NSMAX),       ! strip spanloading and downwash in Trefftz plane
+     & CNC_U(NSMAX,NUMAX),                      ! spanloading sens.
      & CNC_D(NSMAX,NDMAX),
      & CNC_G(NSMAX,NGMAX)
 C

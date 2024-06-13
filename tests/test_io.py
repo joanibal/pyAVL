@@ -125,7 +125,7 @@ class TestFortranLevelAPI(unittest.TestCase):
     def test_get_array(self):
         chords = self.avl_solver.get_avl_fort_arr("SURF_GEOM_R", "CHORDS")
 
-        self.assertEqual(chords.shape, (20, 350))
+        self.assertEqual(chords.shape, (30, 400))
         np.testing.assert_array_equal(chords[0, :5], np.array([0.5, 0.4, 0.3, 0.2, 0.1]))
 
 
