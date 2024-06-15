@@ -1049,9 +1049,15 @@ C
 C
 C*******************************************************************
 C
-C...Store strip X,Y,Z body axes forces 
-C   (these are normalized by strip area and moments are referred to
-C    c/4 point and are normalized by strip chord and area)
+C---  At this point the forces are accumulated for the strip in body axes,
+C     referenced to strip 1/4 chord and normalized by strip area and chord
+C     CFX, CFY, CFZ   ! body axes forces 
+C     CMX, CMY, CMZ   ! body axes moments about c/4 point 
+C     CNC             ! strip spanloading CN*chord
+C     CDV_LSTRP       ! strip viscous drag in stability axes
+C
+C...Store strip X,Y,Z body axes forces and moments 
+C   referred to c/4 and strip area and chord
         cf_strp(1, j) = cfx
         cf_strp(2, j) = cfy
         cf_strp(3, j) = cfz
@@ -1059,12 +1065,14 @@ C    c/4 point and are normalized by strip chord and area)
         cm_strp(2, j) = cmy
         cm_strp(3, j) = cmz
 C
-C...Transform strip body axes forces into stability axes
-        cdstrp(j) = cfx*cosa + cfz*sina
-        clstrp(j) = -(cfx*sina) + cfz*cosa
+C...Strip body axes forces, referred to strip area and chord
         cxstrp(j) = cfx
         cystrp(j) = cfy
         czstrp(j) = cfz
+C...Transform strip body axes forces into stability axes,
+C   referred to strip area and chord
+        cdstrp(j) = cfx*cosa + cfz*sina
+        clstrp(j) = -(cfx*sina) + cfz*cosa
 C
         cdst_a(j) = -(cfx*sina) + cfz*cosa
         clst_a(j) = -(cfx*cosa) - cfz*sina
@@ -1093,11 +1101,12 @@ C
           czst_g(j, n) = cfz_g(n)
         ENDDO
 C
-C... Set strip moments about the overall moment reference point XYZREF 
-C     (still normalized by strip area and chord)
+C------ vector from chord c/4 reference point to case reference point XYZREF 
         r(1) = xr - xyzref(1)
         r(2) = yr - xyzref(2)
         r(3) = zr - xyzref(3)
+C... Strip moments in body axes about the case moment reference point XYZREF 
+C    normalized by strip area and chord
         crstrp(j) = cmx + (cfz*r(2)-cfy*r(3))/cr
         cmstrp(j) = cmy + (cfx*r(3)-cfz*r(1))/cr
         cnstrp(j) = cmz + (cfy*r(1)-cfx*r(2))/cr
@@ -1120,9 +1129,8 @@ C
           cnst_g(j, n) = cmz_g(n) + (cfy_g(n)*r(1)-cfx_g(n)*r(2))/cr
         ENDDO
 C
-C...Take components of X,Y,Z forces in local strip axes 
-C   (axial/normal and lift/drag)
-C    in plane normal to (possibly dihedralled) strip
+C...Components of X,Y,Z forces in local strip axes 
+C   axial/normal forces and lift/drag in plane normal to dihedral of strip
         cl_lstrp(j) = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
         cd_lstrp(j) = udrag(1)*cfx + udrag(2)*cfy + udrag(3)*cfz
         caxlstrp(j) = cfx
@@ -1133,6 +1141,7 @@ C------ vector at chord reference point from rotation axes
         rrot(1) = xsref(j) - xyzref(1)
         rrot(2) = ysref(j) - xyzref(2)
         rrot(3) = zsref(j) - xyzref(3)
+C        print *,"WROT ",WROT
 C
 C------ set total effective velocity = freestream + rotation
         CALL CROSS(rrot, wrot, vrot)
@@ -1202,14 +1211,17 @@ C
           cr = chord(j)
 C
 C
-C
-C
+C--- Surface lift and drag referenced to case SREF, CREF, BREF 
+C--- Surface body axes forces referenced to case SREF, CREF, BREF
+C--- Surface body axes moments referenced to case SREF, CREF, BREF about XYZREF
 C
 C--- Bug fix, HHY/S.Allmaras 
+C--- Surface viscous drag referenced to case SREF, CREF, BREF
 C
         ENDDO
         CALL PUSHINTEGER4(jj - 1)
-C--- Surface hinge moments defined by surface LE moment about hinge vector 
+C
+C---  Surface hinge moments defined by surface LE moment about hinge vector 
 Ccc        CMLE_SRF(IS) = DOT(CM_SRF(1,IS),VHINGE(1,IS))
 C
 C
@@ -1399,15 +1411,15 @@ C    zero out the asymmetric forces and double the symmetric ones
             cls_d_diff(is, n) = cls_d_diff(is, n) + cltot_d_diff(n)
             cds_d_diff(is, n) = cds_d_diff(is, n) + cdtot_d_diff(n)
           ENDDO
-          cdvsurf_diff(is) = cdvsurf_diff(is) + cdvtot_diff
           cnsurf_diff(is) = cnsurf_diff(is) + cntot_diff
           cmsurf_diff(is) = cmsurf_diff(is) + cmtot_diff
           crsurf_diff(is) = crsurf_diff(is) + crtot_diff
+          cdvsurf_diff(is) = cdvsurf_diff(is) + cdvtot_diff
+          clsurf_diff(is) = clsurf_diff(is) + cltot_diff
+          cdsurf_diff(is) = cdsurf_diff(is) + cdtot_diff
           czsurf_diff(is) = czsurf_diff(is) + cztot_diff
           cysurf_diff(is) = cysurf_diff(is) + cytot_diff
           cxsurf_diff(is) = cxsurf_diff(is) + cxtot_diff
-          clsurf_diff(is) = clsurf_diff(is) + cltot_diff
-          cdsurf_diff(is) = cdsurf_diff(is) + cdtot_diff
         END IF
         CALL POPINTEGER4(ad_to)
         DO jj=ad_to,1,-1
@@ -2180,18 +2192,18 @@ C
           CALL PUSHCONTROL1B(1)
         END IF
 C
-C... Set strip moments about the overall moment reference point XYZREF 
-C     (still normalized by strip area and chord)
+C------ vector from chord c/4 reference point to case reference point XYZREF 
         CALL PUSHREAL8(r(1))
         r(1) = xr - xyzref(1)
         CALL PUSHREAL8(r(2))
         r(2) = yr - xyzref(2)
         CALL PUSHREAL8(r(3))
         r(3) = zr - xyzref(3)
+C... Strip moments in body axes about the case moment reference point XYZREF 
+C    normalized by strip area and chord
 C
-C...Take components of X,Y,Z forces in local strip axes 
-C   (axial/normal and lift/drag)
-C    in plane normal to (possibly dihedralled) strip
+C...Components of X,Y,Z forces in local strip axes 
+C   axial/normal forces and lift/drag in plane normal to dihedral of strip
 C
 C------ vector at chord reference point from rotation axes
         CALL PUSHREAL8(rrot(1))
@@ -2200,6 +2212,7 @@ C------ vector at chord reference point from rotation axes
         rrot(2) = ysref(j) - xyzref(2)
         CALL PUSHREAL8(rrot(3))
         rrot(3) = zsref(j) - xyzref(3)
+C        print *,"WROT ",WROT
 C
 C------ set total effective velocity = freestream + rotation
 C
@@ -2319,18 +2332,18 @@ C
           clst_d_diff(j, n) = 0.D0
           cdst_d_diff(j, n) = 0.D0
         ENDDO
-        cfz_diff = cfz_diff + czstrp_diff(j) + cosa*clstrp_diff(j) + 
-     +    sina*cdstrp_diff(j)
-        czstrp_diff(j) = 0.D0
-        cfy_diff = cfy_diff + cystrp_diff(j)
-        cystrp_diff(j) = 0.D0
-        cfx_diff = cfx_diff + cxstrp_diff(j) + cosa*cdstrp_diff(j) - 
-     +    sina*clstrp_diff(j)
-        cxstrp_diff(j) = 0.D0
+        cfz_diff = cfz_diff + cosa*clstrp_diff(j) + sina*cdstrp_diff(j) 
+     +    + czstrp_diff(j)
         cosa_diff = cosa_diff + cfz*clstrp_diff(j) + cfx*cdstrp_diff(j)
+        cfx_diff = cfx_diff + cosa*cdstrp_diff(j) - sina*clstrp_diff(j) 
+     +    + cxstrp_diff(j)
         sina_diff = sina_diff + cfz*cdstrp_diff(j) - cfx*clstrp_diff(j)
         clstrp_diff(j) = 0.D0
         cdstrp_diff(j) = 0.D0
+        czstrp_diff(j) = 0.D0
+        cfy_diff = cfy_diff + cystrp_diff(j)
+        cystrp_diff(j) = 0.D0
+        cxstrp_diff(j) = 0.D0
         CALL POPCONTROL1B(branch)
         IF (branch .EQ. 0) THEN
           cdv_clv_diff = 0.D0

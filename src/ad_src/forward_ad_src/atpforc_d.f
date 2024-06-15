@@ -79,6 +79,7 @@ C
       REAL rsq1_diff
       REAL rsq2
       REAL rsq2_diff
+      INTEGER isurf
       REAL ar
       REAL ar_diff
       REAL spanef_cl
@@ -417,40 +418,46 @@ CCC           DZ2 = ZCNTR - (ZOFF-RT2(3,JV)+ALFA*RT2(1,JV))
         ENDDO
 C
 C
-C...Trefftz-plane drag is kinetic energy in crossflow
         dwwake(jc) = -(ny*vy+nz*vz)
 C
-        temp1 = dyt/sref
-        clff_diff = clff_diff + 2.0*(temp1*gams_diff(jc)+gams(jc)*(
-     +    dyt_diff-temp1*sref_diff)/sref)
-        clff = clff + 2.0*(gams(jc)*temp1)
-        temp1 = dzt/sref
-        cyff_diff = cyff_diff - 2.0*(temp1*gams_diff(jc)+gams(jc)*(
-     +    dzt_diff-temp1*sref_diff)/sref)
-        cyff = cyff - 2.0*(gams(jc)*temp1)
-        temp0 = dzt*vy - dyt*vz
-        temp1 = gams(jc)/sref
-        cdff_diff = cdff_diff + temp0*(gams_diff(jc)-temp1*sref_diff)/
-     +    sref + temp1*(vy*dzt_diff+dzt*vy_diff-vz*dyt_diff-dyt*vz_diff)
-        cdff = cdff + temp1*temp0
-        DO n=1,numax
-          clff_u(n) = clff_u(n) + 2.0*gams_u(jc, n)*dyt/sref
-          cyff_u(n) = cyff_u(n) - 2.0*gams_u(jc, n)*dzt/sref
-          cdff_u(n) = cdff_u(n) + (gams_u(jc, n)*(dzt*vy-dyt*vz)+gams(jc
-     +      )*(dzt*vy_u(n)-dyt*vz_u(n)))/sref
-        ENDDO
-        DO n=1,ncontrol
-          clff_d(n) = clff_d(n) + 2.0*gams_d(jc, n)*dyt/sref
-          cyff_d(n) = cyff_d(n) - 2.0*gams_d(jc, n)*dzt/sref
-          cdff_d(n) = cdff_d(n) + (gams_d(jc, n)*(dzt*vy-dyt*vz)+gams(jc
-     +      )*(dzt*vy_d(n)-dyt*vz_d(n)))/sref
-        ENDDO
-        DO n=1,ndesign
-          clff_g(n) = clff_g(n) + 2.0*gams_g(jc, n)*dyt/sref
-          cyff_g(n) = cyff_g(n) - 2.0*gams_g(jc, n)*dzt/sref
-          cdff_g(n) = cdff_g(n) + (gams_g(jc, n)*(dzt*vy-dyt*vz)+gams(jc
-     +      )*(dzt*vy_g(n)-dyt*vz_g(n)))/sref
-        ENDDO
+C...Trefftz-plane drag is kinetic energy in crossflow
+C
+        isurf = nsurfs(jc)
+        IF (lfload(isurf)) THEN
+C-------add load from this strip only if it contributes to total load
+          temp1 = dyt/sref
+          clff_diff = clff_diff + 2.0*(temp1*gams_diff(jc)+gams(jc)*(
+     +      dyt_diff-temp1*sref_diff)/sref)
+          clff = clff + 2.0*(gams(jc)*temp1)
+          temp1 = dzt/sref
+          cyff_diff = cyff_diff - 2.0*(temp1*gams_diff(jc)+gams(jc)*(
+     +      dzt_diff-temp1*sref_diff)/sref)
+          cyff = cyff - 2.0*(gams(jc)*temp1)
+          temp0 = dzt*vy - dyt*vz
+          temp1 = gams(jc)/sref
+          cdff_diff = cdff_diff + temp0*(gams_diff(jc)-temp1*sref_diff)/
+     +      sref + temp1*(vy*dzt_diff+dzt*vy_diff-vz*dyt_diff-dyt*
+     +      vz_diff)
+          cdff = cdff + temp1*temp0
+          DO n=1,numax
+            clff_u(n) = clff_u(n) + 2.0*gams_u(jc, n)*dyt/sref
+            cyff_u(n) = cyff_u(n) - 2.0*gams_u(jc, n)*dzt/sref
+            cdff_u(n) = cdff_u(n) + (gams_u(jc, n)*(dzt*vy-dyt*vz)+gams(
+     +        jc)*(dzt*vy_u(n)-dyt*vz_u(n)))/sref
+          ENDDO
+          DO n=1,ncontrol
+            clff_d(n) = clff_d(n) + 2.0*gams_d(jc, n)*dyt/sref
+            cyff_d(n) = cyff_d(n) - 2.0*gams_d(jc, n)*dzt/sref
+            cdff_d(n) = cdff_d(n) + (gams_d(jc, n)*(dzt*vy-dyt*vz)+gams(
+     +        jc)*(dzt*vy_d(n)-dyt*vz_d(n)))/sref
+          ENDDO
+          DO n=1,ndesign
+            clff_g(n) = clff_g(n) + 2.0*gams_g(jc, n)*dyt/sref
+            cyff_g(n) = cyff_g(n) - 2.0*gams_g(jc, n)*dzt/sref
+            cdff_g(n) = cdff_g(n) + (gams_g(jc, n)*(dzt*vy-dyt*vz)+gams(
+     +        jc)*(dzt*vy_g(n)-dyt*vz_g(n)))/sref
+          ENDDO
+        END IF
       ENDDO
 C
 C---- Double the X,Z forces, zero Y force for a Y symmetric case

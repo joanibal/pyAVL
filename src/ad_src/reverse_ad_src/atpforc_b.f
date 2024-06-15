@@ -79,6 +79,7 @@ C
       REAL rsq1_diff
       REAL rsq2
       REAL rsq2_diff
+      INTEGER isurf
       REAL ar
       REAL ar_diff
       REAL spanef_cl
@@ -214,11 +215,19 @@ CCC           DZ2 = ZCNTR - (ZOFF-RT2(3,JV)+ALFA*RT2(1,JV))
         ENDDO
 C
 C
+C
 C...Trefftz-plane drag is kinetic energy in crossflow
 C
-        clff = clff + 2.0*gams(jc)*dyt/sref
-        cyff = cyff - 2.0*gams(jc)*dzt/sref
-        cdff = cdff + gams(jc)*(dzt*vy-dyt*vz)/sref
+        isurf = nsurfs(jc)
+        IF (lfload(isurf)) THEN
+C-------add load from this strip only if it contributes to total load
+          clff = clff + 2.0*gams(jc)*dyt/sref
+          cyff = cyff - 2.0*gams(jc)*dzt/sref
+          cdff = cdff + gams(jc)*(dzt*vy-dyt*vz)/sref
+          CALL PUSHCONTROL1B(0)
+        ELSE
+          CALL PUSHCONTROL1B(1)
+        END IF
       ENDDO
 C
 C---- Double the X,Z forces, zero Y force for a Y symmetric case
@@ -273,22 +282,30 @@ C---- span efficiency
         ENDDO
       ENDDO
       DO jc=nstrip,1,-1
-        dyt = rt2(2, jc) - rt1(2, jc)
-        dzt = rt2(3, jc) - rt1(3, jc)
-        temp = gams(jc)/sref
-        temp_diff1 = (dzt*vy-dyt*vz)*cdff_diff/sref
-        temp_diff0 = temp*cdff_diff
-        vy_diff = dzt*temp_diff0
-        vz_diff = -(dyt*temp_diff0)
-        gams_diff(jc) = gams_diff(jc) + temp_diff1 + dyt*2.0*clff_diff/
-     +    sref - dzt*2.0*cyff_diff/sref
-        sref_diff = sref_diff - temp*temp_diff1
-        temp_diff1 = -(gams(jc)*2.0*cyff_diff/sref)
-        dzt_diff = vy*temp_diff0 + temp_diff1
-        sref_diff = sref_diff - dzt*temp_diff1/sref
-        temp_diff1 = gams(jc)*2.0*clff_diff/sref
-        dyt_diff = temp_diff1 - vz*temp_diff0
-        sref_diff = sref_diff - dyt*temp_diff1/sref
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          dyt = rt2(2, jc) - rt1(2, jc)
+          dzt = rt2(3, jc) - rt1(3, jc)
+          temp = gams(jc)/sref
+          temp_diff1 = (dzt*vy-dyt*vz)*cdff_diff/sref
+          temp_diff0 = temp*cdff_diff
+          vy_diff = dzt*temp_diff0
+          vz_diff = -(dyt*temp_diff0)
+          gams_diff(jc) = gams_diff(jc) + temp_diff1 + dyt*2.0*clff_diff
+     +      /sref - dzt*2.0*cyff_diff/sref
+          sref_diff = sref_diff - temp*temp_diff1
+          temp_diff1 = -(gams(jc)*2.0*cyff_diff/sref)
+          dzt_diff = vy*temp_diff0 + temp_diff1
+          sref_diff = sref_diff - dzt*temp_diff1/sref
+          temp_diff1 = gams(jc)*2.0*clff_diff/sref
+          dyt_diff = temp_diff1 - vz*temp_diff0
+          sref_diff = sref_diff - dyt*temp_diff1/sref
+        ELSE
+          dyt_diff = 0.D0
+          vy_diff = 0.D0
+          vz_diff = 0.D0
+          dzt_diff = 0.D0
+        END IF
         ycntr = rtc(2, jc)
         zcntr = rtc(3, jc)
         ycntr_diff = 0.D0
