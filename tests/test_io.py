@@ -46,7 +46,7 @@ class TestOutput(unittest.TestCase):
         avl_solver.write_geom_file(geom_output_file)
         baseline_data = avl_solver.get_surface_params()
         baseline_data_body = avl_solver.get_body_params()
-        # import pdb; pdb.set_trace()
+
         del avl_solver
         avl_solver = AVLSolver(geo_file=geom_output_file)
         new_data = avl_solver.get_surface_params()
@@ -114,8 +114,7 @@ class TestFortranLevelAPI(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file=geom_mod_file, mass_file=mass_file)
 
     def test_get_scalar(self):
-        avl_version = 3.35
-
+        avl_version = 3.40
         version = self.avl_solver.get_avl_fort_arr("CASE_R", "VERSION")
         self.assertEqual(version, avl_version)
 

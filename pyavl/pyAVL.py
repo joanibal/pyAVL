@@ -754,8 +754,9 @@ class AVLSolver(object):
         warnings.warn("executeRun is deprecated, use execute_run instead")
         self.execute_run()
 
-    def execute_run(self):
+    def execute_run(self, tol=0.00002):
         # run the analysis (equivalent to the avl command `x` in the oper menu)
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
         self.avl.oper()
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
@@ -1151,8 +1152,16 @@ class AVLSolver(object):
                 fid.write(f" {data['claf'][idx_sec]}\n")
 
             if (data["clcdsec"][idx_sec] != 0.0).any():
-                fid.write(" CLCD\n")
-                fid.write(f" {data['clcd'][idx_sec]}\n")
+                fid.write(" CDCL\n")
+                fid.write(
+                    f" {data['clcdsec'][idx_sec, 0]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 1]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 2]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 3]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 4]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 5]:.6f}\n"
+                )
+            
 
             # check for control surfaces
 
