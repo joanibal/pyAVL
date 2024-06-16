@@ -62,7 +62,7 @@ class TestResidualDPartials(unittest.TestCase):
 
             self.avl_solver.clear_ad_seeds_fast()
 
-            con_seeds, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
+            con_seeds, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
             self.avl_solver.clear_ad_seeds_fast()
 
             # do dot product
@@ -115,7 +115,7 @@ class TestResidualDPartials(unittest.TestCase):
 
         self.avl_solver.clear_ad_seeds_fast()
 
-        _, geom_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
+        _, geom_seeds_rev, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
         self.avl_solver.clear_ad_seeds_fast()
 
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -171,7 +171,7 @@ class TestResidualDPartials(unittest.TestCase):
         _, _, _, res_d_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)
         self.avl_solver.clear_ad_seeds_fast()
 
-        _, _, _, gamma_d_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
+        _, _, _, gamma_d_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
 
         gamma_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
         res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
@@ -224,7 +224,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             for cs_key in cs_names:
                 cs_deriv_seeds[func_key][cs_key] = np.random.rand(1)[0]
 
-        con_seeds_rev, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+        con_seeds_rev, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
 
         self.avl_solver.clear_ad_seeds_fast()
 
@@ -295,7 +295,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             for cs_key in cs_names:
                 cs_d_rev[func_key][cs_key] = np.random.rand(1)[0]
 
-        _, geom_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
+        _, geom_seeds_rev, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
         self.avl_solver.clear_ad_seeds_fast()
 
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -368,7 +368,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             for cs_key in cs_d_fwd[func_key]:
                 cs_d_rev = {func_key: {cs_key: 1.0}}
 
-                _, _, _, gamma_d_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
+                _, _, _, gamma_d_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
 
                 rev_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
 

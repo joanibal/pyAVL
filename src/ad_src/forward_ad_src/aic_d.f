@@ -3,7 +3,8 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of vvor in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: wc_gam
-C   with respect to varying inputs: chordv rc rv1 rv2 zsym ysym
+C   with respect to varying inputs: chordv rc rv1 rv2 zsym betm
+C                ysym
 C***********************************************************************
 C    Module:  aic.f
 C 
@@ -25,10 +26,10 @@ C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 C
 C
-      SUBROUTINE VVOR_D(betm, iysym, ysym, ysym_diff, izsym, zsym, 
-     +                  zsym_diff, vrcore, nv, rv1, rv1_diff, rv2, 
-     +                  rv2_diff, nsurfv, chordv, chordv_diff, nc, rc, 
-     +                  rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
+      SUBROUTINE VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, 
+     +                  zsym, zsym_diff, vrcore, nv, rv1, rv1_diff, rv2
+     +                  , rv2_diff, nsurfv, chordv, chordv_diff, nc, rc
+     +                  , rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
      +                  ncdim)
       INTEGER nv
 C--------------------------------------------------------------------
@@ -138,6 +139,7 @@ C
       REAL zsym_diff
       INTEGER izsym
       REAL betm
+      REAL betm_diff
       REAL ysym
       REAL ysym_diff
       INTEGER iysym
@@ -210,8 +212,9 @@ C
      +                   , j), rv1_diff(1, j), rv1(2, j), rv1_diff(2, j)
      +                   , rv1(3, j), rv1_diff(3, j), rv2(1, j), 
      +                   rv2_diff(1, j), rv2(2, j), rv2_diff(2, j), rv2(
-     +                   3, j), rv2_diff(3, j), betm, u, u_diff, v, 
-     +                   v_diff, w, w_diff, rcore, rcore_diff)
+     +                   3, j), rv2_diff(3, j), betm, betm_diff, u, 
+     +                   u_diff, v, v_diff, w, w_diff, rcore, rcore_diff
+     +                  )
 C     
           IF (iysym .NE. 0) THEN
 C...  Calculate the influence of the y-IMAGE vortex
@@ -231,9 +234,9 @@ C
      +                     yoff_diff - rv2_diff(2, j), rv2(3, j), 
      +                     rv2_diff(3, j), rv1(1, j), rv1_diff(1, j), 
      +                     yoff - rv1(2, j), yoff_diff - rv1_diff(2, j)
-     +                     , rv1(3, j), rv1_diff(3, j), betm, ui, 
-     +                     ui_diff, vi, vi_diff, wi, wi_diff, rcore, 
-     +                     rcore_diff)
+     +                     , rv1(3, j), rv1_diff(3, j), betm, betm_diff
+     +                     , ui, ui_diff, vi, vi_diff, wi, wi_diff, 
+     +                     rcore, rcore_diff)
 C
 C               CALL VORVEL(X,Y,Z,LBOUND,
 C     &              RV2(1,J),YOFF-RV2(2,J),RV2(3,J),
@@ -260,8 +263,9 @@ C...  Calculate the influence of the z-IMAGE vortex
      +                     , j), zoff - rv2(3, j), zoff_diff - rv2_diff(
      +                     3, j), rv1(1, j), rv1_diff(1, j), rv1(2, j), 
      +                     rv1_diff(2, j), zoff - rv1(3, j), zoff_diff -
-     +                     rv1_diff(3, j), betm, uii, uii_diff, vii, 
-     +                     vii_diff, wii, wii_diff, rcore, rcore_diff)
+     +                     rv1_diff(3, j), betm, betm_diff, uii, 
+     +                     uii_diff, vii, vii_diff, wii, wii_diff, rcore
+     +                     , rcore_diff)
             u_diff = u_diff + fzsym*uii_diff
             u = u + uii*fzsym
             v_diff = v_diff + fzsym*vii_diff
@@ -278,9 +282,9 @@ C...  Calculate the influence of the y,z-IMAGE vortex
      +                       , j), zoff_diff - rv1_diff(3, j), rv2(1, j)
      +                       , rv2_diff(1, j), yoff - rv2(2, j), 
      +                       yoff_diff - rv2_diff(2, j), zoff - rv2(3, j
-     +                       ), zoff_diff - rv2_diff(3, j), betm, uii, 
-     +                       uii_diff, vii, vii_diff, wii, wii_diff, 
-     +                       rcore, rcore_diff)
+     +                       ), zoff_diff - rv2_diff(3, j), betm, 
+     +                       betm_diff, uii, uii_diff, vii, vii_diff, 
+     +                       wii, wii_diff, rcore, rcore_diff)
 C     
               ui_diff = ui_diff + fysym*fzsym*uii_diff
               ui = ui + uii*fysym*fzsym
@@ -353,7 +357,7 @@ C
 C  Differentiation of vorvelc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: u v w
 C   with respect to varying inputs: y1 y2 rcore x y z z1 z2 x1
-C                x2
+C                x2 beta
 C VORVEL
 C
 C
@@ -361,11 +365,13 @@ C
 C
       SUBROUTINE VORVELC_D(x, x_diff, y, y_diff, z, z_diff, lbound, x1, 
      +                     x1_diff, y1, y1_diff, z1, z1_diff, x2, 
-     +                     x2_diff, y2, y2_diff, z2, z2_diff, beta, u, 
-     +                     u_diff, v, v_diff, w, w_diff, rcore, 
-     +                     rcore_diff)
+     +                     x2_diff, y2, y2_diff, z2, z2_diff, beta, 
+     +                     beta_diff, u, u_diff, v, v_diff, w, w_diff, 
+     +                     rcore, rcore_diff)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
+C     Uses Scully (also Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
 C----------------------------------------------------------
       LOGICAL lbound
 C
@@ -440,6 +446,7 @@ C
       REAL x2
       REAL x2_diff
       REAL beta
+      REAL beta_diff
       REAL pi4inv
 C
       DATA pi4inv /0.079577472/
@@ -447,8 +454,9 @@ C
       DO ii1=1,3
         a_diff(ii1) = 0.D0
       ENDDO
-      a_diff(1) = (x1_diff-x_diff)/beta
-      a(1) = (x1-x)/beta
+      temp = (x1-x)/beta
+      a_diff(1) = (x1_diff-x_diff-temp*beta_diff)/beta
+      a(1) = temp
       a_diff(2) = y1_diff - y_diff
       a(2) = y1 - y
       a_diff(3) = z1_diff - z_diff
@@ -457,8 +465,9 @@ C
       DO ii1=1,3
         b_diff(ii1) = 0.D0
       ENDDO
-      b_diff(1) = (x2_diff-x_diff)/beta
-      b(1) = (x2-x)/beta
+      temp = (x2-x)/beta
+      b_diff(1) = (x2_diff-x_diff-temp*beta_diff)/beta
+      b(1) = temp
       b_diff(2) = y2_diff - y_diff
       b(2) = y2 - y
       b_diff(3) = z2_diff - z_diff
@@ -597,7 +606,7 @@ C
         w = w - b(2)*t
       END IF
 C
-      u_diff = pi4inv*u_diff/beta
+      u_diff = pi4inv*(u_diff-u*beta_diff/beta)/beta
       u = u*pi4inv/beta
       v_diff = pi4inv*v_diff
       v = v*pi4inv

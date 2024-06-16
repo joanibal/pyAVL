@@ -1,7 +1,7 @@
 project(
   'pyavl',
   'c',
-  version: '1.3.0',
+  version: '1.7.0',
   license: 'GPL-2.0',
   meson_version: '>= 0.64.0',
   default_options: [
@@ -67,8 +67,9 @@ endif
 
 # _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
 # link_args = ['-Wl,--version-script=' + _linker_script]
-link_args = ['-Wl,--image-base,0x10000000']
-link_args = ['-mcmodel=medium']
+# link_args = ['-Wl,--image-base,0x10000000']
+# link_args = ['-mcmodel=medium']
+link_args = []
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')

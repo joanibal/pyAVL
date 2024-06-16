@@ -1,4 +1,4 @@
-name: Wheel builder
+name: Wheel builder and tester
 
 on: 
   push:
@@ -13,21 +13,22 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheel for ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }} ${{ matrix.buildplat[2] }}
+    name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }} ${{ matrix.buildplat[2] }}
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       matrix:
         buildplat:
-        # should also be able to do multi-archs on a single entry, e.g.
-        # [windows-2019, win*, "AMD64 x86"]. However, those two require a different compiler setup
-        # so easier to separate out here.
-        - [ubuntu-22.04, manylinux, x86_64]
+        # Not supported for now
         # - [ubuntu-22.04, musllinux, x86_64]
-        
-        - [macos-11, macosx, x86_64]
         # - [windows-2019, win, AMD64]
+        # - [macos-12, macosx, arm64]
         
-        python: [ ["cp38", "3.8"],["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11.0-alpha - 3.11.0"]]
+        # working
+        - [ubuntu-22.04, manylinux, x86_64]
+        - [macos-11, macosx, x86_64]
+        
+        python: [["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11"]]
+        # python: [["cp310", "3.10"]]
 
 
     env:
@@ -80,9 +81,6 @@ jobs:
           path: ./wheelhouse/*.whl
           name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
   
-
-  
-  
   upload_all:
     name: upload the wheels to PYPI
     needs: [build_wheels]
@@ -112,16 +110,18 @@ jobs:
       - name: Move wheels to dist
         run: bash tools/wheels/move_wheels.sh
 
-      # - name: Publish distribution 📦 to Test PyPI
-      #   uses: pypa/gh-action-pypi-publish@release/v1
-      #   with:
-      #     # packages-dir: wheelhouse/
-      #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-      #     repository-url: https://test.pypi.org/legacy/
+      - name: Publish distribution 📦 to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # packages-dir: wheelhouse/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          skip-existing: true
+          repository-url: https://test.pypi.org/legacy/
 
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           # packages-dir: wheelhouse/
+          skip-existing: true
           password: ${{ secrets.PYPI_API_TOKEN }}

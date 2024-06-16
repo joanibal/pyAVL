@@ -28,7 +28,7 @@ C
       CHARACTER*2 CNUM
 C
       CHARACTER*4 COM
-      CHARACTER*80 CARG, PROMPT, RTNEW
+      CHARACTER*120 CARG, PROMPT, RTNEW
       LOGICAL ERROR, REPKEY
 C
       INTEGER IINP(10)
@@ -37,25 +37,16 @@ C
       IR = 1
 C
 C---- for trim command, first number in arg string should be part of command
-
-C       WRITE(*,*) 'TRIMSET --- YES '
-C       WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
-C       WRITE(*,*)'COMAND(1:1): ' , COMAND(1:1)
-
       IF(COMAND(1:1) .NE. 'C') THEN
        LMATCH = .FALSE.
- 
        RETURN
       ENDIF
 C
       CNUM = COMARG(1:2)
 C
-C       WRITE(*,*)'CNUM: ' , CNUM
-
+C
       IF    (CNUM.EQ.'1 ') THEN
-
        KTRIM = 1
-
 cc       CALL TRIM1(IR)
        LMATCH = .TRUE.
 C
@@ -70,7 +61,7 @@ C
 C
       ENDIF
 C
-C       WRITE(*,*)'KTRIM: ', KTRIM 
+C
 C---- start here with new run case
  100  CONTINUE
 C
@@ -80,9 +71,11 @@ C
 C------ current case has CL=0 ... set it using CL constraint, if it's present
         DO IV = 1, NVTOT
           IF(ICON(IV,IR) .EQ. ICCL) THEN
-C            WRITE(*,*)
-           WRITE(*,*)'       Setting trim CL from current CL constraint'
-           PARVAL(IPCL,IR) = CONVAL(ICCL,IR)
+            if(LVERBOSE) then 
+      WRITE(*,*)
+      WRITE(*,*)'       Setting trim CL from current CL constraint'
+            endif
+            PARVAL(IPCL,IR) = CONVAL(ICCL,IR)
            GO TO 101
           ENDIF
         ENDDO
@@ -90,6 +83,7 @@ C            WRITE(*,*)
  101   CONTINUE
       ENDIF
 C
+C      WRITE(*,*)
 C
 C---- tag this run case with trim type (not converged yet)
       ITRIM(IR) = -KTRIM
@@ -135,7 +129,9 @@ C-------- set velocity ?
      &       CL  .GT. 0.0       ) THEN
            VEE = SQRT( 2.0*RMASS*GEE / (RHO*SREFD*CL*COSP) )
            PARVAL(IPVEE,JR) = VEE
-C            WRITE(*,7500) 'velocity', JR
+           if (lverbose) then
+           WRITE(*,7500) 'velocity', JR
+           endif
           ENDIF
 C
 C-------- set CL ?
@@ -143,7 +139,9 @@ C-------- set CL ?
      &       VEE .GT. 0.0       ) THEN
            CL  = 2.0*RMASS*GEE / (RHO*SREFD*VEE**2*COSP)
            PARVAL(IPCL,JR) = CL
-C            WRITE(*,7500) 'CL', JR
+           if (lverbose) then
+           WRITE(*,7500) 'CL', JR
+           endif
           ENDIF
 C
           IF(SINP .EQ. 0.0) THEN
@@ -152,15 +150,19 @@ C
            RAD = VEE**2 * COSP / (GEE * SINP)
           ENDIF
           PARVAL(IPRAD,JR) = RAD
-C           WRITE(*,7500) 'turn radius', JR
+          if (lverbose) then
+          WRITE(*,7500) 'turn radius', JR
+          endif
 C
           FAC = 1.0/COSP
           PARVAL(IPFAC,JR) = FAC
-C           WRITE(*,7500) 'load factor', JR
+          if (lverbose) then
+          WRITE(*,7500) 'load factor', JR
+          endif
 C
           THE = 0.
           PARVAL(IPTHE,JR) = THE
-C cc        WRITE(*,7500) 'elevation', JR
+cc        WRITE(*,7500) 'elevation', JR
 C
 C-------- set up CL and rotation rate constraints
           IF(RAD .GT. 0.0) THEN
@@ -208,7 +210,9 @@ C-------- set radius ?
      &       CL  .GT. 0.0      ) THEN
            RAD = RMASS / (0.5*RHO * SREFD * CL)
            PARVAL(IPRAD,JR) = RAD
-C            WRITE(*,7500) 'turn radius', JR
+           if (lverbose) then
+           WRITE(*,7500) 'turn radius', JR
+           endif
           ENDIF
 C
 C-------- set CL ?
@@ -216,7 +220,9 @@ C-------- set CL ?
      &       CL  .EQ. 0.0      ) THEN
            CL = RMASS / (0.5*RHO * SREFD * RAD)
            PARVAL(IPCL,JR) = CL
-C            WRITE(*,7500) 'CL', JR
+           if (lverbose) then
+           WRITE(*,7500) 'CL', JR
+           endif
           ENDIF
 C
 C-------- set load factor ?
@@ -226,7 +232,9 @@ C-------- set load factor ?
      &       GEE .GT. 0.0      ) THEN
            FAC = 0.5*RHO*VEE**2 * SREFD * CL / (RMASS*GEE)
            PARVAL(IPFAC,JR) = FAC
-C            WRITE(*,7500) 'load factor', JR
+           if (lverbose) then
+           WRITE(*,7500) 'load factor', JR
+           endif
           ENDIF
 C
 C-------- set velocity ?
@@ -236,12 +244,14 @@ C-------- set velocity ?
      &       GEE .GT. 0.0      ) THEN
            VEE = SQRT( FAC * RMASS*GEE / (0.5*RHO*SREFD*CL) )
            PARVAL(IPVEE,JR) = VEE
-C            WRITE(*,7500) 'velocity', JR
+           if (lverbose) then
+           WRITE(*,7500) 'velocity', JR
+           endif
           ENDIF
 C
           THE = 0.
           PARVAL(IPTHE,JR) = THE
-C cc        WRITE(*,7500) 'elevation', JR
+cc        WRITE(*,7500) 'elevation', JR
 C
 C-------- set up CL and rotation rate constraints
           IF(RAD .GT. 0.0) THEN
@@ -295,45 +305,45 @@ C--------------------------------------------------------------------------
 C----- jump back here just for menu
  10    CONTINUE
        CALL CFRAC(IR,NRUN,PROMPT,NPR)
-C        WRITE(*,2000) PROMPT(1:NPR),RTITLE(IR)
+       if (lverbose) then
+       WRITE(*,2000) PROMPT(1:NPR),RTITLE(IR)
+       endif
 C
        IF    (KTRIM.EQ.1) THEN
-C         WRITE(*,2005) '(level or banked horizontal flight)'
-C         WRITE(*,2105) 'B  bank angle = ', PHI  , 'deg'
-C         WRITE(*,2105) 'C  CL         = ', CL   , ' '
-C         WRITE(*,2105) 'V  velocity   = ', VEE  , UNCHV(1:NUV)
-C         WRITE(*,2105) 'M  mass       = ', RMASS, UNCHM(1:NUM)
-C         WRITE(*,2105) 'D  air dens.  = ', RHO  , UNCHD(1:NUD)
-C         WRITE(*,2105) 'G  grav.acc.  = ', GEE  , UNCHA(1:NUA)
-C         WRITE(*,2105) '   turn rad.  = ', RAD  , UNCHL(1:NUL)
-C         WRITE(*,2105) '   load fac.  = ', FAC  , ' '
-C         WRITE(*,2105) 'X  X_cg       = ', XCG  , 'Lunit'
-C         WRITE(*,2105) 'Y  Y_cg       = ', YCG  , 'Lunit'
-C         WRITE(*,2105) 'Z  Z_cg       = ', ZCG  , 'Lunit'
+       if (lverbose) then
+        WRITE(*,2005) '(level or banked horizontal flight)'
+        WRITE(*,2105) 'B  bank angle = ', PHI  , 'deg'
+        WRITE(*,2105) 'C  CL         = ', CL   , ' '
+        WRITE(*,2105) 'V  velocity   = ', VEE  , UNCHV(1:NUV)
+        WRITE(*,2105) 'M  mass       = ', RMASS, UNCHM(1:NUM)
+        WRITE(*,2105) 'D  air dens.  = ', RHO  , UNCHD(1:NUD)
+        WRITE(*,2105) 'G  grav.acc.  = ', GEE  , UNCHA(1:NUA)
+        WRITE(*,2105) '   turn rad.  = ', RAD  , UNCHL(1:NUL)
+        WRITE(*,2105) '   load fac.  = ', FAC  , ' '
+        WRITE(*,2105) 'X  X_cg       = ', XCG  , 'Lunit'
+        WRITE(*,2105) 'Y  Y_cg       = ', YCG  , 'Lunit'
+        WRITE(*,2105) 'Z  Z_cg       = ', ZCG  , 'Lunit'
+       endif 
 C C
        ELSEIF(KTRIM.EQ.2) THEN
-C         WRITE(*,2005) '(steady pitch rate - looping flight)'
-C         WRITE(*,2105) 'C  CL        = ', CL   , ' '
-C         WRITE(*,2105) 'V  velocity  = ', VEE  , UNCHV(1:NUV) 
-C         WRITE(*,2105) 'M  mass      = ', RMASS, UNCHM(1:NUM)
-C         WRITE(*,2105) 'D  air dens. = ', RHO  , UNCHD(1:NUD) 
-C         WRITE(*,2105) 'G  grav.acc. = ', GEE  , UNCHA(1:NUA) 
-C         WRITE(*,2105) 'R  turn rad. = ', RAD  , UNCHL(1:NUL) 
-C         WRITE(*,2105) 'L  load fac. = ', FAC  , ' '
-C         WRITE(*,2105) 'X  X_cg      = ', XCG  , 'Lunit'
-C         WRITE(*,2105) 'Y  Y_cg      = ', YCG  , 'Lunit'
-C         WRITE(*,2105) 'Z  Z_cg      = ', ZCG  , 'Lunit'
+       if (lverbose) then
+        WRITE(*,2005) '(steady pitch rate - looping flight)'
+        WRITE(*,2105) 'C  CL        = ', CL   , ' '
+        WRITE(*,2105) 'V  velocity  = ', VEE  , UNCHV(1:NUV) 
+        WRITE(*,2105) 'M  mass      = ', RMASS, UNCHM(1:NUM)
+        WRITE(*,2105) 'D  air dens. = ', RHO  , UNCHD(1:NUD) 
+        WRITE(*,2105) 'G  grav.acc. = ', GEE  , UNCHA(1:NUA) 
+        WRITE(*,2105) 'R  turn rad. = ', RAD  , UNCHL(1:NUL) 
+        WRITE(*,2105) 'L  load fac. = ', FAC  , ' '
+        WRITE(*,2105) 'X  X_cg      = ', XCG  , 'Lunit'
+        WRITE(*,2105) 'Y  Y_cg      = ', YCG  , 'Lunit'
+        WRITE(*,2105) 'Z  Z_cg      = ', ZCG  , 'Lunit'
+       endif
 C C
        ENDIF
 C
 C     CALL ASKC('     Enter parameter, value  (or  # - + N )',COM,CARG)
 C
-
-C
-
-C       WRITE(*,*) "COM: ", COM
-C       WRITE(*,*) "CARG: ", CARG
-
        IF(COM.EQ.'    ') THEN
 C------ just a Return entered... go back
         RETURN
@@ -346,7 +356,7 @@ C---- check for run case commands
 C----- add new case after current one
 C
        IF(NRUN.EQ.NRMAX) THEN
-C         WRITE(*,*)
+        WRITE(*,*)
         WRITE(*,*) '* Run case array limit NRMAX reached'
        ELSE
         NRUN = NRUN + 1
@@ -672,7 +682,9 @@ C-------------------------------------
         ENDIF
         DO JR = IR1, IR2
           PARVAL(IPXCG,JR) = XCG
-C           WRITE(*,7500) 'x_cg', JR
+          if (lverbose) then
+          WRITE(*,7500) 'x_cg', JR
+          endif
         ENDDO
 C
 C-------------------------------------
@@ -684,7 +696,9 @@ C-------------------------------------
         ENDIF
         DO JR = IR1, IR2
           PARVAL(IPYCG,JR) = YCG
-C           WRITE(*,7500) 'y_cg', JR
+          if (lverbose) then
+          WRITE(*,7500) 'y_cg', JR
+          endif
         ENDDO
 C
 C-------------------------------------
@@ -696,7 +710,9 @@ C-------------------------------------
         ENDIF
         DO JR = IR1, IR2
           PARVAL(IPZCG,JR) = ZCG
-C           WRITE(*,7500) 'z_cg', JR
+          if (lverbose) then
+          WRITE(*,7500) 'z_cg', JR
+          endif
         ENDDO
 C
 C-------------------------------------
@@ -708,7 +724,9 @@ C-------------------------------------
         ENDIF
         DO JR = IR1, IR2
           PARVAL(IPCD0,JR) = CD0
-C           WRITE(*,7500) 'CDo', JR
+          if (lverbose) then
+          WRITE(*,7500) 'CDo', JR
+          endif
         ENDDO
 C
 C------------------------------------------------------

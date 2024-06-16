@@ -92,7 +92,7 @@ C    IMAGS=-1  defines edge 2 located at surface root edge (reflected surfaces)
       idx_strip = JFRST(ISURF)
 C
 C-----------------------------------------------------------------
-C---- section arc lengths of wing trace in y-z plane
+C---- Arc length positions of sections in wing trace in y-z plane
       YZLEN(1) = 0.
       DO ISEC = 2, NSEC(ISURF)
         DY = XYZLES(2,ISEC, ISURF) - XYZLES(2,ISEC-1, ISURF)
@@ -100,8 +100,10 @@ C---- section arc lengths of wing trace in y-z plane
         YZLEN(ISEC) = YZLEN(ISEC-1) + SQRT(DY*DY + DZ*DZ)
       ENDDO
 C
-
-      IF(NVS(ISURF).EQ.0) THEN
+      ! we can not rely on the original condition becuase NVS(ISURF) is filled 
+      ! and we may want to rebuild the surface later
+      ! IF(NVS(ISURF).EQ.0) THEN
+      IF(LSURFSPACING(ISURF) .EQV. .FALSE.) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
        DO ISEC = 1, NSEC(ISURF)-1
          NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC, ISURF)
@@ -140,7 +142,13 @@ C
        ENDDO
 C
       ELSE
-C----- set spanwise spacing using overall parameters NVS(ISURF), SSPACE
+C
+C----- Otherwise, set spanwise spacing using the SURFACE spanwise
+C      parameters NVS, SSPACE
+C
+C      This spanwise spacing is modified (fudged) to align vortex edges
+C      with SECTIONs as defined.  This allows CONTROLs to be defined
+C      without bridging vortex strips
 C
        NSPACE = 2*NVS(ISURF) + 1
        IF(NSPACE.GT.KPMAX) THEN
@@ -175,7 +183,7 @@ C----- find node nearest each section
        IPTLOC(1)    = 1
        IPTLOC(NSEC(ISURF)) = NPT
 C
-C----- fudge Glauert angles to make nodes match up exactly with interior sections
+C----- fudge spacing array to make nodes match up exactly with interior sections
        DO ISEC = 2, NSEC(ISURF)-1
          IPT1 = IPTLOC(ISEC-1)
          IPT2 = IPTLOC(ISEC  )
@@ -185,6 +193,7 @@ C----- fudge Glauert angles to make nodes match up exactly with interior section
           STOP
          ENDIF
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
          YPT1 = YPT(IPT1)
          YSCALE = (YZLEN(ISEC)-YZLEN(ISEC-1)) / (YPT(IPT2)-YPT(IPT1))
          DO IPT = IPT1, IPT2-1
@@ -194,6 +203,7 @@ C
            YCP(IVS) = YZLEN(ISEC-1) + YSCALE*(YCP(IVS)-YPT1)
          ENDDO
 C
+C----- check for unique spacing node for next section, if not we need more nodes
          IPT1 = IPTLOC(ISEC  )
          IPT2 = IPTLOC(ISEC+1)
          IF(IPT1.EQ.IPT2) THEN
@@ -202,6 +212,7 @@ C
           STOP
          ENDIF
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
          YPT1 = YPT(IPT1)
          YSCALE = (YPT(IPT2)-YZLEN(ISEC)) / (YPT(IPT2)-YPT(IPT1))
          DO IPT = IPT1, IPT2-1
@@ -218,6 +229,19 @@ C
        ENDDO
 C
       ENDIF
+cc#ifdef USE_CPOML
+C...  store section counters
+      IF (ISURF .EQ. 1) THEN
+        ICNTFRST(ISURF) = 1
+      ELSE
+        ICNTFRST(ISURF) = ICNTFRST(ISURF-1) + NCNTSEC(ISURF-1)
+      ENDIF
+      NCNTSEC(ISURF) = NSEC(ISURF)
+      DO ISEC = 1, NSEC(ISURF)
+        II = ICNTFRST(ISURF) + (ISEC-1)
+        ICNTSEC(II) = IPTLOC(ISEC)
+      ENDDO
+cc#endif
 C
 C
 C====================================================
@@ -347,6 +371,15 @@ C
           TANLE(idx_strip)  = (XYZLER(1)-XYZLEL(1))/WIDTH
           TANTE(idx_strip)  = (XYZLER(1)+CHORDR - XYZLEL(1)-CHORDL)/WIDTH
 C
+cc#ifdef USE_CPOML
+          CHSIN = CHSINL + F1*(CHSINR-CHSINL)
+          CHCOS = CHCOSL + F1*(CHCOSR-CHCOSL)
+          AINC1(idx_strip) = ATAN2(CHSIN,CHCOS)
+          CHSIN = CHSINL + F2*(CHSINR-CHSINL)
+          CHCOS = CHCOSL + F2*(CHCOSR-CHCOSL)
+          AINC2(idx_strip) = ATAN2(CHSIN,CHCOS)
+C
+cc#endif
           CHSIN = CHSINL + FC*(CHSINR-CHSINL)
           CHCOS = CHCOSL + FC*(CHCOSR-CHCOSL)
           AINC(idx_strip) = ATAN2(CHSIN,CHCOS)
@@ -473,6 +506,8 @@ C-------- go over vortices in this strip
           idx_vor = IJFRST(idx_strip)
           DO 1505 IVC = 1, NVC(ISURF)
             ! NVOR = NVOR + 1
+            ! change all NVOR indices into idx_vor
+            ! change all NSTRIP indices into idx_strip
 C
             RV1(1,idx_vor) = RLE1(1,idx_strip)
      &                        + XVR(IVC)*CHORD1(idx_strip)
@@ -533,8 +568,35 @@ C
 C
 C---------- TE control point used only if surface sheds a wake
             LVNC(idx_vor) = LFWAKE(ISURF)
-            idx_vor = idx_vor + 1
+C
+cc#ifdef USE_CPOML
+C...        nodal grid associated with vortex strip (aft-panel nodes)
+C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
+C...        retained in (x,z) plane at this point
+            CALL AKIMA( XLASEC(1,ISEC,ISURF), ZLASEC(1,ISEC,ISURF), NSL,
+     &                  XPT(IVC+1), ZL, DSDX )
+            CALL AKIMA( XUASEC(1,ISEC,ISURF), ZUASEC(1,ISEC,ISURF), NSL,
+     &                  XPT(IVC+1), ZU, DSDX )
+C
+            XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
+     &                        XPT(IVC+1)*CHORD1(idx_strip)
+            XYN1(2,idx_vor) = RLE1(2,idx_strip)
+            ZLON1(idx_vor)  = RLE1(3,idx_strip) + ZL*CHORD1(idx_strip)
+            ZUPN1(idx_vor)  = RLE1(3,idx_strip) + ZU*CHORD1(idx_strip)
+C
+            CALL AKIMA( XLASEC(1,ISEC+1,ISURF), ZLASEC(1,ISEC+1,ISURF), 
+     &                  NSL, XPT(IVC+1), ZL, DSDX )
+            CALL AKIMA( XUASEC(1,ISEC+1,ISURF), ZUASEC(1,ISEC+1,ISURF), 
+     &                  NSL, XPT(IVC+1), ZU, DSDX )
 
+            XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
+     &                        XPT(IVC+1)*CHORD2(idx_strip)
+            XYN2(2,idx_vor) = RLE2(2,idx_strip)
+            ZLON2(idx_vor)  = RLE2(3,idx_strip) + ZL*CHORD2(idx_strip)
+            ZUPN2(idx_vor)  = RLE2(3,idx_strip) + ZU*CHORD2(idx_strip)
+C
+cc#endif
+            idx_vor = idx_vor + 1
  1505     CONTINUE
 C           
         idx_strip = idx_strip + 1
@@ -584,6 +646,7 @@ c--------------------------------------------------------------
             if (ISURF.ne.1) then
                   if(ldupl(isurf-1)) then 
                         ! this surface has already been created
+                        ! it was probably duplicated from the previous one
                         cycle
                   end if
                   call makesurf(ISURF)
@@ -609,7 +672,6 @@ c--------------------------------------------------------------
 
 
       SUBROUTINE MAKEBODY(IBODY,
-     &       NVB1, BSPACE,
      &       XBOD,YBOD,TBOD,NBOD)
 C--------------------------------------------------------------
 C     Sets up all stuff for body IBODY,
@@ -628,43 +690,43 @@ c       WRITE(*,*) '*** Need at least 2 sections per body.'
 c       STOP
 c      ENDIF
 C
-      NVB = NVB1
 C
-      IF(NVB.GT.KLMAX) THEN
-       WRITE(*,*) '* MAKEBODY: Array overflow.  Increase KLMAX to', NVB
-       NVB = KLMAX
+      IF(NVB(IBODY).GT.KLMAX) THEN
+       WRITE(*,*) '* MAKEBODY: Array overflow.  Increase KLMAX to',
+     & NVB(IBODY)
+       NVB(IBODY) = KLMAX
       ENDIF
 C
 C
       LFRST(IBODY) = NLNODE + 1 
-      NL(IBODY) = NVB
+      NL(IBODY) = NVB(IBODY)
 C
-      IF(NLNODE+NVB.GT.NLMAX) THEN
+      IF(NLNODE+NVB(IBODY).GT.NLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase NLMAX to',
-     &             NLNODE+NVB
+     &             NLNODE+NVB(IBODY)
        STOP
       ENDIF
 C
 C-----------------------------------------------------------------
 C---- set lengthwise spacing fraction arrays
-      NSPACE = NVB + 1
+      NSPACE = NVB(IBODY) + 1
       IF(NSPACE.GT.KLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase KLMAX to', 
      &             NSPACE
        STOP
       ENDIF
-      CALL SPACER(NSPACE,BSPACE,FSPACE)
+      CALL SPACER(NSPACE,BSPACE(IBODY),FSPACE)
 C
-      DO IVB = 1, NVB
+      DO IVB = 1, NVB(IBODY)
         XPT(IVB) = FSPACE(IVB)
       ENDDO
       XPT(1) = 0.0
-      XPT(NVB+1) = 1.0
+      XPT(NVB(IBODY)+1) = 1.0
 C
 C---- set body nodes and radii
       VOLB = 0.0
       SRFB = 0.0
-      DO IVB = 1, NVB+1
+      DO IVB = 1, NVB(IBODY)+1
         NLNODE = NLNODE + 1
 C
         XVB = XBOD(1) + (XBOD(NBOD)-XBOD(1))*XPT(IVB)
@@ -674,14 +736,15 @@ C
         RL(3,NLNODE) = XYZTRAN_B(3,IBODY) + XYZSCAL_B(3,IBODY)*YVB
 C
         CALL AKIMA(XBOD,TBOD,NBOD,XVB,TVB,DRDX)
-        RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) * 0.5*TVB
+        RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) 
+     & * 0.5*TVB
       ENDDO
 C---- get surface length, area and volume
       VOLB = 0.0
       SRFB = 0.0
       XBMN = RL(1,LFRST(IBODY))
       XBMX = XBMN
-      DO IVB = 1, NVB
+      DO IVB = 1, NVB(IBODY)
         NL0 = LFRST(IBODY) + IVB-1
         NL1 = NL0 + 1
         X0 = RL(1,NL0)
@@ -708,7 +771,7 @@ C
 
 
 
-      SUBROUTINE SDUPL(NN,Ypt,MSG)
+      SUBROUTINE SDUPL(NN, Ypt,MSG)
 C-----------------------------------
 C     Adds image of surface NN,
 C     reflected about y=Ypt.
@@ -717,9 +780,11 @@ C-----------------------------------
       CHARACTER*(*) MSG
       integer idx_vor
 C
-      NNI = NSURF + 1
+C     
+      NNI = NN + 1
       IF(NNI.GT.NFMAX) THEN
-        WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX.'
+        WRITE(*,*) 'SDUPL: Surface array overflow. Increase NFMAX',
+     &             ' currently ',NFMAX
         STOP
       ENDIF
 C
@@ -740,6 +805,8 @@ C---- same various logical flags
       LFWAKE(NNI) = LFWAKE(NN)
       LFALBE(NNI) = LFALBE(NN)
       LFLOAD(NNI) = LFLOAD(NN)
+      LRANGE(NNI) = LRANGE(NN)
+      LSURFSPACING(NNI) = LSURFSPACING(NN)
 
 C---- accumulate stuff for new image surface 
       ! IFRST(NNI) = NVOR   + 1
@@ -761,6 +828,16 @@ C
 C--- Image flag reversed (set to -IMAGS) for imaged surfaces
       IMAGS(NNI) = -IMAGS(NN)
 C
+cc#ifdef USE_CPOML
+      ICNTFRST(NNI) = ICNTFRST(NN) + NCNTSEC(NN)
+      NCNTSEC(NNI)  = NCNTSEC(NN)
+      DO ISEC = 1, NCNTSEC(NNI)
+            IDUP = ICNTFRST(NNI) + (ISEC-1)
+            IORG = ICNTFRST(NN ) + (ISEC-1)
+            ICNTSEC(IDUP) = ICNTSEC(IORG)
+      ENDDO
+cc#endif
+C
       YOFF = 2.0*Ypt
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
@@ -770,7 +847,8 @@ C    not edge 1 as for a strip with IMAGS=1
       DO 100 IVS = 1, NVS(NNI)
       !   NSTRIP = NSTRIP + 1
         IF(idx_strip.GT.NSMAX) THEN
-          WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX.'
+          WRITE(*,*) 'SDUPL: Strip array overflow. Increase NSMAX',
+     &               ' currently ',NSMAX
           STOP
         ENDIF
 C
@@ -792,6 +870,11 @@ C
         TANLE(JJI)  = -TANLE(JJ)
         AINC (JJI)  =  AINC(JJ)
 C
+cc#ifdef USE_CPOML
+        AINC1(JJI) = AINC2(JJ)
+        AINC2(JJI) = AINC1(JJ)
+C
+cc#endif
         NSURFS(idx_strip) = NNI
 C
         DO N = 1, NDESIGN
@@ -826,7 +909,8 @@ C
         DO 80 IVC = 1, NVC(NNI)
       !     NVOR = NVOR + 1
           IF(idx_vor.GT.NVMAX) THEN
-            WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX.'
+            WRITE(*,*) 'SDUPL: Vortex array overflow. Increase NVMAX',
+     &                 ' currently ',NVMAX
             STOP
           ENDIF
 C
@@ -857,10 +941,23 @@ ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
             RSGN = VREFL(JJ,N)
             DCONTROL(III,N) = -DCONTROL(II,N)*RSGN
           ENDDO
+C          
+cc#ifdef USE_CPOML
+C...      nodal grid associated with vortex strip
+          XYN1(1,III) =  XYN2(1,II)
+          XYN1(2,III) = -XYN2(2,II) + YOFF
+          XYN2(1,III) =  XYN1(1,II)
+          XYN2(2,III) = -XYN1(2,II) + YOFF
+C
+          ZLON1(III)  = ZLON2(II)
+          ZUPN1(III)  = ZUPN2(II)
+          ZLON2(III)  = ZLON1(II)
+          ZUPN2(III)  = ZUPN1(II)
+cc#endif
           idx_vor = idx_vor + 1
-
 C
    80   CONTINUE
+        idx_strip = idx_strip + 1 
 C
   100 CONTINUE
 C
@@ -885,7 +982,8 @@ C-----------------------------------
 C
       NNI = NBODY + 1
       IF(NNI.GT.NBMAX) THEN
-        WRITE(*,*) 'BDUPL: Body array overflow. Increase NBMAX.'
+        WRITE(*,*) 'BDUPL: Body array overflow. Increase NBMAX',
+     &             ' currently ',NBMAX
         STOP
       ENDIF
 C
@@ -894,17 +992,19 @@ C
         IF(BTITLE(NN)(K:K) .NE. ' ') GO TO 6
       ENDDO
  6    BTITLE(NNI) = BTITLE(NN)(1:K) // ' (' // MSG // ')'
+      if (lverbose) then
       WRITE(*,*) ' '
       WRITE(*,*) '  Building duplicate image-body: ',BTITLE(NNI)
+      endif
 C
       LFRST(NNI) = NLNODE + 1
       NL(NNI) = NL(NN)
 C
-      NVB = NL(NNI)
+      NVB(NNI) = NL(NNI)
 C
-      IF(NLNODE+NVB.GT.NLMAX) THEN
+      IF(NLNODE+NVB(NNI).GT.NLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase NLMAX to',
-     &             NLNODE+NVB
+     &             NLNODE+NVB(NNI)
        STOP
       ENDIF
 C
@@ -916,7 +1016,7 @@ C
       YOFF = 2.0*Ypt
 C
 C---- set body nodes and radii
-      DO IVB = 1, NVB+1
+      DO IVB = 1, NVB(NNI)+1
         NLNODE = NLNODE + 1
 C
         LLI = LFRST(NNI) + IVB-1

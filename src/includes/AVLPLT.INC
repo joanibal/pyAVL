@@ -12,6 +12,7 @@ C
      &                XMARG,YMARG,
      &                XPAGE,YPAGE,
      &                XWIND,YWIND,
+     &               UNT(3,3), ORG(3,3), 
      &               PMARG,CPFAC, HNFAC, ENFAC,
      &               AZIMOB,ELEVOB,TILTOB,ROBINV
 C

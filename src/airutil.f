@@ -28,7 +28,7 @@ C----------------------------------------------
 C     Reads in blade.xxx dataset
 C----------------------------------------------
 C
-      CHARACTER*80 LINE
+      CHARACTER*120 LINE
       LOGICAL ERROR
 C
       DIMENSION AINPUT(20)

@@ -64,17 +64,19 @@ class TestGeom(unittest.TestCase):
         assert self.avl_solver.get_mesh_size() == 780
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("alpha"),
+            self.avl_solver.get_case_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("beta"),
+            self.avl_solver.get_case_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
+        
+        coefs = self.avl_solver.get_case_total_data()
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("CL"),
+            coefs["CL"],
             5.407351081559913,
             rtol=1e-8,
         )
@@ -91,23 +93,59 @@ class TestGeom(unittest.TestCase):
         self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("alpha"),
+            self.avl_solver.get_case_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("beta"),
+            self.avl_solver.get_case_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
+        
+        coefs = self.avl_solver.get_case_total_data()
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("CL"),
+            coefs["CL"],
             5.407351081559913,
             rtol=1e-8,
         )
 
-        # data
-        # np.testing.assert_allclose(self.avl_solver.CM, np.zeros_like(self.avl_solver.CM), atol=1e-8)
+    def test_surface_mirroring(self):
+        
+        # Take the one wing and streach out the tip
+        new_data = {
+            "Wing": {
+                "xyzles": np.array([[0, 0, 0], [0.1, 1.0, 0.01], [0.2, 2.0, 0.02], [0.3, 3.0, 0.03], [0.4, 10.0, 0.04]]),
+            },
+        }
+        
+        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.set_surface_params(new_data)
+        
+        self.avl_solver.execute_run()
+        
+        run_data = self.avl_solver.get_case_total_data()
+        
+        # if only one wing was updated then will have unbalanced yaw and roll moments
+        np.testing.assert_allclose(
+            run_data["CR SA"],
+            0.0,
+            atol=1e-12
+        )
+        
+        np.testing.assert_allclose(
+            run_data["CN SA"],
+            0.0,
+            atol=1e-12
+        )
+        
+        updated_data = self.avl_solver.get_surface_params(include_geom=True)
+        
+        np.testing.assert_allclose(
+            updated_data["Wing"]["xyzles"],
+            new_data["Wing"]["xyzles"],
+            atol=1e-16
+        )
 
 
 if __name__ == "__main__":

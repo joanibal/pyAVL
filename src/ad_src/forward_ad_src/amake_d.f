@@ -115,6 +115,7 @@ C MAKESURF
             GOTO 100
           ELSE
 C this surface has already been created
+C it was probably duplicated from the previous one
             CALL MAKESURF_D(isurf)
           END IF
         ELSE
@@ -213,6 +214,7 @@ C
       REAL ypt1_diff
       REAL yscale
       REAL yscale_diff
+      INTEGER ii
       REAL width
       REAL width_diff
       REAL chordl
@@ -292,6 +294,8 @@ C
       REAL fracte_diff
       INTRINSIC MAX
       INTRINSIC MIN
+      REAL zl
+      REAL zu
       REAL sum
       REAL wtot
       INTEGER jj
@@ -359,7 +363,7 @@ C JFRST(ISURF) = NSTRIP + 1
         idx_strip = jfrst(isurf)
 C
 C-----------------------------------------------------------------
-C---- section arc lengths of wing trace in y-z plane
+C---- Arc length positions of sections in wing trace in y-z plane
         yzlen(1) = 0.
         DO ii1=1,ksmax
           yzlen_diff(ii1) = 0.D0
@@ -383,9 +387,11 @@ C---- section arc lengths of wing trace in y-z plane
           yzlen_diff(isec) = yzlen_diff(isec-1) + result1_diff
           yzlen(isec) = yzlen(isec-1) + result1
         ENDDO
+C we can not rely on the original condition becuase NVS(ISURF) is filled 
+C and we may want to rebuild the surface later
+C IF(NVS(ISURF).EQ.0) THEN
 C
-C
-        IF (nvs(isurf) .EQ. 0) THEN
+        IF (lsurfspacing(isurf) .EQV. .false.) THEN
 C----- set spanwise spacing using spacing parameters for each section interval
           DO isec=1,nsec(isurf)-1
             nvs(isurf) = nvs(isurf) + nspans(isec, isurf)
@@ -443,7 +449,13 @@ C
           END IF
         ELSE
 C
-C----- set spanwise spacing using overall parameters NVS(ISURF), SSPACE
+C
+C----- Otherwise, set spanwise spacing using the SURFACE spanwise
+C      parameters NVS, SSPACE
+C
+C      This spanwise spacing is modified (fudged) to align vortex edges
+C      with SECTIONs as defined.  This allows CONTROLs to be defined
+C      without bridging vortex strips
 C
           nspace = 2*nvs(isurf) + 1
           IF (nspace .GT. kpmax) THEN
@@ -494,7 +506,7 @@ C----- find node nearest each section
             iptloc(1) = 1
             iptloc(nsec(isurf)) = npt
 C
-C----- fudge Glauert angles to make nodes match up exactly with interior sections
+C----- fudge spacing array to make nodes match up exactly with interior sections
             DO isec=2,nsec(isurf)-1
               ipt1 = iptloc(isec-1)
               ipt2 = iptloc(isec)
@@ -502,6 +514,7 @@ C----- fudge Glauert angles to make nodes match up exactly with interior section
                 GOTO 110
               ELSE
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
                 ypt1_diff = ypt_diff(ipt1)
                 ypt1 = ypt(ipt1)
                 temp = (yzlen(isec)-yzlen(isec-1))/(ypt(ipt2)-ypt(ipt1))
@@ -519,12 +532,14 @@ C
                   ycp(ivs) = yzlen(isec-1) + yscale*(ycp(ivs)-ypt1)
                 ENDDO
 C
+C----- check for unique spacing node for next section, if not we need more nodes
                 ipt1 = iptloc(isec)
                 ipt2 = iptloc(isec+1)
                 IF (ipt1 .EQ. ipt2) THEN
                   GOTO 120
                 ELSE
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
                   ypt1_diff = ypt_diff(ipt1)
                   ypt1 = ypt(ipt1)
                   temp = (ypt(ipt2)-yzlen(isec))/(ypt(ipt2)-ypt(ipt1))
@@ -555,12 +570,25 @@ C
           END IF
         END IF
 C
+Cc#ifdef USE_CPOML
+C...  store section counters
+ 130    IF (isurf .EQ. 1) THEN
+          icntfrst(isurf) = 1
+        ELSE
+          icntfrst(isurf) = icntfrst(isurf-1) + ncntsec(isurf-1)
+        END IF
+        ncntsec(isurf) = nsec(isurf)
+        DO isec=1,nsec(isurf)
+          ii = icntfrst(isurf) + (isec-1)
+          icntsec(ii) = iptloc(isec)
+        ENDDO
+Cc#endif
 C
 C
 C====================================================
 C---- define strips between input sections
 C
- 130    nj(isurf) = 0
+        nj(isurf) = 0
 C
         IF (ncontrol .GT. ndmax) THEN
           WRITE(*, *) 
@@ -820,6 +848,15 @@ C
               tante(idx_strip) = (xyzler(1)+chordr-xyzlel(1)-chordl)/
      +          width
 C
+Cc#ifdef USE_CPOML
+              chsin = chsinl + f1*(chsinr-chsinl)
+              chcos = chcosl + f1*(chcosr-chcosl)
+              ainc1(idx_strip) = ATAN2(chsin, chcos)
+              chsin = chsinl + f2*(chsinr-chsinl)
+              chcos = chcosl + f2*(chcosr-chcosl)
+              ainc2(idx_strip) = ATAN2(chsin, chcos)
+C
+Cc#endif
               chsin_diff = chsinl_diff + (chsinr-chsinl)*fc_diff + fc*(
      +          chsinr_diff-chsinl_diff)
               chsin = chsinl + fc*(chsinr-chsinl)
@@ -1029,6 +1066,8 @@ C
 C-------- go over vortices in this strip
               idx_vor = ijfrst(idx_strip)
 C NVOR = NVOR + 1
+C change all NVOR indices into idx_vor
+C change all NSTRIP indices into idx_strip
               DO ivc=1,nvc(isurf)
 C
                 rv1_diff(1, idx_vor) = rle1_diff(1, idx_strip) + xvr(ivc
@@ -1169,9 +1208,40 @@ C
 C
 C---------- TE control point used only if surface sheds a wake
                 lvnc(idx_vor) = lfwake(isurf)
+C
+Cc#ifdef USE_CPOML
+C...        nodal grid associated with vortex strip (aft-panel nodes)
+C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
+C...        retained in (x,z) plane at this point
+                CALL AKIMA(xlasec(1, isec, isurf), zlasec(1, isec, isurf
+     +                     ), nsl, xpt(ivc+1), zl, dsdx)
+                CALL AKIMA(xuasec(1, isec, isurf), zuasec(1, isec, isurf
+     +                     ), nsl, xpt(ivc+1), zu, dsdx)
+C
+                xyn1(1, idx_vor) = rle1(1, idx_strip) + xpt(ivc+1)*
+     +            chord1(idx_strip)
+                xyn1(2, idx_vor) = rle1(2, idx_strip)
+                zlon1(idx_vor) = rle1(3, idx_strip) + zl*chord1(
+     +            idx_strip)
+                zupn1(idx_vor) = rle1(3, idx_strip) + zu*chord1(
+     +            idx_strip)
+C
+                CALL AKIMA(xlasec(1, isec+1, isurf), zlasec(1, isec+1, 
+     +                     isurf), nsl, xpt(ivc+1), zl, dsdx)
+                CALL AKIMA(xuasec(1, isec+1, isurf), zuasec(1, isec+1, 
+     +                     isurf), nsl, xpt(ivc+1), zu, dsdx)
+C
+                xyn2(1, idx_vor) = rle2(1, idx_strip) + xpt(ivc+1)*
+     +            chord2(idx_strip)
+                xyn2(2, idx_vor) = rle2(2, idx_strip)
+                zlon2(idx_vor) = rle2(3, idx_strip) + zl*chord2(
+     +            idx_strip)
+                zupn2(idx_vor) = rle2(3, idx_strip) + zu*chord2(
+     +            idx_strip)
+C
+Cc#endif
                 idx_vor = idx_vor + 1
               ENDDO
-C
 C           
               idx_strip = idx_strip + 1
             ENDDO
@@ -1230,6 +1300,9 @@ C
       INTEGER klen
       INTRINSIC LEN
       INTEGER k
+      INTEGER isec
+      INTEGER idup
+      INTEGER iorg
       REAL yoff
       INTEGER idx_strip
       INTEGER ivs
@@ -1244,9 +1317,11 @@ C
       INTEGER nn
       REAL ypt
 C
-      nni = nsurf + 1
+C     
+      nni = nn + 1
       IF (nni .GT. nfmax) THEN
-        WRITE(*, *) 'SDUPL: Surface array overflow. Increase NFMAX.'
+        WRITE(*, *) 'SDUPL: Surface array overflow. Increase NFMAX', 
+     +        ' currently ', nfmax
         STOP
       ELSE
 C
@@ -1267,8 +1342,10 @@ C
 C---- same various logical flags
         lfwake(nni) = lfwake(nn)
         lfalbe(nni) = lfalbe(nn)
-C IFRST(NNI) = NVOR   + 1
         lfload(nni) = lfload(nn)
+        lrange(nni) = lrange(nn)
+C IFRST(NNI) = NVOR   + 1
+        lsurfspacing(nni) = lsurfspacing(nn)
 C
 C---- accumulate stuff for new image surface 
         ifrst(nni) = ifrst(nni-1) + nk(nni-1)*nj(nni-1)
@@ -1289,6 +1366,16 @@ C
 C--- Image flag reversed (set to -IMAGS) for imaged surfaces
         imags(nni) = -imags(nn)
 C
+Cc#ifdef USE_CPOML
+        icntfrst(nni) = icntfrst(nn) + ncntsec(nn)
+        ncntsec(nni) = ncntsec(nn)
+        DO isec=1,ncntsec(nni)
+          idup = icntfrst(nni) + (isec-1)
+          iorg = icntfrst(nn) + (isec-1)
+          icntsec(idup) = icntsec(iorg)
+        ENDDO
+Cc#endif
+C
         yoff = 2.0*ypt
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
@@ -1298,7 +1385,7 @@ C    not edge 1 as for a strip with IMAGS=1
 C   NSTRIP = NSTRIP + 1
         DO ivs=1,nvs(nni)
           IF (idx_strip .GT. nsmax) THEN
-            GOTO 110
+            GOTO 100
           ELSE
 C
             jji = jfrst(nni) + ivs - 1
@@ -1333,6 +1420,11 @@ C
             ainc_diff(jji) = ainc_diff(jj)
             ainc(jji) = ainc(jj)
 C
+Cc#ifdef USE_CPOML
+            ainc1(jji) = ainc2(jj)
+            ainc2(jji) = ainc1(jj)
+C
+Cc#endif
             nsurfs(idx_strip) = nni
 C
             DO n=1,ndesign
@@ -1371,7 +1463,7 @@ C
 C     NVOR = NVOR + 1
             DO ivc=1,nvc(nni)
               IF (idx_vor .GT. nvmax) THEN
-                GOTO 120
+                GOTO 110
               ELSE
 C
                 iii = ijfrst(jji) + ivc - 1
@@ -1418,13 +1510,26 @@ Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
                   dcontrol_diff(iii, n) = -(rsgn*dcontrol_diff(ii, n))
                   dcontrol(iii, n) = -(dcontrol(ii, n)*rsgn)
                 ENDDO
+C          
+Cc#ifdef USE_CPOML
+C...      nodal grid associated with vortex strip
+                xyn1(1, iii) = xyn2(1, ii)
+                xyn1(2, iii) = -xyn2(2, ii) + yoff
+                xyn2(1, iii) = xyn1(1, ii)
+                xyn2(2, iii) = -xyn1(2, ii) + yoff
+C
+                zlon1(iii) = zlon2(ii)
+                zupn1(iii) = zupn2(ii)
+                zlon2(iii) = zlon1(ii)
+                zupn2(iii) = zupn1(ii)
+Cc#endif
                 idx_vor = idx_vor + 1
               END IF
             ENDDO
+C
+            idx_strip = idx_strip + 1
           END IF
         ENDDO
-C
-C
 C
 C
 C
@@ -1432,9 +1537,11 @@ C
         nvor = nvor + nk(nni)*nj(nni)
 C
         RETURN
- 110    WRITE(*, *) 'SDUPL: Strip array overflow. Increase NSMAX.'
+ 100    WRITE(*, *) 'SDUPL: Strip array overflow. Increase NSMAX', 
+     +        ' currently ', nsmax
         STOP
- 120    WRITE(*, *) 'SDUPL: Vortex array overflow. Increase NVMAX.'
+ 110    WRITE(*, *) 'SDUPL: Vortex array overflow. Increase NVMAX', 
+     +        ' currently ', nvmax
         STOP
       END IF
       END

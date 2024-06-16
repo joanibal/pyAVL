@@ -25,19 +25,18 @@ C---------------------------------------
       INCLUDE 'AVL.INC'
 C       INCLUDE 'AVLPLT.INC'
       LOGICAL ERROR, LCERR, LCERRI, LWRIT, LMATCH, LMATCH_TEST
+      LOGICAL USEMRF
 C
-
       CHARACTER*1 ANS
       CHARACTER*2 OPT
       CHARACTER*4 COMAND, COMAND_TEST, ITEMC
-      CHARACTER*80 FNOUT, FNDER, FNNEW
-      CHARACTER*80 LINE, FNVB, COMARG, COMARG_TEST, CRUN, PROMPT, RTNEW
+      CHARACTER*256 FNOUT, FNDER, FNNEW, FNVB
+      CHARACTER*120 LINE, COMARG, COMARG_TEST, CRUN, PROMPT, RTNEW
       CHARACTER*50 SATYPE, ROTTYPE
 C
       LOGICAL LOWRIT
 C
       REAL    RINPUT(20), RINP(20)
-
       INTEGER IINPUT(20), IINP(20), IRUN_TEST
 C
       IF(.NOT.LGEO) THEN
@@ -63,15 +62,17 @@ C       LPLOT = .FALSE.
       LWRIT = .FALSE.
       LSOL  = .FALSE.
 C
+      USEMRF = .FALSE.
+C
       FNOUT = ' '
 C
 C=================================================================
 C---- start of user interaction loop
  800  CONTINUE
-C C
+C
       LCERR = .FALSE.
-C C
-C C
+C
+C
       CALL CFRAC(IRUN,NRUN,CRUN,NPR)
 C
       if(lverbose)then
@@ -79,7 +80,7 @@ C
             CALL CONLST(IRUN)
       end if
 C       WRITE(*,1052)
-
+C
  1050 FORMAT(
      &  /' Operation of run case ',A,':  ', A
      &  /' ==========================================================')
@@ -100,7 +101,8 @@ C
      &  /'  DE  design changes           FE  element forces        '
      &  /'  O ptions                     FB  body forces           '
      &  /'                               HM  hinge moments         '
-     &  /'                               VM  strip shear,moment    ')
+     &  /'                               VM  strip shear,moment    '
+     &  /'  MRF  machine-readable format CPOM OML surface pressures')
 C 
 C   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
 C   x x x x   x x   x     x x x x x   x x x   x x x x
@@ -395,7 +397,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
-C           CALL OUTTOT(LU)
+C           IF(USEMRF) THEN
+C            CALL MRFTOT(LU, 'TOT')
+C           ELSE
+C            CALL OUTTOT(LU)
+C           ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -414,7 +420,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
+C           IF(USEMRF) THEN
+C            CALL MRFSURF(LU)
+C          ELSE
 C           CALL OUTSURF(LU)
+C          ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -433,7 +443,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
+C           IF(USEMRF) THEN
+C            CALL MRFSTRP(LU)
+C          ELSE
 C           CALL OUTSTRP(LU)
+C           ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -452,7 +466,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
+C           IF(USEMRF) THEN
+C            CALL MRFELE(LU)
+C          ELSE
 C           CALL OUTELE(LU)
+C          ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -470,8 +488,12 @@ C          IF(LU.LE.-1) THEN
 C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
+C         ELSE
+C          IF(USEMRF) THEN
+C           CALL MRFBODY(LU)
 C          ELSE
 C           CALL OUTBODY(LU)
+C          ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -490,7 +512,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
+C           IF(USEMRF) THEN
+C            CALL MRFHINGE(LU)
+C          ELSE
 C           CALL OUTHINGE(LU)
+C           ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -509,7 +535,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
-C           CALL OUTVM(LU)
+C           IF(USEMRF) THEN
+C            CALL MRFVM(LU)
+C           ELSE
+C            CALL OUTVM(LU)
+C           ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -528,7 +558,11 @@ C           WRITE(*,*) '* Filename error *'
 C          ELSEIF(LU.EQ.0) THEN
 C           WRITE(*,*) '* Data not written'
 C          ELSE
-C           CALL OUTCNC(LU)
+C           IF(USEMRF) THEN
+C            CALL MRFCNC(LU)
+C           ELSE
+C            CALL OUTCNC(LU)
+C           ENDIF
 C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
 C          ENDIF
 C C
@@ -672,13 +706,34 @@ C           ENDIF
 C C
 C         ENDIF
 C C
+C         IF(USEMRF) THEN
+C          IF(LPTOT)   CALL MRFTOT(LUOUT, 'TOT')
+C          IF(LPSURF)  CALL MRFSURF(LUOUT)
+C          IF(LPSTRP)  CALL MRFSTRP(LUOUT)
+C          IF(LPELE)   CALL MRFELE(LUOUT)
+C         ELSE
 C         IF(LPTOT)   CALL OUTTOT(LUOUT)
 C         IF(LPSURF)  CALL OUTSURF(LUOUT)
 C         IF(LPSTRP)  CALL OUTSTRP(LUOUT)
 C         IF(LPELE)   CALL OUTELE(LUOUT)
 C ccc     IF(LPDERIV) CALL DERMAT(LUOUT)
-C Cs
+C         ENDIF
+C C
 C C------------------------------------------------------
+C       ELSE IF(COMAND.EQ.'MRF ') THEN
+C C------ all subsequent data file writes are full-precision machine readable format
+C         USEMRF = .TRUE.
+C         WRITE(*,'(A,A)')
+C      &    'MRF: all subsequent output in full-precision ',
+C      &    'machine readable format'
+C cc#ifdef USE_CPOML
+C C
+C C------------------------------------------------------
+C       ELSE IF(COMAND.EQ.'CPOM') THEN
+C C------ write OML surface pressures to a file
+C         CALL CPOML()
+C cc#endif
+CC C------------------------------------------------------
 C       ELSE IF(COMAND.EQ.'RE  ') THEN
 C C------ Change reference data 
 C  89     WRITE(*,2090) SREF,CREF,BREF
@@ -745,7 +800,7 @@ C       ENDIF
 C       GO TO 800
 C
       RETURN
-      END 
+      END ! OPER
 
 
 
@@ -778,7 +833,7 @@ C
      &   '  ',A,'  ->  ', A, '=', G12.4, 1X, A)
  1030 FORMAT(
      &   '  ------------      ------------------------')
-      END 
+      END ! CONLST
 
 
 
@@ -787,7 +842,7 @@ C
       CHARACTER*(*) COMAND, COMARG
       LOGICAL LMATCH
       INTEGER IR
-      CHARACTER*80 PROMPT
+      CHARACTER*120 PROMPT
       CHARACTER*4 ARROW
       REAL    RINP(20)
       INTEGER IINP(20)
@@ -902,7 +957,7 @@ C---- go back to OPER menu
 
 
 
-       SUBROUTINE EXEC(NITER,INFO,IR)
+      SUBROUTINE EXEC(NITER,INFO,IR)
 C---------------------------------------------------
 C     Solves for the flow condition specified by 
 C     the global operating parameters:
@@ -924,7 +979,9 @@ C---------------------------------------------------
 
 C
 C---- convergence epsilon, max angle limit (radians)
-      DATA EPS, DMAX / 0.00002, 1.0 /
+      ! EPS replaced by EXEC_TOL
+      ! DATA EPS, DMAX / 0.00002, 1.0 /
+      DATA DMAX / 1.0 /
 
 C
       IF(LNASA_SA) THEN
@@ -1091,6 +1148,7 @@ C------------------------------------
            VSYS(IV,IVROTX) = CLTOT_U(4)
            VSYS(IV,IVROTY) = CLTOT_U(5)
            VSYS(IV,IVROTZ) = CLTOT_U(6)
+
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
@@ -1137,6 +1195,7 @@ C------------------------------------
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
+             ! no *DIR here because we do *DIR in AERO now
              VSYS(IV,NV) = (CRTOT_D(N)*CA + CNTOT_D(N)*SA)
            ENDDO
 C
@@ -1180,6 +1239,7 @@ C------------------------------------
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
+             ! no *DIR here because we do *DIR in AERO now
              VSYS(IV,NV) = (CNTOT_D(N)*CA - CRTOT_D(N)*SA)
            ENDDO
 C
@@ -1200,6 +1260,12 @@ C
 C
  100    CONTINUE
 C
+
+c        write(*,*)
+c        do k = 1, nvtot
+c          write(*,'(1x,40f9.4)') (vsys(k,l), l=1, nvtot), vres(k)
+c        enddo
+c        write(*,*)
 C
 C------ LU-factor,  and back-substitute RHS
         CALL LUDCMP(IVMAX,NVTOT,VSYS,IVSYS,WORK)
@@ -1248,7 +1314,7 @@ C------- display Newton deltas
      &                 DWX*BREF/2.0, DWY*CREF/2.0, DWZ*BREF/2.0,
      &                 (DDC(K), K=1, NCONTROL)
          end if 
- 1905    FORMAT(1X,I3,20E11.3)
+ 1905    FORMAT(1X,I3,40E11.3)
         ENDIF
 C
 C------ limits on angles and rates
@@ -1297,7 +1363,6 @@ C
 C
 C------ set VINF() vector from new ALFA,BETA
         CALL VINFAB
-
 C
         IF(NCONTROL.GT.0) THEN
 C------- set new GAM_D
@@ -1343,7 +1408,7 @@ C------ convergence check
           DELMAX = MAX( DELMAX , ABS(DDC(K)) )
         ENDDO
 C
-        IF(DELMAX.LT.EPS) THEN
+        IF(DELMAX.LT.EXEC_TOL) THEN
          LSOL = .TRUE.
 C------- mark trim case as being converged
          ITRIM(IR) = IABS(ITRIM(IR))
@@ -1365,10 +1430,6 @@ C
       PARVAL(IPROTZ,IR) = WROT(3)*0.5*BREF
       PARVAL(IPCL  ,IR) = CLTOT
 C
-
-C       WRITE(*,*)  'ALFA: ', ALFA
-C       WRITE(*,*) 'PARVAL(IPALFA,IR): ', PARVAL(IPALFA,IR)
-
       LSEN = .TRUE.
       if (ltiming) then 
             call cpu_time(t19)
@@ -1380,6 +1441,7 @@ C
       END ! EXEC
 
 
+
       SUBROUTINE OPTGET
 C-------------------------------------------------
 C     Allows toggling and setting of various 
@@ -1387,7 +1449,7 @@ C     printing and plotting stuff.
 C-------------------------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*4 ITEMC
-      CHARACTER*80 COMARG
+      CHARACTER*120 COMARG
       CHARACTER*50 SATYPE, ROTTYPE
       LOGICAL ERROR
 C
@@ -1573,6 +1635,7 @@ C
         LAIC = .FALSE.
         LSRD = .FALSE.
         LSOL = .FALSE.
+        LVEL = .FALSE.    ! bug   22 Mar 22
         LSEN = .FALSE.
 C
 C---------------------------------
@@ -1651,8 +1714,6 @@ C
       CHARACTER(*) FNAME
 C
       CHARACTER*1 ANS, DUMMY
-
-      WRITE(*,*) LU
 C
  1000 FORMAT(A)
 C
@@ -1670,16 +1731,21 @@ C
        WRITE(*,*) 
        WRITE(*,*) 'File exists.  Append/Overwrite/Cancel  (A/O/C)?  C'
        READ(*,1000) ANS
-       IF    (INDEX('Aa',ANS).NE.0) THEN
- 40     CONTINUE
-        READ(LU,1000,END=42) DUMMY
-        GO TO 40
- 42     CONTINUE
+       IF (INDEX('Aa',ANS).NE.0) THEN
+C---- reopen file with append status HHY 4/17/18
+         CLOSE(LU)
+         OPEN(LU,FILE=FNAME,STATUS='OLD',FORM='FORMATTED',
+     &        ACCESS='APPEND',ERR=44)
+C---- old append code (re-reads to EOF)
+cc 40     CONTINUE
+cc        READ(LU,1000,END=42) DUMMY
+cc        GO TO 40
+cc 42     CONTINUE
        ELSEIF(INDEX('Oo',ANS).NE.0) THEN
-        REWIND(LU) 
+         REWIND(LU) 
        ELSE
-        CLOSE(LU)
-        LU = 0
+         CLOSE(LU)
+         LU = 0
        ENDIF
        RETURN
 C

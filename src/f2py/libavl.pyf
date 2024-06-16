@@ -35,12 +35,12 @@ python module libavl ! in
         subroutine aero_b ! in :libavl:aero_b.f
         end subroutine aero_b
         
-        subroutine loadgeo(fildef) ! in :libavl:avl.f
-            character*80 :: fildef
+        subroutine loadgeo(geom_file) ! in :libavl:avl.f
+            character*256 :: geom_file
         end subroutine loadgeo
 
-        subroutine loadmass(fmsdef) ! in :libavl:avl.f
-            character*80 :: fmsdef
+        subroutine loadmass(mass_file) ! in :libavl:avl.f
+            character*256 :: mass_file
         end subroutine loadmass
 
         
@@ -51,7 +51,7 @@ python module libavl ! in
         subroutine trmset(comand, comarg, com, carg) ! in :libavl:aoper.f
             character*(*) comand, comarg 
             character*4 com
-            character*80 carg
+            character*120 carg
         end subroutine trmset
         
 

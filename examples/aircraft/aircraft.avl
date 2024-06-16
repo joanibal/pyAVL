@@ -69,7 +69,7 @@ airfoils/A_5.dat
 #------------------- Horizontal Tail ------------------
 #======================================================
 SURFACE
-Horizontal Tail
+HorizontalTail
 #Nchordwise  Cspace   Nspan   Sspace
 10       1.0           20         2 
 YDUPLICATE
@@ -110,7 +110,7 @@ Elevator -1.00 0.0 0 1 0 1.00
 #------------------- Vertical Tail --------------------
 #======================================================
 SURFACE
-Vertical Tail
+VerticalTail
 # Nchordwise Cspace Nspanwise Sspace
 10 1.00 10 -2.0
 # YDUPLICATE

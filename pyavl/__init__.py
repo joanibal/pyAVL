@@ -9,7 +9,7 @@ except importlib.metadata.PackageNotFoundError:
 from .pyAVL import AVLSolver
 
 try:
-    from .om_wrapper import AVLGroup
+    from .om_wrapper import AVLGroup, AVLMeshReader
 except ImportError:
     # if openmdao is not installed, then we can't use the wrapper
     pass

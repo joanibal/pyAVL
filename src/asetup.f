@@ -621,13 +621,15 @@ C
       subroutine set_par_and_cons(NITER, IR)
       include 'AVL.INC'
       integer NITER, IR
+      
+      call set_params(IR)
+      ! Additionally set the reference point to be at the cg
       XYZREF(1) = PARVAL(IPXCG,IR)
       XYZREF(2) = PARVAL(IPYCG,IR)
       XYZREF(3) = PARVAL(IPZCG,IR)
 C
       CDREF = PARVAL(IPCD0,IR)
 C
-      MACH = PARVAL(IPMACH,IR)
 C
       IF(MACH.NE.AMACH) THEN
 C----- new Mach number invalidates close to everything that's stored
@@ -687,6 +689,11 @@ C----- might as well directly set operating variables if they are known
            VUNIT = VUNIT + VUNIT_W_term
            
            RHS(I) = -DOT(ENC(1,I),VUNIT)
+            
+           ! Add contribution from control surfaces
+           DO N = 1, NCONTROL
+            RHS(I) = RHS(I) -DOT(ENC_D(1,I,N),VUNIT)*DELCON(N)
+          ENDDO
         ELSE
           RHS(I) = 0
         endif

@@ -63,7 +63,7 @@ C
       REAL Ixx , Iyy , Izz , Ixy , Ixz , Iyz
       REAL Ixxi, Iyyi, Izzi, Ixyi, Ixzi, Iyzi
 C
-      CHARACTER*120 CASE
+      CHARACTER*80 CASE
       CHARACTER*256 LINE, LINEU
 C
       CHARACTER*32 UNCHGEE, UNCHRHO, UNCH
@@ -483,63 +483,4 @@ C
       END ! APPGET
 
 
-
-      SUBROUTINE UNITSET
-      INCLUDE 'AVL.INC'
-
-C----------------------------------------
-C---- set force unit
-      UNITF = UNITM*UNITL/UNITT**2
-      IF(UNCHM(1:1).NE.' ' .AND.
-     &   UNCHL(1:1).NE.' ' .AND.
-     &   UNCHT(1:1).NE.' '      ) THEN
-       UNCHF = UNCHM(1:NUM)//'-'//UNCHL(1:NUL)//'/'//UNCHT(1:NUT)//'^2'
-       CALL STRIP(UNCHF,NUF)
-       IF(UNCHF(1:NUF).EQ.'slug-ft/s^2') UNCHF = 'lb'
-       IF(UNCHF(1:NUF).EQ.'kg-m/s^2'   ) UNCHF = 'N'
-       IF(UNCHF(1:NUF).EQ.'g-cm/s^2'   ) UNCHF = 'dyn'
-       CALL STRIP(UNCHF,NUF)
-      ENDIF
-C
-C---- set area unit
-      UNITS = UNITL**2
-      IF(UNCHL(1:1).NE.' ') THEN
-       UNCHS = UNCHL(1:NUL)//'^2'
-       CALL STRIP(UNCHS,NUS)
-      ENDIF
-C 
-C---- set velocity unit
-      UNITV = UNITL/UNITT
-      IF(UNCHL(1:1).NE.' ' .AND.
-     &   UNCHT(1:1).NE.' '      ) THEN
-       UNCHV = UNCHL(1:NUL)//'/'//UNCHT(1:NUT)
-       CALL STRIP(UNCHV,NUV)
-      ENDIF
-C 
-C---- set acceleration unit name
-      UNITA = UNITL/UNITT**2
-      IF(UNCHL(1:1).NE.' ' .AND.
-     &   UNCHT(1:1).NE.' '      ) THEN
-       UNCHA = UNCHL(1:NUL)//'/'//UNCHT(1:NUT)//'^2'
-       CALL STRIP(UNCHA,NUA)
-      ENDIF
-C 
-C---- set inertia unit name
-      UNITI = UNITM*UNITL**2
-      IF(UNCHM(1:1).NE.' ' .AND.
-     &   UNCHL(1:1).NE.' '      ) THEN
-       UNCHI = UNCHM(1:NUM)//'-'//UNCHL(1:NUL)//'^2'
-       CALL STRIP(UNCHI,NUI)
-      ENDIF
-C
-C---- set density unit name
-      UNITD = UNITM/UNITL**3
-      IF(UNCHM(1:1).NE.' ' .AND.
-     &   UNCHL(1:1).NE.' '      ) THEN
-       UNCHD = UNCHM(1:NUM)//'/'//UNCHL(1:NUL)//'^3'
-       CALL STRIP(UNCHD,NUD)
-      ENDIF
-C
-      RETURN
-      END ! UNITSET
 
