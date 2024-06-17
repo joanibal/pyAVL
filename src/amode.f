@@ -220,8 +220,8 @@ C
            CALL APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
           ENDIF
 C
-cc          LU = 6
-cc          CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
+          LU = 6
+          CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
 C
           INFO = 1
           ETOL = 1.0E-5
