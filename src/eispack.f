@@ -3924,6 +3924,7 @@ C
       IF (LA .LT. KP1) GO TO 200
 C
       DO 180 M = KP1, LA
+        write(*,*)
          MM1 = M - 1
          X = 0.0D0
          I = M
@@ -3932,8 +3933,10 @@ C
             IF (DABS(A(J,MM1)) .LE. DABS(X)) GO TO 100
             X = A(J,MM1)
             I = J
+            write(*,*) 'new X', X, 'from A', J, MM1
   100    CONTINUE
 C
+         write(*,*) 'M', M, 'I', I, 'X', X
          INT(M) = I
          IF (I .EQ. M) GO TO 130
 C     .......... INTERCHANGE ROWS AND COLUMNS OF A ..........
@@ -3943,18 +3946,26 @@ C     .......... INTERCHANGE ROWS AND COLUMNS OF A ..........
             A(M,J) = Y
   110    CONTINUE
 C
+          ! write(*,*) I, 'A(I,:)', A(I,:)
+          ! write(*,*) M, 'A(M,:)', A(M,:)
+
          DO 120 J = 1, IGH
             Y = A(J,I)
             A(J,I) = A(J,M)
             A(J,M) = Y
   120    CONTINUE
+        ! write(*,*) I, 'A(:,I)', A(:,I)
+        ! write(*,*) M, 'A(:,M)', A(:,M)
+        write(*,*) 'switched', I, M
 C     .......... END INTERCHANGE ..........
-  130    IF (X .EQ. 0.0D0) GO TO 180
+  130    IF (DABS(X) .LE. 1e-12_8) GO TO 180
+! 130    IF (X .EQ. 0.0D0) GO TO 180
          MP1 = M + 1
 C
          DO 160 I = MP1, IGH
             Y = A(I,MM1)
             IF (Y .EQ. 0.0D0) GO TO 160
+            write(*,*) 'new Y', Y, I, MM1
             Y = Y / X
             A(I,MM1) = Y
 C
@@ -3965,16 +3976,20 @@ C
   150       A(J,M) = A(J,M) + Y * A(J,I)
 C
   160    CONTINUE
+      write(*,*) 'messed with column', MM1
+      DO i = 1, N
+        PRINT *, (A(i, j), j = 1, N)
+      END DO
 C
   180 CONTINUE
 C
   200 RETURN
       END
-      SUBROUTINE ELTRAN(NM,N,LOW,IGH,A,INT,Z)
+      SUBROUTINE ELTRAN(NM,N,LOW,IGH,A,INTER,Z)
 C
       INTEGER I,J,N,KL,MM,MP,NM,IGH,LOW,MP1
       DOUBLE PRECISION A(NM,IGH),Z(NM,N)
-      INTEGER INT(IGH)
+      INTEGER INTER(IGH)
 C
 C     THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE ELMTRANS,
 C     NUM. MATH. 16, 181-204(1970) BY PETERS AND WILKINSON.
@@ -4000,7 +4015,7 @@ C        A CONTAINS THE MULTIPLIERS WHICH WERE USED IN THE
 C          REDUCTION BY  ELMHES  IN ITS LOWER TRIANGLE
 C          BELOW THE SUBDIAGONAL.
 C
-C        INT CONTAINS INFORMATION ON THE ROWS AND COLUMNS
+C        INTER CONTAINS INFORMATION ON THE ROWS AND COLUMNS
 C          INTERCHANGED IN THE REDUCTION BY  ELMHES.
 C          ONLY ELEMENTS LOW THROUGH IGH ARE USED.
 C
@@ -4035,7 +4050,7 @@ C
          DO 100 I = MP1, IGH
   100    Z(I,MP) = A(I,MP-1)
 C
-         I = INT(MP)
+         I = INTER(MP)
          IF (I .EQ. MP) GO TO 140
 C
          DO 130 J = MP, IGH
@@ -8508,14 +8523,26 @@ C
       IERR = 10 * N
       GO TO 50
 C
+      write(*,*) 'NM',NM, "N", N
    10 CALL  BALANC(NM,N,A,IS1,IS2,FV1)
+c      write(*,*) 'IS1',IS1
+c      write(*,*) 'IS2',IS2
       CALL  ELMHES(NM,N,IS1,IS2,A,IV1)
+      print *, "A Hess"
+      DO i = 1, N
+        PRINT *, (A(i, j), j = 1, N)
+      END DO
+      write(*,*) 'IV1', IV1
       IF (MATZ .NE. 0) GO TO 20
 C     .......... FIND EIGENVALUES ONLY ..........
       CALL  HQR(NM,N,IS1,IS2,A,WR,WI,IERR)
       GO TO 50
 C     .......... FIND BOTH EIGENVALUES AND EIGENVECTORS ..........
    20 CALL  ELTRAN(NM,N,IS1,IS2,A,IV1,Z)
+c      DO i = 1, N
+c        PRINT *, (Z(i, j), j = 1, N)
+c      END DO
+
       CALL  HQR2(NM,N,IS1,IS2,A,WR,WI,Z,IERR)
       IF (IERR .NE. 0) GO TO 50
       CALL  BALBAK(NM,N,IS1,IS2,FV1,N,Z)

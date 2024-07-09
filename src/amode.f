@@ -964,6 +964,10 @@ C
         WXH_U(K,I+3) = WXH_U(K,I+3) + H(J)*ROT
         WXH_U(K,J+3) = WXH_U(K,J+3) - H(I)*ROT
       ENDDO
+      write(*,*) 'MAINV(K,1)', MAINV(3,:)
+      write(*,*) 'C*TOT_U(1)', CXTOT_U(1), CYTOT_U(1), CZTOT_U(1)
+      write(*,*) 'C*TOT_U(1)', CRTOT_U(1), CMTOT_U(1), CNTOT_U(1)
+
 C
 C          =    -   =    -   =     - -    =     - -
 C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
@@ -985,6 +989,9 @@ C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
      &           MAINV(K,1)*CXTOT_U(IU)*QS
      &         + MAINV(K,2)*CYTOT_U(IU)*QS
      &         + MAINV(K,3)*CZTOT_U(IU)*QS
+        if (K.eq. 3 .and. IU .eq. 1) then
+            write(*,*) 'MIF_U(3,1) 2', MIF_U(3,1) , 'qs', QS
+        endif 
           RIM_U(K,IU) = 
      &           RIINV(K,1)*CRTOT_U(IU)*QS*BREFD
      &         + RIINV(K,2)*CMTOT_U(IU)*QS*CREFD
@@ -1054,6 +1061,11 @@ C---- x-acceleration
         BSYS(IEQ,N) =   MIF_D(K,N)
       ENDDO
 
+      ! 6, 7, 8
+      ! &  JEP   =  6,
+      ! &  JER   =  7,
+      ! &  JEPH  =  8,
+      
 c      MIF_U(1,2)
 c      write(*,*)
 c      write(*,*) '* 1u', MIF_U(K,2), PRF_U(K,2)
@@ -1081,6 +1093,7 @@ C---- z-acceleration
       K = 3
       RSYS(IEQ)     =   MIF(K)     - PRF(K)      - GEE*TT(3,K)
       ASYS(IEQ,JEU) = -(MIF_U(K,1) - PRF_U(K,1)) / VEE
+      ! write(*,*) 'ASYS(IEQ,JEU) terms', -MIF_U(K,1) ,  -PRF_U(K,1),  VEE      
       ASYS(IEQ,JEV) = -(MIF_U(K,2) - PRF_U(K,2)) / VEE
       ASYS(IEQ,JEW) = -(MIF_U(K,3) - PRF_U(K,3)) / VEE
       ASYS(IEQ,JEP) =  (MIF_U(K,4) - PRF_U(K,4)) / ROT
@@ -1573,7 +1586,7 @@ C
      &     (ASYS(I,J)*USGN(I)*USGN(J), J=1, NSYS),
      &     (BSYS(I,N)*USGN(I)        , N=1, NCONTROL)
 c     &   ,   RSYS(I)*USGN(I)
- 1200   FORMAT(1X,12F10.4,3X,12G12.4)
+ 1200   FORMAT(1X,12e24.16,3X,12G12.4)
       ENDDO
 C
       RETURN
@@ -1596,6 +1609,7 @@ C
 C---- call EISPACK's Real/General eigenvalue routine
 C     ICALC = 0   ! get eigenvalues only
       ICALC = 1   ! get eigenvalues and eigenvectors
+      IWORK = 0
       CALL RG(JEMAX,NSYS,ASYS,WR,WI,ICALC,WVEC,IWORK,WORK,IERR)
 C
 C-------------------------------------------------------
@@ -1642,9 +1656,16 @@ C------- negative imaginary part of eigenvalue... store complex eigenvector
          ENDDO
         ENDIF
  100  CONTINUE
+
 C
       NEIGEN(IR) = KEIG
 C
+      do KEIG = 1, NEIGEN(IR)
+          write(*,*) KEIG, 'EIGEN(KEIG,IR)'
+          DO I = 1, NSYS
+           write(*,*) EVEC(I,KEIG,IR) 
+         ENDDO
+      enddo
       RETURN
       END ! EIGSOL
 

@@ -144,6 +144,9 @@ C
      &               + WC_GAM(2,I,J)*ENC(2,I)
      &               + WC_GAM(3,I,J)*ENC(3,I)
            LVNC(I) = .TRUE.
+           if (i <= 10 .and. j <= 10) then
+            write(*,*) i,j, 'AICN',AICN(i,j)
+           endif
          ENDDO
        ENDDO
 
@@ -501,36 +504,6 @@ C
       ! It should be equivalent to the new code, but test coverage is low.
       ! I am leaving it hear as a reminder of the original code.
 
-      ! DO I = 1, NVOR
-      !   DO K = 1, 3
-      !     WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-      ! &            + WCSRD_U(K,I,2)*VINF(2)
-      ! &            + WCSRD_U(K,I,3)*VINF(3)
-      ! &            + WCSRD_U(K,I,4)*WROT(1)
-      ! &            + WCSRD_U(K,I,5)*WROT(2)
-      ! &            + WCSRD_U(K,I,6)*WROT(3)
-      !     WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
-      ! &            + WVSRD_U(K,I,2)*VINF(2)
-      ! &            + WVSRD_U(K,I,3)*VINF(3)
-      ! &            + WVSRD_U(K,I,4)*WROT(1)
-      ! &            + WVSRD_U(K,I,5)*WROT(2)
-      ! &            + WVSRD_U(K,I,6)*WROT(3)
-      !     DO J = 1, NVOR
-      !       WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-      !       WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
-      !     ENDDO
-      ! C
-      !     DO N = 1, NUMAX
-      !       WC_U(K,I,N) = WCSRD_U(K,I,N)
-      !       WV_U(K,I,N) = WVSRD_U(K,I,N)
-      !       DO J = 1, NVOR
-      !         WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-      !         WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
-      !       ENDDO
-      !     ENDDO
-      ! C
-      !   ENDDO
-      ! ENDDO
       DO I = 1, NVOR
         DO K = 1, 3
           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
@@ -539,47 +512,77 @@ C
      &            + WCSRD_U(K,I,4)*WROT(1)
      &            + WCSRD_U(K,I,5)*WROT(2)
      &            + WCSRD_U(K,I,6)*WROT(3)
-          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+         WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
      &            + WVSRD_U(K,I,2)*VINF(2)
      &            + WVSRD_U(K,I,3)*VINF(3)
      &            + WVSRD_U(K,I,4)*WROT(1)
      &            + WVSRD_U(K,I,5)*WROT(2)
      &            + WVSRD_U(K,I,6)*WROT(3)
-        enddo 
-      enddo 
-      
-      
-      DO J = 1, NVOR
-        DO I = 1, NVOR
-          DO K = 1, 3
+          DO J = 1, NVOR
             WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
           ENDDO
-        ENDDO
-      ENDDO
-      
-      
-      DO N = 1, NUMAX
-        DO I = 1, NVOR
-          DO K = 1, 3
+C
+          DO N = 1, NUMAX
             WC_U(K,I,N) = WCSRD_U(K,I,N)
             WV_U(K,I,N) = WVSRD_U(K,I,N)
-          enddo
-        enddo
-      enddo
-      
-            
-      DO N = 1, NUMAX
-        DO J = 1, NVOR
-          DO I = 1, NVOR
-            DO K = 1, 3
+            DO J = 1, NVOR
               WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
             ENDDO
           ENDDO
-        enddo 
-      enddo
 C
+        ENDDO
+      ENDDO
+!       DO I = 1, NVOR
+!         DO K = 1, 3
+!           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
+!      &            + WCSRD_U(K,I,2)*VINF(2)
+!      &            + WCSRD_U(K,I,3)*VINF(3)
+!      &            + WCSRD_U(K,I,4)*WROT(1)
+!      &            + WCSRD_U(K,I,5)*WROT(2)
+!      &            + WCSRD_U(K,I,6)*WROT(3)
+!           WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+!      &            + WVSRD_U(K,I,2)*VINF(2)
+!      &            + WVSRD_U(K,I,3)*VINF(3)
+!      &            + WVSRD_U(K,I,4)*WROT(1)
+!      &            + WVSRD_U(K,I,5)*WROT(2)
+!      &            + WVSRD_U(K,I,6)*WROT(3)
+!         enddo 
+!       enddo 
+      
+      
+!       DO J = 1, NVOR
+!         DO I = 1, NVOR
+!           DO K = 1, 3
+!             WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
+!             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
+!           ENDDO
+!         ENDDO
+!       ENDDO
+      
+      
+!       DO N = 1, NUMAX
+!         DO I = 1, NVOR
+!           DO K = 1, 3
+!             WC_U(K,I,N) = WCSRD_U(K,I,N)
+!             WV_U(K,I,N) = WVSRD_U(K,I,N)
+!           enddo
+!         enddo
+!       enddo
+      
+            
+!       DO N = 1, NUMAX
+!         DO J = 1, NVOR
+!           DO I = 1, NVOR
+!             DO K = 1, 3
+!               WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+!               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
+!             ENDDO
+!           ENDDO
+!         enddo 
+!       enddo
+! C
 C
       RETURN
       END ! VELSUM

@@ -314,6 +314,9 @@ class AVLSolver(object):
         # these indices correspond to the position of each parameter in that arra
         self._init_surf_data()
 
+        # set the default solver tolerance
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', 2e-5)
+
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
 
