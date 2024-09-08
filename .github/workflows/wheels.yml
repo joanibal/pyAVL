@@ -65,7 +65,9 @@ jobs:
             LIB_PATH=$LIB_PATH:/usr/local/lib
           fi
           XCODE_VER='15.2'
-          CIBW="ls /Applications/ && sudo xcode-select -s /Applications/Xcode_${XCODE_VER}.app"
+          ls /Applications/Xcode_*.app
+          
+          CIBW="sudo xcode-select -s /Applications/Xcode_${XCODE_VER}.app"
           echo "CIBW_BEFORE_ALL=$CIBW" >> $GITHUB_ENV
           # setting SDKROOT necessary when using the gfortran compiler
           # installed in cibw_before_build_macos.sh
