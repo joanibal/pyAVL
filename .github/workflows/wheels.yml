@@ -75,11 +75,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_${XCODE_VER}.app
           CIBW="MACOSX_DEPLOYMENT_TARGET=${{ matrix.buildplat[4] }}\
             LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH\
-            SDKROOT=$(xcrun --sdk macosx --show-sdk-path)\
-            PIP_PRE=1\
-            PIP_NO_BUILD_ISOLATION=false\
-            PKG_CONFIG_PATH=$LIB_PATH/pkgconfig\
-            PIP_EXTRA_INDEX_URL=https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"
+            SDKROOT=$(xcrun --sdk macosx --show-sdk-path)"
           echo "CIBW_ENVIRONMENT_MACOS=$CIBW" >> "$GITHUB_ENV"
 
           echo "REPAIR_PATH=$LIB_PATH" >> "$GITHUB_ENV"
