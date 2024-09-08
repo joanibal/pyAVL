@@ -871,9 +871,6 @@ C     (still normalized by strip area and chord)
         R(1) = XR - XYZREF(1)
         R(2) = YR - XYZREF(2)
         R(3) = ZR - XYZREF(3)
-        ! write(*,*)J, 'R', R(1), R(2), R(3)
-        ! write(*,*)J, 'xr', XR, YR, ZR
-        ! write(*,*)J, 'XYZREF', XYZREF(1), XYZREF(2), XYZREF(3)
 
         CRSTRP(J) = CMX + (CFZ*R(2) - CFY*R(3))/CR
         CMSTRP(J) = CMY + (CFX*R(3) - CFZ*R(1))/CR
@@ -884,7 +881,6 @@ C
           CMST_U(J,N) = CMY_U(N) + (CFX_U(N)*R(3) - CFZ_U(N)*R(1))/CR
           CNST_U(J,N) = CMZ_U(N) + (CFY_U(N)*R(1) - CFX_U(N)*R(2))/CR
         ENDDO
-        ! write(*,*)J, 'CMST_U', CMY_U(1), CFX_U(1), R(3), CFZ_U(1), R(1)
 C
         DO N=1, NCONTROL
           CRST_D(J,N) = CMX_D(N) + (CFZ_D(N)*R(2) - CFY_D(N)*R(3))/CR
@@ -1172,7 +1168,6 @@ C
          CDTOT_A = CDTOT_A + CDS_A(IS)
          CLTOT_A = CLTOT_A + CLS_A(IS)
 C
-         write(*,*) 'CXTOT_U 0', CXTOT_U(1)
          DO N=1, NUMAX
            CDTOT_U(N) = CDTOT_U(N) + CDS_U(IS,N)
            CLTOT_U(N) = CLTOT_U(N) + CLS_U(IS,N)
@@ -1183,7 +1178,6 @@ C
            CMTOT_U(N) = CMTOT_U(N) + CMS_U(IS,N)
            CNTOT_U(N) = CNTOT_U(N) + CNS_U(IS,N)
          ENDDO
-         write(*,*) 'CXTOT_U 1', CXTOT_U(1)
 
 C
          DO N=1, NCONTROL
@@ -1238,7 +1232,6 @@ C
           CMTOT_U(N) = 2.0 * CMTOT_U(N)
           CNTOT_U(N) = 0.
         ENDDO
-         write(*,*) 'CXTOT_U 2', CXTOT_U(1)
 C
         DO N=1, NCONTROL
           CDTOT_D(N) = 2.0 * CDTOT_D(N)
@@ -1446,7 +1439,6 @@ C
           CMTOT_U(IU) = CMTOT_U(IU) + CMBDY_U(IU)
           CNTOT_U(IU) = CNTOT_U(IU) + CNBDY_U(IU)
         ENDDO
-        write(*,*) 'CXTOT_U 3', CXTOT_U(1)
 
  200  CONTINUE
 C

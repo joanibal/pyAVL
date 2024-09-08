@@ -1,16 +1,26 @@
 from pyavl import AVLSolver
 import numpy as np
+import matplotlib.pyplot as plt
 
+avl = AVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass",  debug=False)
 
-avl_solver = AVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass",  debug=True)
+vel = 10
+avl.set_case_parameter("velocity", vel)
+dens = avl.get_case_parameter("density")
+g = avl.get_case_parameter("grav.acc.")
+mass = avl.get_case_parameter("mass")
+weight = mass * g
+cl = weight / (0.5 * dens * vel**2)
+avl.add_trim_condition("CL", cl)
 
-# set the angle of attack
-# avl_solver.add_constraint("alpha", 5.00)
+avl.execute_eigen_mode_calc()
 
-avl_solver.set_case_parameter("velocity", 10)
+vals_avl = avl.get_eigenvalues()
 
-# This is the method that acutally runs the analysis
-avl_solver.set_avl_fort_arr('CASE_R', 'EXEC_TOL', 0.00002)
-# avl_solver.execute_run()
-avl_solver.avl.mode()
-
+# plot the eigenvalues
+plt.plot(np.real(vals_avl),np.imag(vals_avl), 'o')
+plt.xlabel('real')
+plt.ylabel('imag')
+plt.title('Eigenvalues')
+plt.show()
+# ----------------------------------------------------

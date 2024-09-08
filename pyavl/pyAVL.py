@@ -768,6 +768,49 @@ class AVLSolver(object):
         for cl in CLs:
             self.add_trim_condition("CL", cl)
             self.execute_run()
+            
+    def execute_eigen_mode_calc(self):
+        self.avl.execute_eigenmode_calc()
+    
+    def get_eigenvalues(self):
+        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL"""
+        
+        # get the number of "valid" eigenvalues from avl
+        # [0] because pyavl only supports 1 run case
+        num_eigen = self.get_avl_fort_arr("CASE_I", "NEIGEN")[0]
+        
+        # 0 because pyavl only supports 1 run case
+        slicer = (0, slice(0,num_eigen))
+        # get the eigenvalues from avl
+        eig_vals = self.get_avl_fort_arr("CASE_Z", "EVAL", slicer=slicer)
+        return eig_vals
+
+    def get_eigenvectors(self):
+        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL"""
+        
+        # get the number of "valid" eigenvalues from avl
+        # [0] because pyavl only supports 1 run case
+        num_eigen = self.get_avl_fort_arr("CASE_I", "NEIGEN")[0]
+        
+        # 0 because pyavl only supports 1 run case
+        slicer = (0, slice(0,num_eigen), slice(None))
+        eig_vecs = self.get_avl_fort_arr("CASE_Z", "EVEC", slicer=slicer)
+        
+        return eig_vecs
+    
+    def get_system_matrix(self):
+        """returns the system matrix used for the eigenmode calculation"""
+        
+        # get the dimesion of the A matrix from the eig_vals    
+        eig_vals = self.get_avl_fort_arr("CASE_Z", "EVAL")
+        jemax = eig_vals.shape[1]
+        asys = np.zeros((jemax,jemax), order="F")
+        
+        # 1 because pyavl only supports 1 run case and we are using fortran base 1 indexing
+        irun_case = 1
+        self.avl.get_system_matrix(irun_case,asys)
+        
+        return asys
 
     def get_control_names(self) -> List[str]:
         fort_names = self.get_avl_fort_arr("CASE_C", "DNAME")

@@ -144,9 +144,6 @@ C
      &               + WC_GAM(2,I,J)*ENC(2,I)
      &               + WC_GAM(3,I,J)*ENC(3,I)
            LVNC(I) = .TRUE.
-           if (i <= 10 .and. j <= 10) then
-            write(*,*) i,j, 'AICN',AICN(i,j)
-           endif
          ENDDO
        ENDDO
 

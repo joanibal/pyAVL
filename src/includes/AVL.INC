@@ -277,7 +277,7 @@ C
      & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
      & XNP,                ! x neutral point
      & EXEC_TOL           ! tolerance of exec trim solve
-      COMPLEX EVAL, EVEC, EVALDAT
+      COMPLEX(kind=avl_real) EVAL, EVEC, EVALDAT
       COMMON /CASE_Z/
      &  EVAL(JEMAX,NRMAX),       ! mode eigenvalue
      &  EVEC(JEMAX,JEMAX,NRMAX), ! mode eigenvector
