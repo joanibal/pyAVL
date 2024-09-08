@@ -44,6 +44,10 @@ share/python-wheels/
 MANIFEST
 src/ad_src/forward_tmp/
 src/ad_src/reverse_tmp/
+examples/aircraft/*.html
+examples/aircraft/*.db
+tests/reports/
+tests/*.html
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
