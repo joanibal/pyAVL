@@ -31,11 +31,11 @@ jobs:
         # - [macos-13, macosx, x86_64, accelerate, "14.0"]
         # - [macos-14, macosx, arm64, openblas, "12.3"]
         - [macos-12, macosx, x86_64, openblas, "10.13"]
-        # - [macos-14, macosx, arm64]
-        # - [macos-14, macosx, arm64]
+        - [macos-13, macosx, x86_64, accelerate, "14.0"]
+        - [macos-14, macosx, arm64, openblas, "12.3"]
+        - [macos-14, macosx, arm64, accelerate, "14.0"]
         
-        # python: [["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11"]]
-        python: [["cp310", "3.10"]]
+        python: [["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11"]]
 
 
     env:
