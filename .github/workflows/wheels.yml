@@ -116,6 +116,8 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
           name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
+                    ${{ matrix.buildplat[2] }} ${{ matrix.buildplat[3] }}
+                    ${{ matrix.buildplat[4] }}
   
   upload_all:
     name: upload the wheels to PYPI
@@ -128,7 +130,7 @@ jobs:
       - name: Checkout pyAVL
         uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download
         name: download the wheels
         with:
