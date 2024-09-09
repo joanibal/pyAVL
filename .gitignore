@@ -48,7 +48,11 @@ examples/aircraft/*.html
 examples/aircraft/*.db
 tests/reports/
 tests/*.html
-
+tests/*_out.avl
+tests/reports
+tests/opt_*.avl
+.devcontainer
+**.DS_Store
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
