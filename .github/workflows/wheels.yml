@@ -61,15 +61,26 @@ jobs:
       - name: Setup macOS
         if: startsWith( matrix.buildplat[0], 'macos-' )
         run: |
+          if [[ ${{ matrix.buildplat[3] }} == 'accelerate' ]]; then
+            echo CIBW_CONFIG_SETTINGS=\"setup-args=-Dblas=accelerate\" >> "$GITHUB_ENV"
+            # Always use preinstalled gfortran for Accelerate builds
+            ln -s $(which gfortran-13) gfortran
+            export PATH=$PWD:$PATH
+            echo "PATH=$PATH" >> "$GITHUB_ENV"
+            LIB_PATH=$(dirname $(gfortran --print-file-name libgfortran.dylib))
+          fi
           # Add libraries installed by cibw_before_build_macos.sh to path
           if [[ ${{ matrix.buildplat[2] }} == 'arm64' ]]; then
             LIB_PATH=$LIB_PATH:/opt/arm64-builds/lib
           else
             LIB_PATH=$LIB_PATH:/usr/local/lib
           fi
-          XCODE_VER='15.2'
-          ls /Applications/Xcode_*.app
-          
+          if [[ ${{ matrix.buildplat[4] }} == '10.9' ]]; then
+            # Newest version of Xcode that supports macOS 10.9
+            XCODE_VER='13.4.1'
+          else
+            XCODE_VER='15.2'
+          fi
           CIBW="sudo xcode-select -s /Applications/Xcode_${XCODE_VER}.app"
           echo "CIBW_BEFORE_ALL=$CIBW" >> $GITHUB_ENV
           # setting SDKROOT necessary when using the gfortran compiler
