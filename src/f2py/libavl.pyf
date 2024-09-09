@@ -35,12 +35,12 @@ python module libavl ! in
         subroutine aero_b ! in :libavl:aero_b.f
         end subroutine aero_b
         
-        subroutine loadgeo(fildef) ! in :libavl:avl.f
-            character*120 :: fildef
+        subroutine loadgeo(geom_file) ! in :libavl:avl.f
+            character*256 :: geom_file
         end subroutine loadgeo
 
-        subroutine loadmass(fmsdef) ! in :libavl:avl.f
-            character*120 :: fmsdef
+        subroutine loadmass(mass_file) ! in :libavl:avl.f
+            character*256 :: mass_file
         end subroutine loadmass
 
         
@@ -88,6 +88,18 @@ python module libavl ! in
 
         subroutine solve_adjoint
         end subroutine solve_adjoint
+        
+        subroutine mode
+        end subroutine mode
+        
+        subroutine execute_eigenmode_calc
+        end subroutine execute_eigenmode_calc
+        
+        subroutine get_system_matrix(ir, asys)
+            include '../includes/AVL.INC'
+            integer :: ir
+            real*8, intent(inout) :: asys(jemax,jemax)
+        end subroutine get_system_matrix
         
     end interface 
 end python module libavl

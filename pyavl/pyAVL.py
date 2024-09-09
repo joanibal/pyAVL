@@ -314,6 +314,9 @@ class AVLSolver(object):
         # these indices correspond to the position of each parameter in that arra
         self._init_surf_data()
 
+        # set the default solver tolerance
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', 2e-5)
+
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
 
@@ -754,8 +757,9 @@ class AVLSolver(object):
         warnings.warn("executeRun is deprecated, use execute_run instead")
         self.execute_run()
 
-    def execute_run(self):
+    def execute_run(self, tol=0.00002):
         # run the analysis (equivalent to the avl command `x` in the oper menu)
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
         self.avl.oper()
 
     def CLSweep(self, start_CL, end_CL, increment=0.1):
@@ -764,6 +768,49 @@ class AVLSolver(object):
         for cl in CLs:
             self.add_trim_condition("CL", cl)
             self.execute_run()
+            
+    def execute_eigen_mode_calc(self):
+        self.avl.execute_eigenmode_calc()
+    
+    def get_eigenvalues(self):
+        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL"""
+        
+        # get the number of "valid" eigenvalues from avl
+        # [0] because pyavl only supports 1 run case
+        num_eigen = self.get_avl_fort_arr("CASE_I", "NEIGEN")[0]
+        
+        # 0 because pyavl only supports 1 run case
+        slicer = (0, slice(0,num_eigen))
+        # get the eigenvalues from avl
+        eig_vals = self.get_avl_fort_arr("CASE_Z", "EVAL", slicer=slicer)
+        return eig_vals
+
+    def get_eigenvectors(self):
+        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL"""
+        
+        # get the number of "valid" eigenvalues from avl
+        # [0] because pyavl only supports 1 run case
+        num_eigen = self.get_avl_fort_arr("CASE_I", "NEIGEN")[0]
+        
+        # 0 because pyavl only supports 1 run case
+        slicer = (0, slice(0,num_eigen), slice(None))
+        eig_vecs = self.get_avl_fort_arr("CASE_Z", "EVEC", slicer=slicer)
+        
+        return eig_vecs
+    
+    def get_system_matrix(self):
+        """returns the system matrix used for the eigenmode calculation"""
+        
+        # get the dimesion of the A matrix from the eig_vals    
+        eig_vals = self.get_avl_fort_arr("CASE_Z", "EVAL")
+        jemax = eig_vals.shape[1]
+        asys = np.zeros((jemax,jemax), order="F")
+        
+        # 1 because pyavl only supports 1 run case and we are using fortran base 1 indexing
+        irun_case = 1
+        self.avl.get_system_matrix(irun_case,asys)
+        
+        return asys
 
     def get_control_names(self) -> List[str]:
         fort_names = self.get_avl_fort_arr("CASE_C", "DNAME")
@@ -1151,8 +1198,16 @@ class AVLSolver(object):
                 fid.write(f" {data['claf'][idx_sec]}\n")
 
             if (data["clcdsec"][idx_sec] != 0.0).any():
-                fid.write(" CLCD\n")
-                fid.write(f" {data['clcd'][idx_sec]}\n")
+                fid.write(" CDCL\n")
+                fid.write(
+                    f" {data['clcdsec'][idx_sec, 0]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 1]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 2]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 3]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 4]:.6f} "
+                    f" {data['clcdsec'][idx_sec, 5]:.6f}\n"
+                )
+            
 
             # check for control surfaces
 

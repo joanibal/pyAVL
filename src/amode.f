@@ -29,8 +29,8 @@ C
       CHARACTER*1 ITEM, ANS, CHKEY
       CHARACTER*2 OPT, CHPLOT
       CHARACTER*4 COMAND, ITEMC
-      CHARACTER*120 FNOUT, FNNEW, FNSYS
-      CHARACTER*120 LINE, FNVB, COMARG, PROMPT, RTNEW
+      CHARACTER*256 FNOUT, FNNEW, FNSYS, FNVB 
+      CHARACTER*120 LINE, COMARG, PROMPT, RTNEW
       CHARACTER SATYPE*50, ROTTYPE*50
 C
       LOGICAL LPROOT(JEMAX,NRMAX),
@@ -42,6 +42,7 @@ C
 C
       REAL RINPUT(20), RINP(20)
       INTEGER IINPUT(20), IINP(20)
+      logical :: lsysmat
 C
       IRUN0 = IRUN
 C
@@ -81,6 +82,11 @@ c      EYEPTX = 0.
 c      ROBINV = 0.
 C
       OVERLAY = .FALSE.
+
+      if (LVERBOSE) then 
+            write(*,*) 3, parnam(ipixx), '  ', parunch(ipixx)
+      endif
+
 C
 C=================================================================
 C---- start of user interaction loop
@@ -95,7 +101,7 @@ C
 C
 C
 C
-      WRITE(*,1052)
+      WRITE(*,1052) LSVMOV
  1052 FORMAT(
      &   ' =========================================================='
      & //' "#" select run case for eigenmode analysis (0 = all)'
@@ -108,6 +114,7 @@ C
      & //'  A nnotate current plot'
      &  /'  H ardcopy current plot'
      &  /'  T ime-integration parameters'
+     &  /'  G enerate hardcopy movie toggle', L3
      & //'  S ystem matrix output'
      &  /'  W rite eigenvalues to file'
      &  /'  D ata file overlay toggle'
@@ -115,7 +122,7 @@ C
      &  /'  U nzoom')
 C
 C   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-C   x x   x       x         x x   x   x x x x   x x   x
+C   x x x x     x x         x x   x   x x x x   x x   x
 
  810  CONTINUE
       CALL ASKC(' .MODE^',COMAND,COMARG)
@@ -198,51 +205,15 @@ C-------------------------------------------------------------------
      &       COMAND .EQ. 'C   '      ) THEN
 C------ execute eigenmode calculation
         DO 100 IR = IRUN1, IRUN2
-          CALL RUNCHK(IR,LOK)
-          IF(.NOT.LOK) THEN
-           WRITE(*,*) '** Skipping ill-posed run case', IR
-           GO TO 100
-          ENDIF
-C
-          NITER = 10
-          INFO = 0
-          CALL EXEC(NITER,INFO,IR)
-C
-          IF(COMAND .EQ. 'N   ') THEN
-           CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
-          ELSE
-           CALL APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
-          ENDIF
-C
-cc          LU = 6
-cc          CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
-C
-          INFO = 1
-          ETOL = 1.0E-5
-          CALL EIGSOL(INFO,IR,ETOL,ASYS,NSYS)
-C
-C
-          DO KEIG = 1, NEIGEN(IR)
-            LPROOT(KEIG,IR) = .TRUE.
-            LPRNUM(KEIG,IR) = IRUN1 .NE. IRUN2
-          ENDDO
-C
-          XORG0 = 0.0
-          YORG0 = 0.0
-          TMIN = 0.
-          TMAX = 0.
-          FMIN = 0.
-          FMAX = 0.
-          ! removed plotting
-!           CALL PLEMAP(XORG0,YORG0, 
-!      &                IRUN1,IR,
-!      &                KEVIEW,IRVIEW,
-!      &                LPROOT,LPRNUM,OVERLAY,
-!      &                TMIN,TMAX,TDEL,TFAC,
-!      &                FMIN,FMAX,FDEL,FFAC )
-C
-          WRITE(*,*)
-          CALL EIGLST(6,IR)
+                
+            IF(COMAND .EQ. 'N   ') THEN
+                  lsysmat = .true.
+            ELSE
+                  lsysmat = .false.
+            ENDIF
+
+          call eigenmode_analysis(IR,lsysmat)
+
 C
  100    CONTINUE
 C
@@ -463,6 +434,10 @@ C
         ENDIF
         GO TO 70
 C
+C-----------------------------------------------------------------------
+      ELSEIF(COMAND.EQ.'G   ') THEN
+       LSVMOV = .NOT. LSVMOV
+C
 C-------------------------------------------------------------------
 C---- write system matrices
       ELSEIF(COMAND.EQ.'S   ' .OR.
@@ -489,7 +464,7 @@ C
           CDREF     = PARVAL(IPCD0,IR)
 C
           NITER = 10
-          INFO = 0
+          INFO = 1
           CALL EXEC(NITER,INFO,IR)
 C
           IF(COMAND.EQ.'S   ') THEN
@@ -528,25 +503,25 @@ C
 C
 C-------------------------------------------------------------------
 C---- write eigenvalues
-C       ELSEIF(COMAND.EQ.'W   ') THEN
-C        IF(FEVDEF(1:1).EQ.' ') THEN
-C C------ set default filename
-C         KDOT = INDEX(FILDEF,'.')
-C         IF(KDOT.EQ.0) THEN
-C          CALL SLEN(FILDEF,NFIL)
-C          FEVDEF = FILDEF(1:NFIL) // '.eig'
-C         ELSE
-C          FEVDEF = FILDEF(1:KDOT) // 'eig'
-C         ENDIF
-C        ENDIF
-C C
-C        CALL SLEN(FEVDEF,NFE)
-C        NFE = MAX( NFE , 1 )
-C        WRITE(*,2040) FEVDEF(1:NFE)
-C  2040  FORMAT(' Enter eigenvalue save filename: ', A)
-C        READ (*,1000) FNNEW
-C        IF(FNNEW.NE.' ') FEVDEF = FNNEW
-C        CALL EIGOUT(FEVDEF, IRUN1,IRUN2, SAVED)
+      ELSEIF(COMAND.EQ.'W   ') THEN
+       IF(FEVDEF(1:1).EQ.' ') THEN
+C------ set default filename
+        KDOT = INDEX(FILDEF,'.')
+        IF(KDOT.EQ.0) THEN
+         CALL SLEN(FILDEF,NFIL)
+         FEVDEF = FILDEF(1:NFIL) // '.eig'
+        ELSE
+         FEVDEF = FILDEF(1:KDOT) // 'eig'
+        ENDIF
+       ENDIF
+C
+       CALL SLEN(FEVDEF,NFE)
+       NFE = MAX( NFE , 1 )
+       WRITE(*,2040) FEVDEF(1:NFE)
+ 2040  FORMAT(' Enter eigenvalue save filename: ', A)
+       READ (*,1000) FNNEW
+       IF(FNNEW.NE.' ') FEVDEF = FNNEW
+       CALL EIGOUT(FEVDEF, IRUN1,IRUN2, SAVED)
 C
 C-------------------------------------------------------------------
 C C---- toggle overlay flag
@@ -954,6 +929,7 @@ C
         WXH_U(K,I+3) = WXH_U(K,I+3) + H(J)*ROT
         WXH_U(K,J+3) = WXH_U(K,J+3) - H(I)*ROT
       ENDDO
+
 C
 C          =    -   =    -   =     - -    =     - -
 C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
@@ -988,7 +964,7 @@ C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
      &         + RIINV(K,2)*WXH_U(2,IU)
      &         + RIINV(K,3)*WXH_U(3,IU)
         ENDDO
-C
+
         DO N = 1, NCONTROL
           MIF_D(K,N) = 
      &           MAINV(K,1)*CXTOT_D(N)*QS
@@ -1043,6 +1019,8 @@ C---- x-acceleration
       DO N = 1, NCONTROL
         BSYS(IEQ,N) =   MIF_D(K,N)
       ENDDO
+
+
 C
 C---- y-acceleration
       IEQ = JEV
@@ -1234,14 +1212,6 @@ C---- z-velocity
      &                  + TT_ANG(K,2,3)*VINF(2)
      &                  + TT_ANG(K,3,3)*VINF(3) )*VEE
 C
-
-c      write(*,*) 'H  ', H
-c      write(*,*) 'WxH', WXH
-c      write(*,*) 'I-1 M  ', RIM
-c      write(*,*) 'I-1 WxH', PRM
-C
-c      write(*,*) nzmax, nsys
-C
       RETURN
       END ! SYSMAT
 
@@ -1250,7 +1220,9 @@ C
 
       SUBROUTINE APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
 C------------------------------------------------------------------
-C     Computes system matrices for run case IR.
+C     Computes system matrices for run case IR,
+C     using the approximate expression in Etkin.
+C
 C     Current forces and derivatives are assumed to be correct.
 C------------------------------------------------------------------
       INCLUDE 'AVL.INC'
@@ -1526,11 +1498,22 @@ C
 
       SUBROUTINE SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
 C------------------------------------------------------------------
-C     Computes eigenvalues and eigenvectors for run case IR.
-C     Current forces and derivatives are assumed to be correct.
+C     Prints out state-system matrices "A" and "B" 
+C     In an organized manner.
 C------------------------------------------------------------------
       INCLUDE 'AVL.INC'
       REAL*8 ASYS(JEMAX,JEMAX),BSYS(JEMAX,NDMAX),RSYS(JEMAX)
+      REAL*8 USGN(JEMAX)
+C
+      DO I = 1, NSYS
+        USGN(I) = 1.0
+      ENDDO
+      USGN(JEU) = -1.0
+      USGN(JEW) = -1.0
+      USGN(JEP) = -1.0
+      USGN(JER) = -1.0
+      USGN(JEX) = -1.0
+      USGN(JEZ) = -1.0
 C
       WRITE(LU,*)
       WRITE(LU,1100)
@@ -1542,9 +1525,11 @@ C      1234567890123456789012345678901234567890
  1100 FORMAT(1X,A,A,A,1X,'|',2X,12A12)
 C
       DO I = 1, NSYS
-        WRITE(LU,1200) (ASYS(I,J), J=1, NSYS),
-     &                 (BSYS(I,N), N=1, NCONTROL)
- 1200   FORMAT(1X,12F10.4,3X,12G12.4)
+        WRITE(LU,1200) 
+     &     (ASYS(I,J)*USGN(I)*USGN(J), J=1, NSYS),
+     &     (BSYS(I,N)*USGN(I)        , N=1, NCONTROL)
+c     &   ,   RSYS(I)*USGN(I)
+ 1200   FORMAT(1X,12e24.16,3X,12G12.4)
       ENDDO
 C
       RETURN
@@ -1567,6 +1552,7 @@ C
 C---- call EISPACK's Real/General eigenvalue routine
 C     ICALC = 0   ! get eigenvalues only
       ICALC = 1   ! get eigenvalues and eigenvectors
+      IWORK = 0
       CALL RG(JEMAX,NSYS,ASYS,WR,WI,ICALC,WVEC,IWORK,WORK,IERR)
 C
 C-------------------------------------------------------
@@ -1613,9 +1599,16 @@ C------- negative imaginary part of eigenvalue... store complex eigenvector
          ENDDO
         ENDIF
  100  CONTINUE
+
 C
       NEIGEN(IR) = KEIG
 C
+      ! do KEIG = 1, NEIGEN(IR)
+      !     write(*,*) KEIG, 'EIGEN(KEIG,IR)'
+      !     DO I = 1, NSYS
+      !      write(*,*) EVEC(I,KEIG,IR) 
+      !    ENDDO
+      ! enddo
       RETURN
       END ! EIGSOL
 
@@ -2168,3 +2161,103 @@ C
       GO TO 10
 C
       END ! PARMOD
+
+
+      subroutine eigenmode_analysis(IR,lsysmat)
+            INCLUDE 'AVL.INC'
+            
+            integer :: IR
+            logical :: lsysmat
+            
+            integer :: NITER, INFO, KEIG, NSYS, LU
+            REAL*8 ASYS(JEMAX,JEMAX),BSYS(JEMAX,NDMAX),RSYS(JEMAX)
+            REAL*8 :: ETOL
+            
+            LOGICAL :: LPROOT(JEMAX,NRMAX), LPRNUM(JEMAX,NRMAX), LOK
+       
+            
+            
+            CALL RUNCHK(IR,LOK)
+            IF(.NOT.LOK) THEN
+            WRITE(*,*) '** Skipping ill-posed run case', IR
+            return 
+            ENDIF
+C
+
+            
+            NITER = 10
+            INFO = 1
+            CALL EXEC(NITER,INFO,IR)
+C
+            IF(lsysmat) THEN
+                  CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
+            ELSE
+                  CALL APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
+            ENDIF
+            
+            ! LU = 6
+            ! CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
+C
+            INFO = 1
+            ETOL = 1.0E-5
+            CALL EIGSOL(INFO,IR,ETOL,ASYS,NSYS)
+C
+C
+            DO KEIG = 1, NEIGEN(IR)
+                  LPROOT(KEIG,IR) = .TRUE.
+                  LPRNUM(KEIG,IR) = IRUN1 .NE. IRUN2
+            ENDDO
+C
+            ! XORG0 = 0.0
+            ! YORG0 = 0.0
+            ! TMIN = 0.
+            ! TMAX = 0.
+            ! FMIN = 0.
+            ! FMAX = 0.
+            ! removed plotting
+      !       CALL PLEMAP(XORG0,YORG0, 
+      ! &                IRUN1,IR,
+      ! &                KEVIEW,IRVIEW,
+      ! &                LPROOT,LPRNUM,OVERLAY,
+      ! &                TMIN,TMAX,TDEL,TFAC,
+      ! &                FMIN,FMAX,FDEL,FFAC )
+C
+            if (lverbose) then 
+                  CALL EIGLST(6,IR)
+            endif
+            
+      end subroutine eigenmode_analysis
+      
+      subroutine execute_eigenmode_calc()
+            ! inteded to be called from the f2py interface
+            integer :: IR
+            logical :: lsysmat
+            
+            lsysmat = .TRUE. ! this routine is analogous to 'N' in AVL
+            IR = 1 ! for pyAVL we always use IR = 1
+            CALL eigenmode_analysis(IR,lsysmat)
+            
+      end subroutine execute_eigenmode_calc
+      
+      subroutine get_system_matrix(ir, ASYS)
+            INCLUDE 'AVL.INC'
+      
+            ! input/output
+            REAL*8 :: ASYS(JEMAX,JEMAX)
+            
+            ! working
+            REAL*8 :: BSYS(JEMAX,NDMAX),RSYS(JEMAX)
+            REAL*8 :: ETOL
+            integer :: NSYS, i
+            
+            CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
+            
+            
+      end subroutine
+C
+
+            
+            
+            
+            
+            

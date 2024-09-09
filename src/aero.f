@@ -871,6 +871,7 @@ C     (still normalized by strip area and chord)
         R(1) = XR - XYZREF(1)
         R(2) = YR - XYZREF(2)
         R(3) = ZR - XYZREF(3)
+
         CRSTRP(J) = CMX + (CFZ*R(2) - CFY*R(3))/CR
         CMSTRP(J) = CMY + (CFX*R(3) - CFZ*R(1))/CR
         CNSTRP(J) = CMZ + (CFY*R(1) - CFX*R(2))/CR
@@ -1177,6 +1178,7 @@ C
            CMTOT_U(N) = CMTOT_U(N) + CMS_U(IS,N)
            CNTOT_U(N) = CNTOT_U(N) + CNS_U(IS,N)
          ENDDO
+
 C
          DO N=1, NCONTROL
            CDTOT_D(N) = CDTOT_D(N) + CDS_D(IS,N)
@@ -1437,6 +1439,7 @@ C
           CMTOT_U(IU) = CMTOT_U(IU) + CMBDY_U(IU)
           CNTOT_U(IU) = CNTOT_U(IU) + CNBDY_U(IU)
         ENDDO
+
  200  CONTINUE
 C
       RETURN

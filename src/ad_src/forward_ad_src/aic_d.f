@@ -370,6 +370,8 @@ C
      +                     rcore, rcore_diff)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
+C     Uses Scully (also Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
 C----------------------------------------------------------
       LOGICAL lbound
 C

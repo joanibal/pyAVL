@@ -253,6 +253,7 @@ C
       REAL ypt1_diff
       REAL yscale
       REAL yscale_diff
+      INTEGER ii
       REAL width
       REAL width_diff
       REAL chordl
@@ -332,6 +333,8 @@ C
       REAL fracte_diff
       INTRINSIC MAX
       INTRINSIC MIN
+      REAL zl
+      REAL zu
       REAL sum
       REAL wtot
       INTEGER jj
@@ -401,7 +404,7 @@ C
         idx_strip = jfrst(isurf)
 C
 C-----------------------------------------------------------------
-C---- section arc lengths of wing trace in y-z plane
+C---- Arc length positions of sections in wing trace in y-z plane
         yzlen(1) = 0.
         DO isec=2,nsec(isurf)
           dy = xyzles(2, isec, isurf) - xyzles(2, isec-1, isurf)
@@ -466,7 +469,13 @@ C
           END IF
         ELSE
 C
-C----- set spanwise spacing using overall parameters NVS(ISURF), SSPACE
+C
+C----- Otherwise, set spanwise spacing using the SURFACE spanwise
+C      parameters NVS, SSPACE
+C
+C      This spanwise spacing is modified (fudged) to align vortex edges
+C      with SECTIONs as defined.  This allows CONTROLs to be defined
+C      without bridging vortex strips
 C
           nspace = 2*nvs(isurf) + 1
           IF (nspace .GT. kpmax) THEN
@@ -511,7 +520,7 @@ C----- find node nearest each section
             CALL PUSHINTEGER4(isec)
             ad_count0 = 1
 C
-C----- fudge Glauert angles to make nodes match up exactly with interior sections
+C----- fudge spacing array to make nodes match up exactly with interior sections
             DO isec=2,nsec(isurf)-1
               CALL PUSHINTEGER4(ipt1)
               ipt1 = iptloc(isec-1)
@@ -521,6 +530,7 @@ C----- fudge Glauert angles to make nodes match up exactly with interior section
                 GOTO 110
               ELSE
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
                 CALL PUSHREAL8(ypt1)
                 ypt1 = ypt(ipt1)
                 CALL PUSHREAL8(yscale)
@@ -541,6 +551,7 @@ C
                 CALL PUSHINTEGER4(ivs - 1)
                 CALL PUSHINTEGER4(ad_from0)
 C
+C----- check for unique spacing node for next section, if not we need more nodes
                 CALL PUSHINTEGER4(ipt1)
                 ipt1 = iptloc(isec)
                 CALL PUSHINTEGER4(ipt2)
@@ -549,6 +560,7 @@ C
                   GOTO 120
                 ELSE
 C
+C----- fudge spacing to this section so that nodes match up exactly with section
                   CALL PUSHREAL8(ypt1)
                   ypt1 = ypt(ipt1)
                   CALL PUSHREAL8(yscale)
@@ -584,7 +596,7 @@ C
             STOP
           END IF
         END IF
-C
+Cc#endif
 C
 C
 C====================================================
@@ -742,6 +754,9 @@ C
               END IF
 C
 C
+Cc#ifdef USE_CPOML
+C
+Cc#endif
               CALL PUSHREAL8(chsin)
               chsin = chsinl + fc*(chsinr-chsinl)
               CALL PUSHREAL8(chcos)
@@ -873,6 +888,8 @@ C
 C-------- go over vortices in this strip
               idx_vor = ijfrst(idx_strip)
 C NVOR = NVOR + 1
+C change all NVOR indices into idx_vor
+C change all NSTRIP indices into idx_strip
               DO ivc=1,nvc(isurf)
 C
 C
@@ -937,10 +954,19 @@ C------------ scale control gain by factor 0..1, (fraction of element on control
                 ENDDO
 C
 C---------- TE control point used only if surface sheds a wake
+C
+Cc#ifdef USE_CPOML
+C...        nodal grid associated with vortex strip (aft-panel nodes)
+C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
+C...        retained in (x,z) plane at this point
+C
+C
+C
+C
+Cc#endif
                 CALL PUSHINTEGER4(idx_vor)
                 idx_vor = idx_vor + 1
               ENDDO
-C
 C           
               CALL PUSHINTEGER4(idx_strip)
               idx_strip = idx_strip + 1
@@ -2167,6 +2193,9 @@ C
       INTEGER klen
       INTRINSIC LEN
       INTEGER k
+      INTEGER isec
+      INTEGER idup
+      INTEGER iorg
       REAL yoff
       INTEGER idx_strip
       INTEGER ivs
@@ -2287,6 +2316,9 @@ C    surfaces.
 C
 C--- Image flag reversed (set to -IMAGS) for imaged surfaces
 C
+Cc#ifdef USE_CPOML
+Cc#endif
+C
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
 C    these have the 1 and 2 strip edges reversed (i.e. root is edge 2, 
@@ -2301,6 +2333,9 @@ C
             jji = jfrst(nni) + ivs - 1
             jj = jfrst(nn) + ivs - 1
 C
+Cc#ifdef USE_CPOML
+C
+Cc#endif
 C
             n = ndesign + 1
             CALL PUSHINTEGER4(n - 1)
@@ -2340,12 +2375,19 @@ Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
                   rsgn = vrefl(jj, n)
                 ENDDO
                 CALL PUSHINTEGER4(n - 1)
+C          
+Cc#ifdef USE_CPOML
+C...      nodal grid associated with vortex strip
+C
+Cc#endif
                 idx_vor = idx_vor + 1
                 ad_count0 = ad_count0 + 1
               END IF
             ENDDO
             CALL PUSHCONTROL1B(0)
             CALL PUSHINTEGER4(ad_count0)
+C
+            idx_strip = idx_strip + 1
             CALL PUSHINTEGER4(ivs)
             CALL PUSHCONTROL1B(1)
           END IF

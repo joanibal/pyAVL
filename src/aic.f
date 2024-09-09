@@ -362,7 +362,8 @@ C
      &                  SRC_U,DBL_U )
 C----------------------------------------------------------
 C     Sets strengths of source+doublet line segments
-C     for each unit freestream and rotation component
+C     for 6 "unit" flow components consisting of:
+C     3 unit (X,Y,Z) freestream and 3 unit (X,Y,Z) rotations
 C
 C Input
 C -----
@@ -567,6 +568,8 @@ C
      &                   U,V,W, RCORE)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
+C     Uses Scully (also Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
 C----------------------------------------------------------
       LOGICAL LBOUND
 C
@@ -650,7 +653,7 @@ C
 
 
 
-
+      !$PRAGMA FORCEINLINE
       SUBROUTINE SRDVELC(X,Y,Z, X1,Y1,Z1, X2,Y2,Z2,
      &                   BETA,RCORE,
      &                   UVWS,UVWD  )
@@ -702,11 +705,11 @@ C---- set velocity components for unit source and doublet
         UVWS(K) = R1(K)*AI1 + R2(K)*AI2
 C
         RR1 =  (R1(K)+R2(K))    /R1EPS 
-     &        - R1(K)*(RDR+RCSQ)/R1EPS**3
+     &        - R1(K)*(RDR+RCSQ)/(R1EPS*R1EPS*R1EPS)
      &        - R2(K)           /R2EPS
 C
         RR2 =  (R1(K)+R2(K))    /R2EPS 
-     &        - R2(K)*(RDR+RCSQ)/R2EPS**3
+     &        - R2(K)*(RDR+RCSQ)/(R2EPS*R2EPS*R2EPS)
      &        - R1(K)           /R1EPS
 C
         RRT = 2.0*R1(K)*(R2SQ  - RDR)

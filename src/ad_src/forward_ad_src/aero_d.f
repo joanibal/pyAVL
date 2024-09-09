@@ -1343,9 +1343,15 @@ C
 C
 C*******************************************************************
 C
-C...Store strip X,Y,Z body axes forces 
-C   (these are normalized by strip area and moments are referred to
-C    c/4 point and are normalized by strip chord and area)
+C---  At this point the forces are accumulated for the strip in body axes,
+C     referenced to strip 1/4 chord and normalized by strip area and chord
+C     CFX, CFY, CFZ   ! body axes forces 
+C     CMX, CMY, CMZ   ! body axes moments about c/4 point 
+C     CNC             ! strip spanloading CN*chord
+C     CDV_LSTRP       ! strip viscous drag in stability axes
+C
+C...Store strip X,Y,Z body axes forces and moments 
+C   referred to c/4 and strip area and chord
         cf_strp(1, j) = cfx
         cf_strp(2, j) = cfy
         cf_strp(3, j) = cfz
@@ -1353,19 +1359,21 @@ C    c/4 point and are normalized by strip chord and area)
         cm_strp(2, j) = cmy
         cm_strp(3, j) = cmz
 C
-C...Transform strip body axes forces into stability axes
-        cdstrp_diff(j) = cosa*cfx_diff + cfx*cosa_diff + sina*cfz_diff +
-     +    cfz*sina_diff
-        cdstrp(j) = cfx*cosa + cfz*sina
-        clstrp_diff(j) = cosa*cfz_diff + cfz*cosa_diff - sina*cfx_diff -
-     +    cfx*sina_diff
-        clstrp(j) = -(cfx*sina) + cfz*cosa
+C...Strip body axes forces, referred to strip area and chord
         cxstrp_diff(j) = cfx_diff
         cxstrp(j) = cfx
         cystrp_diff(j) = cfy_diff
         cystrp(j) = cfy
         czstrp_diff(j) = cfz_diff
         czstrp(j) = cfz
+C...Transform strip body axes forces into stability axes,
+C   referred to strip area and chord
+        cdstrp_diff(j) = cosa*cfx_diff + cfx*cosa_diff + sina*cfz_diff +
+     +    cfz*sina_diff
+        cdstrp(j) = cfx*cosa + cfz*sina
+        clstrp_diff(j) = cosa*cfz_diff + cfz*cosa_diff - sina*cfx_diff -
+     +    cfx*sina_diff
+        clstrp(j) = -(cfx*sina) + cfz*cosa
 C
         cdst_a(j) = -(cfx*sina) + cfz*cosa
         clst_a(j) = -(cfx*cosa) - cfz*sina
@@ -1401,14 +1409,15 @@ C
           czst_g(j, n) = cfz_g(n)
         ENDDO
 C
-C... Set strip moments about the overall moment reference point XYZREF 
-C     (still normalized by strip area and chord)
+C------ vector from chord c/4 reference point to case reference point XYZREF 
         r_diff(1) = xr_diff - xyzref_diff(1)
         r(1) = xr - xyzref(1)
         r_diff(2) = yr_diff - xyzref_diff(2)
         r(2) = yr - xyzref(2)
         r_diff(3) = zr_diff - xyzref_diff(3)
         r(3) = zr - xyzref(3)
+C... Strip moments in body axes about the case moment reference point XYZREF 
+C    normalized by strip area and chord
         temp = (cfz*r(2)-cfy*r(3))/cr
         crstrp_diff(j) = cmx_diff + (r(2)*cfz_diff+cfz*r_diff(2)-r(3)*
      +    cfy_diff-cfy*r_diff(3)-temp*cr_diff)/cr
@@ -1452,9 +1461,8 @@ C
           cnst_g(j, n) = cmz_g(n) + (cfy_g(n)*r(1)-cfx_g(n)*r(2))/cr
         ENDDO
 C
-C...Take components of X,Y,Z forces in local strip axes 
-C   (axial/normal and lift/drag)
-C    in plane normal to (possibly dihedralled) strip
+C...Components of X,Y,Z forces in local strip axes 
+C   axial/normal forces and lift/drag in plane normal to dihedral of strip
         cl_lstrp(j) = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
         cd_lstrp(j) = udrag(1)*cfx + udrag(2)*cfy + udrag(3)*cfz
         caxlstrp(j) = cfx
@@ -1468,6 +1476,7 @@ C------ vector at chord reference point from rotation axes
         rrot(2) = ysref(j) - xyzref(2)
         rrot_diff(3) = zsref_diff(j) - xyzref_diff(3)
         rrot(3) = zsref(j) - xyzref(3)
+C        print *,"WROT ",WROT
 C
 C------ set total effective velocity = freestream + rotation
         DO ii1=1,3
@@ -1718,6 +1727,7 @@ C
           enave(2) = enave(2) + sr*ensy(j)
           enave(3) = enave(3) + sr*ensz(j)
 C
+C--- Surface lift and drag referenced to case SREF, CREF, BREF 
           temp0 = sr/sref
           cdsurf_diff(is) = cdsurf_diff(is) + temp0*cdstrp_diff(j) + 
      +      cdstrp(j)*(sr_diff-temp0*sref_diff)/sref
@@ -1726,7 +1736,7 @@ C
           clsurf_diff(is) = clsurf_diff(is) + temp0*clstrp_diff(j) + 
      +      clstrp(j)*(sr_diff-temp0*sref_diff)/sref
           clsurf(is) = clsurf(is) + clstrp(j)*temp0
-C
+C--- Surface body axes forces referenced to case SREF, CREF, BREF
           temp0 = sr/sref
           cxsurf_diff(is) = cxsurf_diff(is) + temp0*cxstrp_diff(j) + 
      +      cxstrp(j)*(sr_diff-temp0*sref_diff)/sref
@@ -1739,7 +1749,7 @@ C
           czsurf_diff(is) = czsurf_diff(is) + temp0*czstrp_diff(j) + 
      +      czstrp(j)*(sr_diff-temp0*sref_diff)/sref
           czsurf(is) = czsurf(is) + czstrp(j)*temp0
-C
+C--- Surface body axes moments referenced to case SREF, CREF, BREF about XYZREF
           temp0 = crstrp(j)*sr*cr/(sref*bref)
           crsurf_diff(is) = crsurf_diff(is) + (sr*cr*crstrp_diff(j)+
      +      crstrp(j)*(cr*sr_diff+sr*cr_diff)-temp0*(bref*sref_diff+sref
@@ -1757,6 +1767,7 @@ C
           cnsurf(is) = cnsurf(is) + temp0
 C
 C--- Bug fix, HHY/S.Allmaras 
+C--- Surface viscous drag referenced to case SREF, CREF, BREF
           temp0 = sr/sref
           cdvsurf_diff(is) = cdvsurf_diff(is) + temp0*cdv_lstrp_diff(j) 
      +      + cdv_lstrp(j)*(sr_diff-temp0*sref_diff)/sref
@@ -1899,32 +1910,35 @@ C--- Lift direction is vector product of "stream" and spanwise vector
         END IF
         cl_srf(is) = DOT(ulift, cf_srf(1, is))
         cd_srf(is) = DOT(udrag, cf_srf(1, is))
-C--- Surface hinge moments defined by surface LE moment about hinge vector 
+C
+C---  Surface hinge moments defined by surface LE moment about hinge vector 
 Ccc        CMLE_SRF(IS) = DOT(CM_SRF(1,IS),VHINGE(1,IS))
 C
 C
 C-------------------------------------------------
         IF (lfload(is)) THEN
-C------- Total forces summed from surface forces...
-C-         normalized to configuration reference quantities
-          cdtot_diff = cdtot_diff + cdsurf_diff(is)
-          cdtot = cdtot + cdsurf(is)
-          cltot_diff = cltot_diff + clsurf_diff(is)
-          cltot = cltot + clsurf(is)
+C--- Total forces summed from surface forces
+C    normalized to case reference quantities SREF, CREF, BREF
           cxtot_diff = cxtot_diff + cxsurf_diff(is)
           cxtot = cxtot + cxsurf(is)
           cytot_diff = cytot_diff + cysurf_diff(is)
           cytot = cytot + cysurf(is)
           cztot_diff = cztot_diff + czsurf_diff(is)
           cztot = cztot + czsurf(is)
+          cdtot_diff = cdtot_diff + cdsurf_diff(is)
+          cdtot = cdtot + cdsurf(is)
+          cltot_diff = cltot_diff + clsurf_diff(is)
+          cltot = cltot + clsurf(is)
+          cdvtot_diff = cdvtot_diff + cdvsurf_diff(is)
+          cdvtot = cdvtot + cdvsurf(is)
+C--- Total body axes moments about XYZREF summed from surface moments
+C    normalized to case reference quantities SREF, CREF, BREF
           crtot_diff = crtot_diff + crsurf_diff(is)
           crtot = crtot + crsurf(is)
           cmtot_diff = cmtot_diff + cmsurf_diff(is)
           cmtot = cmtot + cmsurf(is)
           cntot_diff = cntot_diff + cnsurf_diff(is)
           cntot = cntot + cnsurf(is)
-          cdvtot_diff = cdvtot_diff + cdvsurf_diff(is)
-          cdvtot = cdvtot + cdvsurf(is)
 C
           cdtot_a = cdtot_a + cds_a(is)
           cltot_a = cltot_a + cls_a(is)
