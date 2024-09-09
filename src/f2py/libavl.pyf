@@ -89,5 +89,17 @@ python module libavl ! in
         subroutine solve_adjoint
         end subroutine solve_adjoint
         
+        subroutine mode
+        end subroutine mode
+        
+        subroutine execute_eigenmode_calc
+        end subroutine execute_eigenmode_calc
+        
+        subroutine get_system_matrix(ir, asys)
+            include '../includes/AVL.INC'
+            integer :: ir
+            real*8, intent(inout) :: asys(jemax,jemax)
+        end subroutine get_system_matrix
+        
     end interface 
 end python module libavl

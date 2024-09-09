@@ -653,7 +653,7 @@ C
 
 
 
-
+      !$PRAGMA FORCEINLINE
       SUBROUTINE SRDVELC(X,Y,Z, X1,Y1,Z1, X2,Y2,Z2,
      &                   BETA,RCORE,
      &                   UVWS,UVWD  )
@@ -705,11 +705,11 @@ C---- set velocity components for unit source and doublet
         UVWS(K) = R1(K)*AI1 + R2(K)*AI2
 C
         RR1 =  (R1(K)+R2(K))    /R1EPS 
-     &        - R1(K)*(RDR+RCSQ)/R1EPS**3
+     &        - R1(K)*(RDR+RCSQ)/(R1EPS*R1EPS*R1EPS)
      &        - R2(K)           /R2EPS
 C
         RR2 =  (R1(K)+R2(K))    /R2EPS 
-     &        - R2(K)*(RDR+RCSQ)/R2EPS**3
+     &        - R2(K)*(RDR+RCSQ)/(R2EPS*R2EPS*R2EPS)
      &        - R1(K)           /R1EPS
 C
         RRT = 2.0*R1(K)*(R2SQ  - RDR)
