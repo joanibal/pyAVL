@@ -89,6 +89,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_${XCODE_VER}.app
           CIBW="MACOSX_DEPLOYMENT_TARGET=${{ matrix.buildplat[4] }}\
             LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH\
+            PKG_CONFIG_PATH=$LIB_PATH/pkgconfig\
             SDKROOT=$(xcrun --sdk macosx --show-sdk-path)"
           echo "CIBW_ENVIRONMENT_MACOS=$CIBW" >> "$GITHUB_ENV"
 
