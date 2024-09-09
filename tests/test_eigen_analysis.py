@@ -22,12 +22,12 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestEigenAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
+        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False, debug=True)
 
     def test_vel_sweep(self):
-        vel = 10
         
-        for vel in np.linspace(10, 100, 10):
+        # for vel in np.linspace(10, 100, 10):
+        for vel in [10]:
             self.avl_solver.set_case_parameter("velocity", vel)
             dens = self.avl_solver.get_case_parameter("density")
             g = self.avl_solver.get_case_parameter("grav.acc.")
