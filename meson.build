@@ -143,7 +143,9 @@ ff_args += [
   '-ffixed-line-length-80', 
   '-std=legacy',
   '-fdefault-real-8',
-  '-fPIC'
+  '-fdefault-double-8',
+  '-fPIC',
+  '-O2'
 ]
 
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'

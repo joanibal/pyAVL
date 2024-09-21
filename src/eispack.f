@@ -3949,8 +3949,7 @@ C
             A(J,M) = Y
   120    CONTINUE
 C     .......... END INTERCHANGE ..........
-  130    IF (DABS(X) .LE. 1e-12_8) GO TO 180
-! 130    IF (X .EQ. 0.0D0) GO TO 180
+  130    IF (X .EQ. 0.0D0) GO TO 180
          MP1 = M + 1
 C
          DO 160 I = MP1, IGH
