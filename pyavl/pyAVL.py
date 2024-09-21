@@ -1864,3 +1864,65 @@ class AVLSolver(object):
 
         return sens
 
+
+# --- ploting and vizulaization ---
+
+    def add_mesh_plot(self, axis):
+        """ adds a plot of the aircraft mesh to the axis"""
+        mesh_size = self.get_mesh_size()
+        num_control_surfs = self.get_num_control_surfs()
+        num_strips = self.get_num_strips()
+        num_surfs = self.get_num_surfaces()
+            
+        # get the mesh points for ploting
+        mesh_slice = (slice(0, mesh_size),)
+        strip_slice = (slice(0, num_strips),)
+        surf_slice = (slice(0, num_surfs),)
+        
+        rv1 = self.get_avl_fort_arr("VRTX_R", "RV1", slicer=mesh_slice)
+        rv2 = self.get_avl_fort_arr("VRTX_R", "RV2", slicer=mesh_slice)
+        rle1 = self.get_avl_fort_arr("STRP_R", "RLE1", slicer=strip_slice)
+        rle2 = self.get_avl_fort_arr("STRP_R", "RLE2", slicer=strip_slice)
+        chord1 = self.get_avl_fort_arr("STRP_R", "CHORD1", slicer=strip_slice)
+        chord2 = self.get_avl_fort_arr("STRP_R", "CHORD2", slicer=strip_slice)
+        jfrst = self.get_avl_fort_arr("SURF_I", "JFRST", slicer=surf_slice)
+        
+        ijfrst = self.get_avl_fort_arr("STRP_I", "IJFRST", slicer=strip_slice)
+        nvstrp = self.get_avl_fort_arr("STRP_I", "NVSTRP", slicer=strip_slice)
+        
+        
+        nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice)
+        
+              
+        for idx_surf in range(num_surfs):
+            # get the range of the elements that belong to this surfaces
+            strip_st = jfrst[idx_surf] -1
+            strip_end = strip_st + nj[idx_surf]
+ 
+
+
+            for idx_strip in range(strip_st, strip_end):
+                xs = [rle1[idx_strip, 0], rle1[idx_strip, 0] + chord1[idx_strip]]
+                ys = [rle1[idx_strip, 1], rle1[idx_strip, 1]]
+                zs = [rle1[idx_strip, 2], rle1[idx_strip, 2]]         
+                
+                axis.plot(xs, ys, 'k')
+                
+                if idx_strip == strip_end -1:
+                    xs = [rle2[idx_strip, 0], rle2[idx_strip, 0] + chord2[idx_strip]]
+                    ys = [rle2[idx_strip, 1], rle2[idx_strip, 1]]
+                    zs = [rle2[idx_strip, 2], rle2[idx_strip, 2]]         
+                
+                    axis.plot(xs, ys, 'k')
+                
+                
+                
+                vor_st = ijfrst[idx_strip] -1
+                vor_end = vor_st + nvstrp[idx_strip]
+
+                
+                for idx_line in range(vor_st,vor_end):
+                    xs = [rv1[idx_line, 0], rv2[idx_line, 0]]
+                    ys = [rv1[idx_line, 1], rv2[idx_line, 1]]
+                    zs = [rv1[idx_line, 2], rv2[idx_line, 2]]
+                    axis.plot(xs, ys, 'k')

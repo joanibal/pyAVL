@@ -89,5 +89,8 @@ python module libavl ! in
         subroutine solve_adjoint
         end subroutine solve_adjoint
         
+        subroutine cpoml
+        end subroutine cpoml
+        
     end interface 
 end python module libavl

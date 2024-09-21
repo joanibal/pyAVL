@@ -667,10 +667,16 @@ cc#ifdef USE_CPOML
       REAL(kind=avl_real) ZLON2
       REAL(kind=avl_real) ZUPN1
       REAL(kind=avl_real) ZUPN2
+      REAL(kind=avl_real) XYZLO
+      REAL(kind=avl_real) XYZUP
+      REAL(kind=avl_real) CPUP
+      REAL(kind=avl_real) CPLO
       COMMON /VRTX_S/
      & XYN1(2,NVMAX), XYN2(2,NVMAX),  ! left/right aft-node of element
      & ZLON1(NVMAX), ZLON2(NVMAX),    ! left/right lower z-coord of aft-node
-     & ZUPN1(NVMAX), ZUPN2(NVMAX)     ! left/right upper z-coord of aft-node
+     & ZUPN1(NVMAX), ZUPN2(NVMAX),     ! left/right upper z-coord of aft-node
+     & XYZLO(3, NVMAX), XYZUP(3, NVMAX),  ! saved gridpoint for oml
+     & CPL(NVMAX), CPU(NVMAX)
 cc#endif
 C
       COMMON /BODY_I/

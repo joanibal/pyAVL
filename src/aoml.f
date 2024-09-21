@@ -318,6 +318,15 @@ C...      rotate airfoil in (x,z) for twist
           ZUP = ZLE - (X0 - XLE)*SNA + (ZUPD - ZLE)*CSA
           YLO = YLOD
           YUP = YUPD
+          
+          XYZLO(1,I) = XLO
+          XYZLO(2,I) = YLO
+          XYZLO(3,I) = ZLO
+          
+          XYZUP(1,I) = XUP
+          XYZUP(2,I) = YUP
+          XYZUP(3,I) = ZUP
+          
           WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
         ENDDO
 C
@@ -360,6 +369,8 @@ C
           CPU = CPT(I1) + 0.5*DCP(I1)
           CPL = CPT(I1) - 0.5*DCP(I1)
           WRITE(LU,'(8(ES23.15))') XLO,XUP, YLO,YUP, ZLO,ZUP, CPL,CPU
+          CPLO(I) = CPL
+          CPUP(I) = CPU
 C
           DO II = 2, NVC_chord
             I = I1 + (II-1)
@@ -400,6 +411,9 @@ C
             CPU = CPT(I) + 0.5*DCP(I)
             CPL = CPT(I) - 0.5*DCP(I)
             WRITE(LU,'(8(ES23.15))') XLO,XUP, YLO,YUP, ZLO,ZUP, CPL,CPU
+            
+            CPLO(I) = CPL
+            CPUP(I) = CPU
           ENDDO
         ENDDO
       ENDDO
