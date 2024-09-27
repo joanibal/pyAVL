@@ -263,6 +263,9 @@ C
 C
         WRITE(LU,'(A,1X,A)') 'VERTEX_GRID',
      &    '(x_lo, x_up, y_lo, y_up, z_lo, z_up)'
+     
+     
+        idx_mesh = 1
         DO J = ISTRIP0, ISTRIP1, ISTEP
           I1 = IJFRST(J)
 C

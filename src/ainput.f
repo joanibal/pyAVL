@@ -52,6 +52,7 @@ C
 C
 C----------------------------------------------------
       FERR = .FALSE.
+      LRANGE = .TRUE.
 C
       OPEN(UNIT=LUN,FILE=FNAME,STATUS='OLD',ERR=3)
       GO TO 6
