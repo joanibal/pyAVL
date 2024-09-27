@@ -626,6 +626,8 @@ C------- read optional airfoil x/c limits
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           LRANGE(ISURF) = .FALSE.
+        else 
+          LRANGE(ISURF) = .TRUE.
         ENDIF
 C
 C------ read NACA 4-digit designator
@@ -711,7 +713,12 @@ C------- read optional airfoil x/c limits
         ENDIF
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
+          write(*,*) 'aifoil Lrange false', ISURF, isec
+          write(*,*) (XFMIN .GT. 0.01)
+          write(*,*) (XFMAX .LT. 0.99)
           LRANGE(ISURF) = .FALSE.
+        else
+          LRANGE(ISURF) = .True.
         ENDIF
 C
 C------ read airfoil coordinates
@@ -797,6 +804,8 @@ C------- read optional airfoil x/c limits
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           LRANGE(ISURF) = .FALSE.
+        else
+          LRANGE(ISURF) = .TRUE.
         ENDIF
 C
 C------ read filename

@@ -1926,3 +1926,33 @@ class AVLSolver(object):
                     ys = [rv1[idx_line, 1], rv2[idx_line, 1]]
                     zs = [rv1[idx_line, 2], rv2[idx_line, 2]]
                     axis.plot(xs, ys, 'k')
+
+    def get_cp_data(self):
+        nvort = self.get_mesh_size()
+        mesh_slicer = (slice(0, nvort),)
+        
+        num_surfs = self.get_num_surfaces()
+        surf_slice = (slice(0,num_surfs))
+        
+        nj = self.get_avl_fort_arr('SURF_I', 'NJ', slicer=surf_slice)
+        nk = self.get_avl_fort_arr('SURF_I', 'NK', slicer=surf_slice)
+        
+        
+        xyz_lo_list = []
+        xyz_up_list = []
+        cp_lo_list = []
+        cp_up_list = []
+        
+        for idx_surf in range(num_surfs):
+            nvort = nk[idx_surf]*(nj[idx_surf]+1)
+            vtx_slicer = (idx_surf, slice(0, nvort),slice(None))
+            cp_slicer = (idx_surf, slice(0, nvort))
+
+            print('nvort', nvort)
+            xyz_lo_list.append(self.get_avl_fort_arr('VRTX_S', 'XYZLO', slicer=vtx_slicer))
+            xyz_up_list.append( self.get_avl_fort_arr('VRTX_S', 'XYZUP', slicer=vtx_slicer))
+        
+            cp_lo_list.append(self.get_avl_fort_arr('VRTX_S', 'CPLO', slicer=cp_slicer))
+            cp_up_list.append(self.get_avl_fort_arr('VRTX_S', 'CPUP', slicer=cp_slicer))
+        
+        return xyz_lo_list, xyz_up_list, cp_lo_list, cp_up_list

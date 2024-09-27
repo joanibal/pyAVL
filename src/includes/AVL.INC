@@ -675,8 +675,8 @@ cc#ifdef USE_CPOML
      & XYN1(2,NVMAX), XYN2(2,NVMAX),  ! left/right aft-node of element
      & ZLON1(NVMAX), ZLON2(NVMAX),    ! left/right lower z-coord of aft-node
      & ZUPN1(NVMAX), ZUPN2(NVMAX),     ! left/right upper z-coord of aft-node
-     & XYZLO(3, NVMAX), XYZUP(3, NVMAX),  ! saved gridpoint for oml
-     & CPL(NVMAX), CPU(NVMAX)
+     & XYZLO(3, NVMAX, NFMAX), XYZUP(3, NVMAX, NFMAX),  ! saved gridpoint for oml
+     & CPLO(NVMAX, NFMAX), CPUP(NVMAX, NFMAX)
 cc#endif
 C
       COMMON /BODY_I/

@@ -185,6 +185,8 @@ C
 C...COMMENTS    C code reader in read_cpoml.c
 C
       INCLUDE 'AVL.INC'
+      
+      integer idx_mesh
 C
       LU = 12
       OPEN(LU, FILE='cpoml.dat', FORM='FORMATTED', STATUS='UNKNOWN')
@@ -194,6 +196,8 @@ C
       WRITE(LU,'(A)') 'VERSION 1.0'
       WRITE(LU,'(I6,6X,A)') NSURF, '  | surfaces'
       DO ISURF = 1, NSURF
+        idx_mesh = 1
+
         NVC_chord = NK(ISURF)
 C
 C...    determine if surface is L-to-R or R-to-L
@@ -234,6 +238,28 @@ C
           WRITE(LU,*) (NSPAN - ICNTSEC(II + ISEC-1) + 1,
      & ISEC=NSEC_surf,1,-1)
         ENDIF
+        
+C
+        WRITE(*,'(A)') 'SURFACE'
+        WRITE(*,'(A)') STITLE(ISURF)
+        WRITE(*,'(I6,6X,A)') LSCOMP(ISURF), '  | component'
+        WRITE(*,'(2I6,A)') NJ(ISURF), NK(ISURF),
+     &    '  | elements (span, chord)'
+        WRITE(*,'(I6,6X,A)') IMAGS(ISURF),
+     &    '  | imags (<0 if Y-duplicated)'
+C
+        NSEC_surf = NCNTSEC(ISURF)
+        II = ICNTFRST(ISURF)
+        WRITE(*,'(I6,6X,A)') NSEC_surf, '  | section indices'
+        IF (ISTEP .GT. 0) THEN
+          WRITE(*,*) (ICNTSEC(II + ISEC-1), ISEC=1,NSEC_surf)
+        ELSE
+          NSPAN = NJ(ISURF) + 1
+          WRITE(*,*) (NSPAN - ICNTSEC(II + ISEC-1) + 1,
+     & ISEC=NSEC_surf,1,-1)
+        ENDIF
+        
+                
 C
         WRITE(LU,'(A,1X,A)') 'VERTEX_GRID',
      &    '(x_lo, x_up, y_lo, y_up, z_lo, z_up)'
@@ -250,6 +276,18 @@ C
           YLE = RLE1(2,J)
           ZLE = RLE1(3,J)
           WRITE(LU,'(6(ES23.15))') XLE, XLE, YLE, YLE, ZLE, ZLE
+          
+                    
+          XYZLO(1,idx_mesh, isurf) = XLE
+          XYZLO(2,idx_mesh, isurf) = YLE
+          XYZLO(3,idx_mesh, isurf) = ZLE
+          
+          XYZUP(1,idx_mesh, isurf) = XLE
+          XYZUP(2,idx_mesh, isurf) = YLE
+          XYZUP(3,idx_mesh, isurf) = ZLE
+          idx_mesh = idx_mesh + 1
+        
+
 C
           DO II = 1, NVC_chord
             I = I1 + (II-1)
@@ -278,6 +316,18 @@ C...        rotate airfoil in (x,z) for twist
             YLO = YLOD
             YUP = YUPD
             WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
+            
+            XYZLO(1,idx_mesh, isurf) = XLO
+            XYZLO(2,idx_mesh, isurf) = YLO
+            XYZLO(3,idx_mesh, isurf) = ZLO
+            
+            XYZUP(1,idx_mesh, isurf) = XUP
+            XYZUP(2,idx_mesh, isurf) = YUP
+            XYZUP(3,idx_mesh, isurf) = ZUP
+            idx_mesh = idx_mesh + 1
+            ! write(*,*) I-1, 'XYZ LO', XLO, YLO, ZLO
+            call flush()
+            
           ENDDO
         ENDDO
 C
@@ -291,6 +341,17 @@ C
         YLE = RLE2(2,J)
         ZLE = RLE2(3,J)
         WRITE(LU,'(6(ES23.15))') XLE, XLE, YLE, YLE, ZLE, ZLE
+        
+        XYZLO(1,idx_mesh, isurf) = XLE
+        XYZLO(2,idx_mesh, isurf) = YLE
+        XYZLO(3,idx_mesh, isurf) = ZLE
+        
+        XYZUP(1,idx_mesh, isurf) = XLE
+        XYZUP(2,idx_mesh, isurf) = YLE
+        XYZUP(3,idx_mesh, isurf) = ZLE
+        idx_mesh = idx_mesh + 1
+        
+
 C
         DO II = 1, NVC_chord
           I = I1 + (II-1)
@@ -319,14 +380,15 @@ C...      rotate airfoil in (x,z) for twist
           YLO = YLOD
           YUP = YUPD
           
-          XYZLO(1,I) = XLO
-          XYZLO(2,I) = YLO
-          XYZLO(3,I) = ZLO
+          XYZLO(1,idx_mesh, ISURF) = XLO
+          XYZLO(2,idx_mesh, ISURF) = YLO
+          XYZLO(3,idx_mesh, ISURF) = ZLO
           
-          XYZUP(1,I) = XUP
-          XYZUP(2,I) = YUP
-          XYZUP(3,I) = ZUP
-          
+          XYZUP(1,idx_mesh, ISURF) = XUP
+          XYZUP(2,idx_mesh, ISURF) = YUP
+          XYZUP(3,idx_mesh, ISURF) = ZUP
+          idx_mesh = idx_mesh + 1
+          ! write(*,*) I, 'XYZ LO', XLO, YLO, ZLO
           WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
         ENDDO
 C
@@ -369,8 +431,8 @@ C
           CPU = CPT(I1) + 0.5*DCP(I1)
           CPL = CPT(I1) - 0.5*DCP(I1)
           WRITE(LU,'(8(ES23.15))') XLO,XUP, YLO,YUP, ZLO,ZUP, CPL,CPU
-          CPLO(I) = CPL
-          CPUP(I) = CPU
+          CPLO(I, ISURF) = CPL
+          CPUP(I, ISURF) = CPU
 C
           DO II = 2, NVC_chord
             I = I1 + (II-1)
@@ -412,8 +474,8 @@ C
             CPL = CPT(I) - 0.5*DCP(I)
             WRITE(LU,'(8(ES23.15))') XLO,XUP, YLO,YUP, ZLO,ZUP, CPL,CPU
             
-            CPLO(I) = CPL
-            CPUP(I) = CPU
+            CPLO(I, ISURF) = CPL
+            CPUP(I, ISURF) = CPU
           ENDDO
         ENDDO
       ENDDO
