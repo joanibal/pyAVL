@@ -26,23 +26,32 @@ c      Open the file for writing. Use a unit number (out_unit) that is not in us
       OPEN(UNIT=LU, FILE=file_name, STATUS='REPLACE', ACTION='WRITE')
       
       WRITE(LU, '(A,A)') 'TITLE = ', trim(TITLE)
-      WRITE(LU, '(A)') 'VARIABLES = "X", "Y", "Z"'
-      WRITE(LU, '(A,f5.2)') 'DATASETAUXDATA AVL=',VERSION
+      WRITE(LU, '(A)') 'VARIABLES = "X", "Y", "Z" "CP"'
+      WRITE(LU, '(A,f4.2,A)') 'DATASETAUXDATA AVL="',VERSION,'"'
       
-      WRITE(LU, '(A,A,A)') 'ZONE T=',
-     & trim(STITLE(ISURF)),' DATAPACKING=BLOCK'
       
       DO ISURF = 1, NSURF
-        nChords = NK(ISURF)
-        nStrips = NJ(ISURF)
-        
-        nPts = (nStrips+1)*(nChords*2+1)
-        nPts = (nStrips+1)*(nChords+1)
+            nChords = NK(ISURF)
+            nStrips = NJ(ISURF)
+            write(*,*) 'ISURF', ISURF
+            
+            nPts = (nStrips+1)*(nChords*2+1)
+            ! nPts = (nStrips+1)*(nChords+1)
+            nCCPts = (nStrips)*(nChords*2)
+        WRITE(LU, '(A,A,A,A,2(A,I0))') 'ZONE T="',
+     &   trim(STITLE(ISURF)),'", DATAPACKING=BLOCK, ',
+     &   'VARLOCATION=(4=CELLCENTERED), ',
+     &   'I=',(2*nChords+1), ', J=', (nStrips+1)
         DO idim = 1,3
             DO iPt = 1,nPts
-                WRITE(LU, '(F15.8)') XYZLO(idim, iPt, ISURF)
+                WRITE(LU, '(F15.8)') XYZSURF(idim, iPt, ISURF)
             ENDDO 
         ENDDO
+        
+      DO iPt = 1,nCCPts
+            WRITE(LU, '(F15.8)') CPSURF(iPt, ISURF)
+      ENDDO 
+
         
       ENDDO  
       CLOSE(LU)

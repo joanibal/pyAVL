@@ -21,7 +21,7 @@ C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
 C     
 C    ICONX   max number of control or design variable declaration lines per section (20)
-      PARAMETER (NVMAX=5450,
+      PARAMETER (NVMAX=5450, !max number of vortices
      &           NSMAX=400,
      &           NFMAX=30,
      &           NLMAX=500,
@@ -667,16 +667,14 @@ cc#ifdef USE_CPOML
       REAL(kind=avl_real) ZLON2
       REAL(kind=avl_real) ZUPN1
       REAL(kind=avl_real) ZUPN2
-      REAL(kind=avl_real) XYZLO
-      REAL(kind=avl_real) XYZUP
-      REAL(kind=avl_real) CPUP
-      REAL(kind=avl_real) CPLO
+      REAL(kind=avl_real) XYZSURF
+      REAL(kind=avl_real) CPSURF
       COMMON /VRTX_S/
      & XYN1(2,NVMAX), XYN2(2,NVMAX),  ! left/right aft-node of element
      & ZLON1(NVMAX), ZLON2(NVMAX),    ! left/right lower z-coord of aft-node
      & ZUPN1(NVMAX), ZUPN2(NVMAX),     ! left/right upper z-coord of aft-node
-     & XYZLO(3, NVMAX, NFMAX), XYZUP(3, NVMAX, NFMAX),  ! saved gridpoint for oml
-     & CPLO(NVMAX, NFMAX), CPUP(NVMAX, NFMAX)
+     & XYZSURF(3, NVMAX, NFMAX),
+     & CPSURF(NVMAX,NFMAX)
 cc#endif
 C
       COMMON /BODY_I/
