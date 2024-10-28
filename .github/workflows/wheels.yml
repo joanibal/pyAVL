@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - master
+      - optvl
   pull_request:
     branches:
       - master
+      - optvl
   release:
     types:
       - published
