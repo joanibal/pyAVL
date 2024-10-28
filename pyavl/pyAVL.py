@@ -674,20 +674,6 @@ class AVLSolver(object):
 
         return hinge_moments
 
-    def get_hinge_moments(self) -> Dict[str, float]:
-        """
-        get the hinge moments from the fortran layer and return them as a dictionary
-        """
-        hinge_moments = {}
-
-        control_surfaces = self.get_control_names()
-        mom_array = self.get_avl_fort_arr("CASE_R", "CHINGE")
-
-        for idx_con, con_surf in enumerate(control_surfaces):
-            hinge_moments[con_surf] = mom_array[idx_con]
-
-        return hinge_moments
-
     def get_strip_data(self) -> Dict[str, Dict[str, np.ndarray]]:
         # fmt: off
         var_to_fort_var = {
@@ -700,6 +686,9 @@ class AVLSolver(object):
             # strip contributions to total lift and drag from strip integration
             "CL": ["STRP_R", "CLSTRP"],
             "CD": ["STRP_R", "CDSTRP"],
+            "CDv" : ["STRP_R","CDV_LSTRP"],  # strip viscous drag in stability axes
+            "downwash" : ["STRP_R","DWWAKE"],
+            
             
             # strip contributions to non-dimensionalized forces 
             "CX": ["STRP_R", "CXSTRP"], 
@@ -717,7 +706,15 @@ class AVLSolver(object):
             "CL strip" : ["STRP_R", "CL_LSTRP"],
             "CD strip" : ["STRP_R", "CD_LSTRP"],
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
-            "CM strip" : ["STRP_R", "CF_STRP"], # moments in 3 directions
+            "CM strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
+
+            
+            # additional forces and moments
+            "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
+            "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
+            "CM LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
+            "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
+            
         }    
         # fmt: on
         surf_names = self.get_surface_names()
@@ -1867,7 +1864,7 @@ class AVLSolver(object):
 
 # --- ploting and vizulaization ---
 
-    def add_mesh_plot(self, axis):
+    def add_mesh_plot(self, axis, xaxis='x', yaxis='y', show_mesh=True):
         """ adds a plot of the aircraft mesh to the axis"""
         mesh_size = self.get_mesh_size()
         num_control_surfs = self.get_num_control_surfs()
@@ -1892,40 +1889,107 @@ class AVLSolver(object):
         
         
         nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice)
-        
+        imags = self.get_avl_fort_arr("SURF_I", "IMAGS")
               
         for idx_surf in range(num_surfs):
             # get the range of the elements that belong to this surfaces
             strip_st = jfrst[idx_surf] -1
             strip_end = strip_st + nj[idx_surf]
- 
+            
+            # inboard and outboard of outline
+            # get surfaces that have not been duplicated
+            if imags[idx_surf] > 0:
+                j1 = strip_st
+                jn = strip_end  - 1
+                dj=1
+            else: 
+                # this surface is a duplicate
+                j1 = strip_end  - 1
+                jn = strip_st
+                dj = -1
+                
+            pts = {
+                'x':[rle1[j1, 0], rle1[j1, 0] + chord1[j1]],
+                'y': [rle1[j1, 1], rle1[j1, 1]],
+                'z': [rle1[j1, 2], rle1[j1, 2]]         
+            }
+            # # chord-wise grid
+            axis.plot(pts[xaxis], pts[yaxis], color='black')
+            
+                
+            pts = {
+                'x' :np.array([rle2[jn, 0], rle2[jn, 0] + chord2[jn]]),
+                'y' :np.array([rle2[jn, 1], rle2[jn, 1]]),
+                'z' :np.array([rle2[jn, 2], rle2[jn, 2]]),
+            }
+            
+            # # chord-wise grid
+            axis.plot(pts[xaxis], pts[yaxis], color='black')
+            
+            # import matplotlib.pyplot as plt
+            
+            # plt.show()
+            # # --- outline of surface ---
+            # front 
+            pts ={
+                'x': np.append(rle1[j1:jn:dj, 0], rle2[jn, 0]),
+                'y': np.append(rle1[j1:jn:dj, 1], rle2[jn, 1]),
+                'z': np.append(rle1[j1:jn:dj, 2], rle2[jn, 2])
+            }
+            axis.plot(pts[xaxis], pts[yaxis], '-', color='black')
+            
+            # aft
+            
+            pts = {
+                'x':  np.append(rle1[j1:jn:dj, 0]+ chord1[j1:jn:dj], rle2[jn, 0]+chord2[jn]),
+                'y':  np.append(rle1[j1:jn:dj, 1], rle2[jn, 1]),
+                'z':  np.append(rle1[j1:jn:dj, 2], rle2[jn, 2]),
+            }
+            axis.plot(pts[xaxis], pts[yaxis], '-', color='black')
+            
+            
+            if show_mesh:
+                for idx_strip in range(strip_st, strip_end):
+                    if idx_strip != strip_st:
+                        
+                        pts = {
+                            'x':[rle1[idx_strip, 0], rle1[idx_strip, 0] + chord1[idx_strip]],
+                            'y':[rle1[idx_strip, 1], rle1[idx_strip, 1]],
+                            'z':[rle1[idx_strip, 2], rle1[idx_strip, 2]],
+                        }         
+                        
+                        # # chord-wise grid
+                        axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
+                        
+                    
+                    
+                    vor_st = ijfrst[idx_strip] -1
+                    vor_end = vor_st + nvstrp[idx_strip]
 
+                    # spanwise grid
+                    for idx_vor in range(vor_st,vor_end):
+                        pts = {
+                            'x': [rv1[idx_vor, 0], rv2[idx_vor, 0]],
+                            'y': [rv1[idx_vor, 1], rv2[idx_vor, 1]],
+                            'z': [rv1[idx_vor, 2], rv2[idx_vor, 2]],
+                        }
+                        axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
+                        
+                
 
-            for idx_strip in range(strip_st, strip_end):
-                xs = [rle1[idx_strip, 0], rle1[idx_strip, 0] + chord1[idx_strip]]
-                ys = [rle1[idx_strip, 1], rle1[idx_strip, 1]]
-                zs = [rle1[idx_strip, 2], rle1[idx_strip, 2]]         
-                
-                axis.plot(xs, ys, 'k')
-                
-                if idx_strip == strip_end -1:
-                    xs = [rle2[idx_strip, 0], rle2[idx_strip, 0] + chord2[idx_strip]]
-                    ys = [rle2[idx_strip, 1], rle2[idx_strip, 1]]
-                    zs = [rle2[idx_strip, 2], rle2[idx_strip, 2]]         
-                
-                    axis.plot(xs, ys, 'k')
-                
-                
-                
-                vor_st = ijfrst[idx_strip] -1
-                vor_end = vor_st + nvstrp[idx_strip]
-
-                
-                for idx_line in range(vor_st,vor_end):
-                    xs = [rv1[idx_line, 0], rv2[idx_line, 0]]
-                    ys = [rv1[idx_line, 1], rv2[idx_line, 1]]
-                    zs = [rv1[idx_line, 2], rv2[idx_line, 2]]
-                    axis.plot(xs, ys, 'k')
+    def plot_geom(self, **kwargs):
+        import matplotlib.pyplot as plt
+        
+        ax = plt.subplot(2,1,1)
+        self.add_mesh_plot(ax, xaxis='y', yaxis='x')
+        ax.set_ylabel('X', rotation=0)
+        ax = plt.subplot(2,1,2)
+        self.add_mesh_plot(ax, xaxis='y', yaxis='z')
+        ax.set_ylabel('Z', rotation=0)
+        ax.set_xlabel('Y')
+    
+        plt.axis('equal')
+        plt.show()        
 
     def get_cp_data(self):
         nvort = self.get_mesh_size()
@@ -1938,21 +2002,75 @@ class AVLSolver(object):
         nk = self.get_avl_fort_arr('SURF_I', 'NK', slicer=surf_slice)
         
         
-        xyz_lo_list = []
-        xyz_up_list = []
-        cp_lo_list = []
-        cp_up_list = []
+        xyz_list = []
+        cp_list = []
         
         for idx_surf in range(num_surfs):
-            nvort = nk[idx_surf]*(nj[idx_surf]+1)
-            vtx_slicer = (idx_surf, slice(0, nvort),slice(None))
-            cp_slicer = (idx_surf, slice(0, nvort))
+            nChords = nk[idx_surf]
+            nStrips = nj[idx_surf]
+            nPts = (nStrips+1)*(nChords*2+1)
+            nCCPts = (nStrips)*(nChords*2)
+            
+            vtx_slicer = (idx_surf, slice(0, nPts),slice(None))
+            cp_slicer = (idx_surf, slice(0, nCCPts))
 
-            print('nvort', nvort)
-            xyz_lo_list.append(self.get_avl_fort_arr('VRTX_S', 'XYZLO', slicer=vtx_slicer))
-            xyz_up_list.append( self.get_avl_fort_arr('VRTX_S', 'XYZUP', slicer=vtx_slicer))
+
+            xyz = self.get_avl_fort_arr('VRTX_S', 'XYZSURF', slicer=vtx_slicer)
+            
+            xyz = xyz.reshape((nStrips+1, nChords*2+1, 3))
+            xyz_list.append(xyz)
         
-            cp_lo_list.append(self.get_avl_fort_arr('VRTX_S', 'CPLO', slicer=cp_slicer))
-            cp_up_list.append(self.get_avl_fort_arr('VRTX_S', 'CPUP', slicer=cp_slicer))
+            cp = self.get_avl_fort_arr('VRTX_S', 'CPSURF', slicer=cp_slicer)
+            cp = cp.reshape((nStrips, nChords*2))
+            cp_list.append(cp)
         
-        return xyz_lo_list, xyz_up_list, cp_lo_list, cp_up_list
+        return xyz_list, cp_list
+
+    def plot_cp(self):
+        import matplotlib.pyplot as plt
+        from matplotlib import cm
+        
+        self.avl.cpoml()
+        xyz, cp = self.get_cp_data()
+        
+        num_surfs = self.get_num_surfaces()
+        
+        # create the map for the cp color
+        cp_max = -1e99
+        cp_min = 1e99
+        for idx_surf in range(num_surfs):
+            cp_max = max(cp_max, np.max(cp[idx_surf]))
+            cp_min = min(cp_min, np.min(cp[idx_surf]))
+
+        cp_amax = max(np.abs(cp_min), np.abs(cp_max))
+        # Create a normalized colormap
+        norm = plt.Normalize(vmin=-1*cp_amax, vmax=cp_amax)
+        m = cm.ScalarMappable(cmap=cm.bwr)
+        m.set_clim(vmin=cp_min, vmax=cp_max)
+        
+        # do the actual ploting of each surface 
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        plt.subplots_adjust(left=0.025, right=0.925, top=0.925, bottom=0.025)
+
+        
+        for idx_surf in range(num_surfs):
+                    
+            xyz_surf = xyz[idx_surf]
+            
+            face_color = m.to_rgba(cp[idx_surf])  
+            
+            ax.plot_surface(xyz_surf[:,:,0],xyz_surf[:,:,1], xyz_surf[:,:,2], facecolors = face_color)
+        
+        
+        plt.axis('off')
+
+        plt.grid(b=None)
+        fig.colorbar(m, ax=ax)
+        # Set an equal aspect ratio
+        ax.set_aspect('equal')
+
+        plt.show()
+
+        
+        

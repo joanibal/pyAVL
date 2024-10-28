@@ -25,7 +25,7 @@ c      Open the file for writing. Use a unit number (out_unit) that is not in us
       LU = 13
       OPEN(UNIT=LU, FILE=file_name, STATUS='REPLACE', ACTION='WRITE')
       
-      WRITE(LU, '(A,A)') 'TITLE = ', trim(TITLE)
+      WRITE(LU, '(A,A,A)') 'TITLE = "', trim(TITLE),'"'
       WRITE(LU, '(A)') 'VARIABLES = "X", "Y", "Z" "CP"'
       WRITE(LU, '(A,f4.2,A)') 'DATASETAUXDATA AVL="',VERSION,'"'
       
