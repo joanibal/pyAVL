@@ -1,7 +1,7 @@
 project(
   'pyavl',
   'c',
-  version: '1.7.0',
+  version: '1.8.0',
   license: 'GPL-2.0',
   meson_version: '>= 0.64.0',
   default_options: [
@@ -143,7 +143,9 @@ ff_args += [
   '-ffixed-line-length-80', 
   '-std=legacy',
   '-fdefault-real-8',
-  '-fPIC'
+  '-fdefault-double-8',
+  '-fPIC',
+  '-O2'
 ]
 
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'

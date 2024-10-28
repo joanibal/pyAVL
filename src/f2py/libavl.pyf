@@ -95,6 +95,17 @@ python module libavl ! in
         subroutine write_tecplot(file_name)
             character*(*) file_name
         end subroutine write_tecplot
+        subroutine mode
+        end subroutine mode
+        
+        subroutine execute_eigenmode_calc
+        end subroutine execute_eigenmode_calc
+        
+        subroutine get_system_matrix(ir, asys)
+            include '../includes/AVL.INC'
+            integer :: ir
+            real*8, intent(inout) :: asys(jemax,jemax)
+        end subroutine get_system_matrix
         
     end interface 
 end python module libavl

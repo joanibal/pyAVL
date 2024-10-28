@@ -42,6 +42,7 @@ C
 C
       REAL RINPUT(20), RINP(20)
       INTEGER IINPUT(20), IINP(20)
+      logical :: lsysmat
 C
       IRUN0 = IRUN
 C
@@ -204,51 +205,15 @@ C-------------------------------------------------------------------
      &       COMAND .EQ. 'C   '      ) THEN
 C------ execute eigenmode calculation
         DO 100 IR = IRUN1, IRUN2
-          CALL RUNCHK(IR,LOK)
-          IF(.NOT.LOK) THEN
-           WRITE(*,*) '** Skipping ill-posed run case', IR
-           GO TO 100
-          ENDIF
-C
-          NITER = 10
-          INFO = 1
-          CALL EXEC(NITER,INFO,IR)
-C
-          IF(COMAND .EQ. 'N   ') THEN
-           CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
-          ELSE
-           CALL APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
-          ENDIF
-C
-cc          LU = 6
-cc          CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
-C
-          INFO = 1
-          ETOL = 1.0E-5
-          CALL EIGSOL(INFO,IR,ETOL,ASYS,NSYS)
-C
-C
-          DO KEIG = 1, NEIGEN(IR)
-            LPROOT(KEIG,IR) = .TRUE.
-            LPRNUM(KEIG,IR) = IRUN1 .NE. IRUN2
-          ENDDO
-C
-          XORG0 = 0.0
-          YORG0 = 0.0
-          TMIN = 0.
-          TMAX = 0.
-          FMIN = 0.
-          FMAX = 0.
-          ! removed plotting
-!           CALL PLEMAP(XORG0,YORG0, 
-!      &                IRUN1,IR,
-!      &                KEVIEW,IRVIEW,
-!      &                LPROOT,LPRNUM,OVERLAY,
-!      &                TMIN,TMAX,TDEL,TFAC,
-!      &                FMIN,FMAX,FDEL,FFAC )
-C
-          WRITE(*,*)
-          CALL EIGLST(6,IR)
+                
+            IF(COMAND .EQ. 'N   ') THEN
+                  lsysmat = .true.
+            ELSE
+                  lsysmat = .false.
+            ENDIF
+
+          call eigenmode_analysis(IR,lsysmat)
+
 C
  100    CONTINUE
 C
@@ -964,6 +929,7 @@ C
         WXH_U(K,I+3) = WXH_U(K,I+3) + H(J)*ROT
         WXH_U(K,J+3) = WXH_U(K,J+3) - H(I)*ROT
       ENDDO
+
 C
 C          =    -   =    -   =     - -    =     - -
 C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
@@ -1054,9 +1020,6 @@ C---- x-acceleration
         BSYS(IEQ,N) =   MIF_D(K,N)
       ENDDO
 
-c      MIF_U(1,2)
-c      write(*,*)
-c      write(*,*) '* 1u', MIF_U(K,2), PRF_U(K,2)
 
 C
 C---- y-acceleration
@@ -1248,13 +1211,6 @@ C---- z-velocity
       ASYS(IEQ,JEPS)= -(  TT_ANG(K,1,3)*VINF(1)
      &                  + TT_ANG(K,2,3)*VINF(2)
      &                  + TT_ANG(K,3,3)*VINF(3) )*VEE
-C
-c      write(*,*) 'H  ', H
-c      write(*,*) 'WxH', WXH
-c      write(*,*) 'I-1 M  ', RIM
-c      write(*,*) 'I-1 WxH', PRM
-C
-c      write(*,*) nzmax, nsys
 C
       RETURN
       END ! SYSMAT
@@ -1573,7 +1529,7 @@ C
      &     (ASYS(I,J)*USGN(I)*USGN(J), J=1, NSYS),
      &     (BSYS(I,N)*USGN(I)        , N=1, NCONTROL)
 c     &   ,   RSYS(I)*USGN(I)
- 1200   FORMAT(1X,12F10.4,3X,12G12.4)
+ 1200   FORMAT(1X,12e24.16,3X,12G12.4)
       ENDDO
 C
       RETURN
@@ -1596,6 +1552,7 @@ C
 C---- call EISPACK's Real/General eigenvalue routine
 C     ICALC = 0   ! get eigenvalues only
       ICALC = 1   ! get eigenvalues and eigenvectors
+      IWORK = 0
       CALL RG(JEMAX,NSYS,ASYS,WR,WI,ICALC,WVEC,IWORK,WORK,IERR)
 C
 C-------------------------------------------------------
@@ -1642,9 +1599,16 @@ C------- negative imaginary part of eigenvalue... store complex eigenvector
          ENDDO
         ENDIF
  100  CONTINUE
+
 C
       NEIGEN(IR) = KEIG
 C
+      ! do KEIG = 1, NEIGEN(IR)
+      !     write(*,*) KEIG, 'EIGEN(KEIG,IR)'
+      !     DO I = 1, NSYS
+      !      write(*,*) EVEC(I,KEIG,IR) 
+      !    ENDDO
+      ! enddo
       RETURN
       END ! EIGSOL
 
@@ -2197,3 +2161,103 @@ C
       GO TO 10
 C
       END ! PARMOD
+
+
+      subroutine eigenmode_analysis(IR,lsysmat)
+            INCLUDE 'AVL.INC'
+            
+            integer :: IR
+            logical :: lsysmat
+            
+            integer :: NITER, INFO, KEIG, NSYS, LU
+            REAL*8 ASYS(JEMAX,JEMAX),BSYS(JEMAX,NDMAX),RSYS(JEMAX)
+            REAL*8 :: ETOL
+            
+            LOGICAL :: LPROOT(JEMAX,NRMAX), LPRNUM(JEMAX,NRMAX), LOK
+       
+            
+            
+            CALL RUNCHK(IR,LOK)
+            IF(.NOT.LOK) THEN
+            WRITE(*,*) '** Skipping ill-posed run case', IR
+            return 
+            ENDIF
+C
+
+            
+            NITER = 10
+            INFO = 1
+            CALL EXEC(NITER,INFO,IR)
+C
+            IF(lsysmat) THEN
+                  CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
+            ELSE
+                  CALL APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
+            ENDIF
+            
+            ! LU = 6
+            ! CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
+C
+            INFO = 1
+            ETOL = 1.0E-5
+            CALL EIGSOL(INFO,IR,ETOL,ASYS,NSYS)
+C
+C
+            DO KEIG = 1, NEIGEN(IR)
+                  LPROOT(KEIG,IR) = .TRUE.
+                  LPRNUM(KEIG,IR) = IRUN1 .NE. IRUN2
+            ENDDO
+C
+            ! XORG0 = 0.0
+            ! YORG0 = 0.0
+            ! TMIN = 0.
+            ! TMAX = 0.
+            ! FMIN = 0.
+            ! FMAX = 0.
+            ! removed plotting
+      !       CALL PLEMAP(XORG0,YORG0, 
+      ! &                IRUN1,IR,
+      ! &                KEVIEW,IRVIEW,
+      ! &                LPROOT,LPRNUM,OVERLAY,
+      ! &                TMIN,TMAX,TDEL,TFAC,
+      ! &                FMIN,FMAX,FDEL,FFAC )
+C
+            if (lverbose) then 
+                  CALL EIGLST(6,IR)
+            endif
+            
+      end subroutine eigenmode_analysis
+      
+      subroutine execute_eigenmode_calc()
+            ! inteded to be called from the f2py interface
+            integer :: IR
+            logical :: lsysmat
+            
+            lsysmat = .TRUE. ! this routine is analogous to 'N' in AVL
+            IR = 1 ! for pyAVL we always use IR = 1
+            CALL eigenmode_analysis(IR,lsysmat)
+            
+      end subroutine execute_eigenmode_calc
+      
+      subroutine get_system_matrix(ir, ASYS)
+            INCLUDE 'AVL.INC'
+      
+            ! input/output
+            REAL*8 :: ASYS(JEMAX,JEMAX)
+            
+            ! working
+            REAL*8 :: BSYS(JEMAX,NDMAX),RSYS(JEMAX)
+            REAL*8 :: ETOL
+            integer :: NSYS, i
+            
+            CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
+            
+            
+      end subroutine
+C
+
+            
+            
+            
+            
+            

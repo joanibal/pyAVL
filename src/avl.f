@@ -494,20 +494,23 @@ C        CALL MASPUT(IR1,IR2)
 C C
 C        LSOL = .FALSE.
 C        LSEN = .FALSE.
-C C
-
+C C         
+       if (LVERBOSE) then
+            WRITE(*,*) 'Trying to read file: ', FMSDEF(1:NMS), '  ...'
+       endif 
 
 C        CALL STRIP(FMSDEF,NMS)
-      FMSDEF = mass_file
+       FMSDEF = mass_file
        CALL MASGET(LUMAS,FMSDEF,ERROR)
        IF(ERROR) THEN
        ELSE
-C         WRITE(*,*)
-C         WRITE(*,*) 'Mass distribution read ...'
-C C         CALL MASSHO(6)
-C
+
         CALL APPGET
         if (LVERBOSE) then
+         WRITE(*,*)
+         WRITE(*,*) 'Mass distribution read ...'
+         CALL MASSHO(6)
+
         WRITE(*,*) 
      & '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
         CALL APPSHO(6,RHO0)
