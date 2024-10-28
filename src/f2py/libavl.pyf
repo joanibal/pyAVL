@@ -89,6 +89,12 @@ python module libavl ! in
         subroutine solve_adjoint
         end subroutine solve_adjoint
         
+        subroutine cpoml
+        end subroutine cpoml
+        
+        subroutine write_tecplot(file_name)
+            character*(*) file_name
+        end subroutine write_tecplot
         subroutine mode
         end subroutine mode
         

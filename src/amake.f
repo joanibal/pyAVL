@@ -574,24 +574,32 @@ C...        nodal grid associated with vortex strip (aft-panel nodes)
 C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
 C...        retained in (x,z) plane at this point
             CALL AKIMA( XLASEC(1,ISEC,ISURF), ZLASEC(1,ISEC,ISURF), NSL,
-     &                  XPT(IVC+1), ZL, DSDX )
+     &                  XPT(IVC+1), ZL_L, DSDX )
             CALL AKIMA( XUASEC(1,ISEC,ISURF), ZUASEC(1,ISEC,ISURF), NSL,
-     &                  XPT(IVC+1), ZU, DSDX )
+     &                  XPT(IVC+1), ZU_L, DSDX )
+C
+            CALL AKIMA( XLASEC(1,ISEC+1,ISURF), ZLASEC(1,ISEC+1,ISURF),
+     &                  NSR, XPT(IVC+1), ZL_R, DSDX )
+            CALL AKIMA( XUASEC(1,ISEC+1,ISURF), ZUASEC(1,ISEC+1,ISURF),
+     &                  NSR, XPT(IVC+1), ZU_R, DSDX )
 C
             XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
      &                        XPT(IVC+1)*CHORD1(idx_strip)
             XYN1(2,idx_vor) = RLE1(2,idx_strip)
+            
+            ZL =  (1.-F1)*ZL_L + F1 *ZL_R
+            ZU =  (1.-F1)*ZU_L + F1 *ZU_R
+            
             ZLON1(idx_vor)  = RLE1(3,idx_strip) + ZL*CHORD1(idx_strip)
             ZUPN1(idx_vor)  = RLE1(3,idx_strip) + ZU*CHORD1(idx_strip)
 C
-            CALL AKIMA( XLASEC(1,ISEC+1,ISURF), ZLASEC(1,ISEC+1,ISURF), 
-     &                  NSL, XPT(IVC+1), ZL, DSDX )
-            CALL AKIMA( XUASEC(1,ISEC+1,ISURF), ZUASEC(1,ISEC+1,ISURF), 
-     &                  NSL, XPT(IVC+1), ZU, DSDX )
-
             XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
      &                        XPT(IVC+1)*CHORD2(idx_strip)
             XYN2(2,idx_vor) = RLE2(2,idx_strip)
+            
+            ZL =  (1.-F2)*ZL_L + F2 *ZL_R
+            ZU =  (1.-F2)*ZU_L + F2 *ZU_R
+          
             ZLON2(idx_vor)  = RLE2(3,idx_strip) + ZL*CHORD2(idx_strip)
             ZUPN2(idx_vor)  = RLE2(3,idx_strip) + ZU*CHORD2(idx_strip)
 C

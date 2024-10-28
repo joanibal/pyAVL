@@ -185,6 +185,8 @@ C
 C...COMMENTS    C code reader in read_cpoml.c
 C
       INCLUDE 'AVL.INC'
+      
+      integer idx_mesh, idx_mesh_surf, idx_LE, idx_LE_lo, idx_LE_up
 C
       LU = 12
       OPEN(LU, FILE='cpoml.dat', FORM='FORMATTED', STATUS='UNKNOWN')
@@ -194,6 +196,8 @@ C
       WRITE(LU,'(A)') 'VERSION 1.0'
       WRITE(LU,'(I6,6X,A)') NSURF, '  | surfaces'
       DO ISURF = 1, NSURF
+        idx_mesh = 1
+
         NVC_chord = NK(ISURF)
 C
 C...    determine if surface is L-to-R or R-to-L
@@ -207,7 +211,7 @@ C...    determine if surface is L-to-R or R-to-L
 C
           Y0 = RLE1(2,ISTRIP0)
           Y1 = RLE1(2,ISTRIP1)
-          IF (Y1 .GT. Y0) THEN
+          IF (Y1 .GE. Y0) THEN
             ISTEP = 1                           ! L-to-R
           ELSE
             ISTRIP1 = JFRST(ISURF)
@@ -234,10 +238,37 @@ C
           WRITE(LU,*) (NSPAN - ICNTSEC(II + ISEC-1) + 1,
      & ISEC=NSEC_surf,1,-1)
         ENDIF
+        
+C
+        WRITE(*,'(A)') 'SURFACE'
+        WRITE(*,'(A)') STITLE(ISURF)
+        WRITE(*,'(I6,6X,A)') LSCOMP(ISURF), '  | component'
+        WRITE(*,'(2I6,A)') NJ(ISURF), NK(ISURF),
+     &    '  | elements (span, chord)'
+        WRITE(*,'(I6,6X,A)') IMAGS(ISURF),
+     &    '  | imags (<0 if Y-duplicated)'
+C
+        NSEC_surf = NCNTSEC(ISURF)
+        II = ICNTFRST(ISURF)
+        WRITE(*,'(I6,6X,A)') NSEC_surf, '  | section indices'
+        IF (ISTEP .GT. 0) THEN
+          WRITE(*,*) (ICNTSEC(II + ISEC-1), ISEC=1,NSEC_surf)
+        ELSE
+          NSPAN = NJ(ISURF) + 1
+          WRITE(*,*) (NSPAN - ICNTSEC(II + ISEC-1) + 1,
+     & ISEC=NSEC_surf,1,-1)
+        ENDIF
+        
+                
 C
         WRITE(LU,'(A,1X,A)') 'VERTEX_GRID',
      &    '(x_lo, x_up, y_lo, y_up, z_lo, z_up)'
+c     
+        idx_mesh = 1
+        idx_mesh_surf = 1
+        idx_strip =  0
         DO J = ISTRIP0, ISTRIP1, ISTEP
+          idx_strip =  idx_strip+1
           I1 = IJFRST(J)
 C
           DYLE = RLE2(2,J) - RLE1(2,J)
@@ -250,6 +281,15 @@ C
           YLE = RLE1(2,J)
           ZLE = RLE1(3,J)
           WRITE(LU,'(6(ES23.15))') XLE, XLE, YLE, YLE, ZLE, ZLE
+          
+                    
+          idx_LE = (idx_strip-1)*(2*NVC_chord+1) +   NVC_chord + 1
+          XYZSURF(1,idx_LE, isurf) = XLE
+          XYZSURF(2,idx_LE, isurf) = YLE
+          XYZSURF(3,idx_LE, isurf) = ZLE
+
+          CSD  = DYLE/SQRT(DYLE*DYLE + DZLE*DZLE)
+          SND  = DZLE/SQRT(DYLE*DYLE + DZLE*DZLE)
 C
           DO II = 1, NVC_chord
             I = I1 + (II-1)
@@ -260,11 +300,7 @@ C
             ZUP0 = ZUPN1(I)
 C
 C...        rotate airfoil in (y,z) so that it is perpendicular to dihedral
-            DY = XYN2(2,I) - XYN1(2,I)
-            DZ = 0.5*(ZLON2(I) - ZLON1(I))
-     &         + 0.5*(ZUPN2(I) - ZUPN1(I))
-            CSD  = DY/SQRT(DY*DY + DZ*DZ)
-            SND  = DZ/SQRT(DY*DY + DZ*DZ)
+
             YLOD = YLE + (Y0 - YLE)*CSD - (ZLO0 - ZLE)*SND
             YUPD = YLE + (Y0 - YLE)*CSD - (ZUP0 - ZLE)*SND
             ZLOD = ZLE - (Y0 - YLE)*SND + (ZLO0 - ZLE)*CSD
@@ -278,6 +314,15 @@ C...        rotate airfoil in (x,z) for twist
             YLO = YLOD
             YUP = YUPD
             WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
+            
+            XYZSURF(1, idx_LE - II, isurf) =  XUP
+            XYZSURF(2, idx_LE - II, isurf) =  YUP
+            XYZSURF(3, idx_LE - II, isurf) =  ZUP
+            
+            XYZSURF(1, idx_LE + II, isurf) =  XLO
+            XYZSURF(2, idx_LE + II, isurf) =  YLO
+            XYZSURF(3, idx_LE + II, isurf) =  ZLO
+            
           ENDDO
         ENDDO
 C
@@ -291,6 +336,18 @@ C
         YLE = RLE2(2,J)
         ZLE = RLE2(3,J)
         WRITE(LU,'(6(ES23.15))') XLE, XLE, YLE, YLE, ZLE, ZLE
+        
+        idx_strip = idx_strip + 1
+        idx_LE = (idx_strip-1)*(2*NVC_chord+1) +   NVC_chord + 1
+        XYZSURF(1,idx_LE, isurf) = XLE
+        XYZSURF(2,idx_LE, isurf) = YLE
+        XYZSURF(3,idx_LE, isurf) = ZLE
+        
+        DY = YLE - RLE1(2,J)
+        DZ = ZLE - RLE1(3,J)
+        
+        CSD  = DY/SQRT(DY*DY + DZ*DZ)
+        SND  = DZ/SQRT(DY*DY + DZ*DZ)       
 C
         DO II = 1, NVC_chord
           I = I1 + (II-1)
@@ -301,11 +358,6 @@ C
           ZUP0 = ZUPN2(I)
 C
 C...      rotate airfoil in (y,z) so that it is perpendicular to dihedral
-          DY = XYN2(2,I) - XYN1(2,I)
-          DZ = 0.5*(ZLON2(I) - ZLON1(I))
-     &       + 0.5*(ZUPN2(I) - ZUPN1(I))
-          CSD  = DY/SQRT(DY*DY + DZ*DZ)
-          SND  = DZ/SQRT(DY*DY + DZ*DZ)
           YLOD = YLE + (Y0 - YLE)*CSD - (ZLO0 - ZLE)*SND
           YUPD = YLE + (Y0 - YLE)*CSD - (ZUP0 - ZLE)*SND
           ZLOD = ZLE - (Y0 - YLE)*SND + (ZLO0 - ZLE)*CSD
@@ -318,12 +370,28 @@ C...      rotate airfoil in (x,z) for twist
           ZUP = ZLE - (X0 - XLE)*SNA + (ZUPD - ZLE)*CSA
           YLO = YLOD
           YUP = YUPD
+          
+          ! write(*,*) I, 'XYZ LO', XLO, YLO, ZLO
           WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
+          
+          
+          XYZSURF(1, idx_LE - II, isurf) =  XUP
+          XYZSURF(2, idx_LE - II, isurf) =  YUP
+          XYZSURF(3, idx_LE - II, isurf) =  ZUP
+          
+          XYZSURF(1, idx_LE + II, isurf) =  XLO
+          XYZSURF(2, idx_LE + II, isurf) =  YLO
+          XYZSURF(3, idx_LE + II, isurf) =  ZLO
+          
+          
         ENDDO
-C
+        idx_mesh = 1
         WRITE(LU,'(A,1X,A)') 'ELEMENT_CP',
      &    '(x_lo, x_up, y_lo, y_up, z_lo, z_up, cp_lo, cp_up)'
+       
+        idx_strip = 0
         DO J = ISTRIP0, ISTRIP1, ISTEP
+          idx_strip =  idx_strip+1
           I1 = IJFRST(J)
 C
           CSA = COS(AINC(J))
@@ -357,9 +425,18 @@ C...      rotate airfoil in (x,z) for twist
           YLO = YLOD
           YUP = YUPD
 C
-          CPU = CPT(I1) + 0.5*DCP(I1)
-          CPL = CPT(I1) - 0.5*DCP(I1)
+C          WARNING I swicheck the sign here!!
+C          CPU = CPT(I1) + 0.5*DCP(I1)
+C          CPL = CPT(I1) - 0.5*DCP(I1)
+          CPU = CPT(I1) - 0.5*DCP(I1)
+          CPL = CPT(I1) + 0.5*DCP(I1)
           WRITE(LU,'(8(ES23.15))') XLO,XUP, YLO,YUP, ZLO,ZUP, CPL,CPU
+          ! CPLO(idx_mesh, ISURF) = CPL
+          ! CPUP(idx_mesh, ISURF) = CPU
+          idx_LE_lo = (idx_strip-1)*(2*NVC_chord) +   NVC_chord + 1
+          idx_LE_up = (idx_strip-1)*(2*NVC_chord) +   NVC_chord + 0
+          CPSURF(idx_LE_lo, isurf) = CPL
+          CPSURF(idx_LE_up, isurf) = CPU
 C
           DO II = 2, NVC_chord
             I = I1 + (II-1)
@@ -397,9 +474,15 @@ C...        rotate airfoil in (x,z) for twist
             YLO = YLOD
             YUP = YUPD
 C
-            CPU = CPT(I) + 0.5*DCP(I)
-            CPL = CPT(I) - 0.5*DCP(I)
+C          WARNING I swicheck the sign here!!
+C          CPU = CPT(I1) + 0.5*DCP(I1)
+C          CPL = CPT(I1) - 0.5*DCP(I1)
+            CPU = CPT(I) - 0.5*DCP(I)
+            CPL = CPT(I) + 0.5*DCP(I)
             WRITE(LU,'(8(ES23.15))') XLO,XUP, YLO,YUP, ZLO,ZUP, CPL,CPU
+            CPSURF(idx_LE_lo + (II-1), isurf) = CPL
+            CPSURF(idx_LE_up - (II-1), isurf) = CPU
+            
           ENDDO
         ENDDO
       ENDDO

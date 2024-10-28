@@ -1,5 +1,4 @@
-AIRCRAFT
-
+AIRCRAFT 1
 #======================================================
 #------------------- Geometry File --------------------
 #======================================================
@@ -60,7 +59,7 @@ airfoils/A_4.dat
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
-0.0    2.99998412979    0       0.140110383308     0.0      5      3
+0.0    2.99998412979    0.1       0.140110383308     0.0      5      3
 AFILE
 airfoils/A_5.dat
 
@@ -69,7 +68,7 @@ airfoils/A_5.dat
 #------------------- Horizontal Tail ------------------
 #======================================================
 SURFACE
-HorizontalTail
+Horizontal Tail
 #Nchordwise  Cspace   Nspan   Sspace
 10       1.0           20         2 
 YDUPLICATE
@@ -113,8 +112,6 @@ SURFACE
 VerticalTail
 # Nchordwise Cspace Nspanwise Sspace
 10 1.00 10 -2.0
-# YDUPLICATE
-# 0.0
 #Xscale Yscale Zscale
 SCALE
 1.0 1.0 1.0
