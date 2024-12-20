@@ -704,6 +704,9 @@ C----- might as well directly set operating variables if they are known
       end !set_vel_rhs
       
       SUBROUTINE set_gam_d_rhs(IQ,ENC_Q, rhs_vec)
+      ! This part is from GDCALC
+      ! It ...
+        
       INCLUDE 'AVL.INC'
       REAL ENC_Q(3,NVMAX,*), rhs_vec(NVMAX)
       REAL RROT(3), VROT(3), VC(3)
@@ -744,6 +747,92 @@ C
       RETURN
       END ! set_gam_d_rhs
 
+      subroutine set_gam_u_rhs()
+        ! look at GUCALC
+        ! in that subroutine the RHS for each GAM_U direction is setup
+        ! it is aslo solved for in that subroutine, but we don't need 
+        ! that part becuase we are computing the residual
+        ! 
+        ! we can ignore all the GAM_U_D and GAM_U_G stuff becuase we
+        ! don't need derivatives of those. I think
+        
+        ! TODO:REFACTOR ALL THE RHS STUFF INTO SOME COMMON SUBROUTINES
+        ! TODO: change this to work per direction so that we don't need 
+        ! memory for  all the RHS at once
+        
+        INCLUDE 'AVL.INC'
+        REAL RROT(3), VUNIT(3), WUNIT(3)
+C
+C---- setup BC's at control points for unit freestream,rotation vectors,
+C      and back-substitute to obtain corresponding vortex circulations
+C
+C---- go over freestream velocity components u,v,w = f(V,beta,alpha)
+      DO 10 IU = 1, 3
+C------ go over all control points
+        DO I = 1, NVOR
+          IF(LVNC(I)) THEN
+C--------- this c.p. has V.n equation...
+            VUNIT(1) = 0.
+            VUNIT(2) = 0.
+            VUNIT(3) = 0.
+            IF(LVALBE(I)) THEN
+C---------- direct freestream influence is enabled for this c.p.
+            VUNIT(IU) = VUNIT(IU) + 1.0
+            ENDIF
+
+C--------- always add on indirect freestream influence via BODY sources and doublets
+            VUNIT(1) = VUNIT(1) + WCSRD_U(1,I,IU)
+            VUNIT(2) = VUNIT(2) + WCSRD_U(2,I,IU)
+            VUNIT(3) = VUNIT(3) + WCSRD_U(3,I,IU)
+
+C--------- set r.h.s. for V.n equation
+            RHS_U(I,IU) = -DOT(ENC(1,I),VUNIT)
+            
+          ELSE
+C--------- just clear r.h.s.
+            RHS_U(I,IU) = 0.
+          ENDIF
+        ENDDO
+  10   CONTINUE
+C
+C---- go over freestream rotation components p,q,r
+      DO 20 IU = 4, 6
+C------ go over all control points
+        DO I = 1, NVOR
+          IF(LVNC(I)) THEN
+C--------- this c.p. has V.n equation
+            WUNIT(1) = 0.
+            WUNIT(2) = 0.
+            WUNIT(3) = 0.
+            IF(LVALBE(I)) THEN
+C---------- direct freestream influence is enabled for this c.p.
+            WUNIT(IU-3) = WUNIT(IU-3) + 1.0
+            ENDIF
+            RROT(1) = RC(1,I) - XYZREF(1)
+            RROT(2) = RC(2,I) - XYZREF(2)
+            RROT(3) = RC(3,I) - XYZREF(3)
+            CALL CROSS(RROT,WUNIT,VUNIT)
+
+C--------- always add on indirect freestream influence via BODY sources and doublets
+            VUNIT(1) = VUNIT(1) + WCSRD_U(1,I,IU)
+            VUNIT(2) = VUNIT(2) + WCSRD_U(2,I,IU)
+            VUNIT(3) = VUNIT(3) + WCSRD_U(3,I,IU)
+
+C--------- set r.h.s. for V.n equation
+            RHS_U(I,IU) = -DOT(ENC(1,I),VUNIT)
+            
+          ELSE
+C--------- just clear r.h.s.
+            RHS_U(I,IU) = 0.
+            
+          ENDIF
+        ENDDO
+   20 CONTINUE
+C
+      
+        
+      end subroutine set_gam_d_rhs
+      
       
       subroutine mat_prod(mat, vec, n, out_vec)
         include 'AVL.INC'

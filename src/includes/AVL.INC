@@ -614,6 +614,7 @@ C
       REAL(kind=avl_real) RHS
       REAL(kind=avl_real) RES
       REAL(kind=avl_real) RES_D
+      REAL(kind=avl_real) RES_U
       REAL(kind=avl_real) CPT
       COMMON /VRTX_R/
      & RV1(3,NVMAX),    ! h.v. vortex left  points
@@ -658,7 +659,8 @@ cc#ifdef USE_CPOML
 cc#else
      & RHS(NVMAX),               ! RHS (flow normal to surface) for linear system
      & RES(NVMAX),               ! residual for linear system res = Ax-b
-     & RES_D(NVMAX,NDMAX)        ! residual for gamma_d lin. sys 
+     & RES_D(NVMAX,NDMAX),        ! residual for gamma_d lin. sys 
+     & RES_U(NVMAX,NUMAX)        ! residual for gamma_u lin. sys 
 
 cc#ifdef USE_CPOML
       REAL(kind=avl_real) XYN1

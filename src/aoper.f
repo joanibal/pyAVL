@@ -2074,7 +2074,7 @@ C ======================== res and Adjoint for GAM ========
       subroutine get_res
       INCLUDE "AVL.INC"
       integer I, IC
-      real RHS_D(NVOR)
+      real RHS_tmp(NVOR)
       call set_par_and_cons(NITMAX, IRUN)
 C---  
       ! Do not use this routine in the sovler
@@ -2108,13 +2108,24 @@ C------ don't bother if this control variable is undefined
             IF (lcondef(ic)) THEN
             
                   call mat_prod(AICN, GAM_D(:,IC), NVOR, res_D(:, IC))
-                  !  RHS_D(:) = 0.D0
-                  call set_gam_d_rhs(IC, ENC_D, RHS_D)
+                  !  RHS_tmp(:) = 0.D0
+                  call set_gam_d_rhs(IC, ENC_D, RHS_tmp)
                   !$AD II-LOOP
                   do I = 1, NVOR
-                        res_D(I, IC) = res_D(I, IC) - RHS_D(I)
+                        res_D(I, IC) = res_D(I, IC) - RHS_tmp(I)
                   enddo      
             endif 
+      ENDDO
+      
+      DO N = 1, NUMAX
+C------ don't bother if this control variable is undefined
+            call mat_prod(AICN, GAM_U(:,N), NVOR, res_U(:, IC))
+            !  RHS_D(:) = 0.D0
+            call set_gam_u_rhs(IC, ENC_U, RHS_tmp)
+            !$AD II-LOOP
+            do I = 1, NVOR
+                  res_U(I, IC) = res_U(I, IC) - RHS_tmp(I)
+            enddo      
       ENDDO
 
       end !get_res
