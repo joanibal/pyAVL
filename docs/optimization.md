@@ -1,6 +1,6 @@
 # Optimization 
 
-See [`examples/aircraft/run_opt.py`](https://github.com/joanibal/pyAVL/blob/master/examples/aircraft/run_opt.py) for a basic example. 
+See [`examples/aircraft/run_opt.py`](https://github.com/joanibal/OptAVL/blob/master/examples/aircraft/run_opt.py) for a basic example. 
 Other scripts in the examples' directory provide examples for more complex cases. 
 
 More documentation to follow. 

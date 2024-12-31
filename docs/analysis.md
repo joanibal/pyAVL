@@ -1,4 +1,4 @@
-# Analysis with pyAVL
+# Analysis with OptVL
 
 After initializing and setting up your `AVLSolver`, you can perform analysis tasks such as alpha sweeps and CL sweeps.
 
