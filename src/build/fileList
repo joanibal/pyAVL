@@ -59,6 +59,8 @@ f77Files =\
         lapack/iparmq.f\
         lapack/iparam2stage.f\
         lapack/ilaenv.f\
+        lapack/dlamchg.f\
+		lapack/idamax.f\
 		
 
 cFiles = \
