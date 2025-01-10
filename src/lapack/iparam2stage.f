@@ -152,7 +152,7 @@
 *  =====================================================================
       INTEGER FUNCTION IPARAM2STAGE( ISPEC, NAME, OPTS,
      $                              NI, NBI, IBI, NXI )
-#if defined(_OPENMP)
+#ifdef _OPENMP
       use omp_lib
 #endif
       IMPLICIT NONE
@@ -193,7 +193,7 @@
 *     Get the number of threads
 *
       NTHREADS = 1
-#if defined(_OPENMP)
+#ifdef _OPENMP
 !$OMP PARALLEL
       NTHREADS = OMP_GET_NUM_THREADS()
 !$OMP END PARALLEL
