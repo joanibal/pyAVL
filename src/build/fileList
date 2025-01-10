@@ -55,7 +55,11 @@ f77Files =\
 		lapack/dgetrf2.f\
 		lapack/dgetrf.f\
 		lapack/lsame.f\
-
+		lapack/ieeeck.f\
+        lapack/iparmq.f\
+        lapack/iparam2stage.f\
+        lapack/ilaenv.f\
+		
 
 cFiles = \
 		ad_src/ADFirstAidKit/adStack.c\
