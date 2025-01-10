@@ -152,9 +152,9 @@
 *  =====================================================================
       INTEGER FUNCTION IPARAM2STAGE( ISPEC, NAME, OPTS,
      $                              NI, NBI, IBI, NXI )
-#ifdef _OPENMP
-      use omp_lib
-#endif
+! #ifdef _OPENMP
+!       use omp_lib
+! #endif
       IMPLICIT NONE
 *
 *  -- LAPACK auxiliary routine --
@@ -193,11 +193,11 @@
 *     Get the number of threads
 *
       NTHREADS = 1
-#ifdef _OPENMP
-!$OMP PARALLEL
-      NTHREADS = OMP_GET_NUM_THREADS()
-!$OMP END PARALLEL
-#endif
+! #ifdef _OPENMP
+! !$OMP PARALLEL
+!       NTHREADS = OMP_GET_NUM_THREADS()
+! !$OMP END PARALLEL
+! #endif
 *      WRITE(*,*) 'IPARAM VOICI NTHREADS ISPEC ',NTHREADS, ISPEC
 *
       IF( ISPEC .NE. 19 ) THEN
