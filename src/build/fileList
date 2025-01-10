@@ -54,6 +54,7 @@ f77Files =\
 		lapack/dgemm.f\
 		lapack/dgetrf2.f\
 		lapack/dgetrf.f\
+		lapack/lsame.f\
 
 
 cFiles = \
