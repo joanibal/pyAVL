@@ -163,8 +163,8 @@ endif
 
 # Configure the template
 configure_file(
-    input: 'AVL.INC.in',
-    output: 'AVL.INC',
+    input: 'src/includes/AVL.INC.in',
+    output: 'src/includes/AVL.INC',
     configuration: {'OSNVMAX': nvmax}
 )
 
