@@ -24,8 +24,8 @@ python -m unittest -v test_eigen_analysis.py
 
 # tests for adjoint
 python -m unittest -v test_new_subroutines.py
-python -m unittest -v test_partial_derivs.py TestFunctionPartials
-python -m unittest -v test_partial_derivs.py TestResidualPartials
+python -m unittest -v test_partial_derivs.TestFunctionPartials
+python -m unittest -v test_partial_derivs.TestResidualPartials
 python -m unittest -v test_consurf_partial_derivs.py
 python -m unittest -v test_total_derivs.py
 
