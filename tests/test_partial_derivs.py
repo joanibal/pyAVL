@@ -3,7 +3,9 @@
 # =============================================================================
 from pyavl import AVLSolver
 import copy
-import resource
+import platform
+if platform.system() != "Windows":
+    import resource
 
 # =============================================================================
 # Standard Python Modules
@@ -35,8 +37,9 @@ class TestFunctionPartials(unittest.TestCase):
     def tearDown(self):
         # Without the following line a copy of large_list will be kept in
         # memory for each test that runs, uncomment the line to allow the
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB")
+        if platform.system() != "Windows":
+            mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+            print(f"{self.id()} Memory usage: {mb_memory} MB")
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -352,8 +355,9 @@ class TestResidualPartials(unittest.TestCase):
     def tearDown(self):
         # Without the following line a copy of large_list will be kept in
         # memory for each test that runs, uncomment the line to allow the
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB" )
+        if platform.system() != "Windows":
+            mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+            print(f"{self.id()} Memory usage: {mb_memory} MB" )
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:

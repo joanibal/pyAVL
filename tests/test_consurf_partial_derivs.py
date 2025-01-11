@@ -3,7 +3,9 @@
 # =============================================================================
 from pyavl import AVLSolver
 import copy
-import resource
+import platform
+if platform.system() != "Windows":
+    import resource
 
 # =============================================================================
 # Standard Python Modules
@@ -33,8 +35,9 @@ class TestResidualDPartials(unittest.TestCase):
         self.avl_solver.execute_run()
 
     def tearDown(self) -> None:
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB" )
+        if platform.system() != "Windows":
+            mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+            print(f"{self.id()} Memory usage: {mb_memory} MB" )
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -196,8 +199,9 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         self.avl_solver.clear_ad_seeds_fast()
 
     def tearDown(self):
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB" )
+        if platform.system() != "Windows":
+            mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+            print(f"{self.id()} Memory usage: {mb_memory} MB" )
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:

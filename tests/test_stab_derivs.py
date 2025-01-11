@@ -3,7 +3,9 @@
 # =============================================================================
 from pyavl import AVLSolver
 import copy
-import resource
+import platform
+if platform.system() != "Windows":
+    import resource
 # =============================================================================
 # Standard Python Modules
 # =============================================================================
@@ -34,10 +36,12 @@ class TestStabDerivs(unittest.TestCase):
         self.avl_solver.execute_run()
 
     def tearDown(self):
-        # Without the following line a copy of large_list will be kept in
-        # memory for each test that runs, uncomment the line to allow the
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB")
+
+        if platform.system() != "Windows": 
+            # Without the following line a copy of large_list will be kept in
+            # memory for each test that runs, uncomment the line to allow the
+            mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+            print(f"{self.id()} Memory usage: {mb_memory} MB")
 
     def finite_dif(self, con_list, geom_seeds, step=1e-7):
         con_seeds = {}
