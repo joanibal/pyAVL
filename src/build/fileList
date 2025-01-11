@@ -18,7 +18,7 @@ f77Files =\
 		cdcl.f\
 		getvm.f\
 		hidden.f\
-		matrix.f\
+		matrix-lapackdp.f\
 		second.f\
 		sgutil.f\
 		spline.f\
