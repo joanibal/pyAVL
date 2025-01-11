@@ -155,8 +155,18 @@ cc_args = [numpy_nodepr_api]
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
   cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
-  ff_args += ['-fmax-stack-var-size=6553']
+  # ff_args += ['-fmax-stack-var-size=6553']
+  nvmax = 3500
+else
+  nvmax = 5450
 endif
+
+# Configure the template
+configure_file(
+    input: 'AVL.INC.in',
+    output: 'AVL.INC',
+    configuration: {'OSNVMAX': NVMAX}
+)
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
 # Share this object across multiple modules.
