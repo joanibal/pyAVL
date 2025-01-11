@@ -61,6 +61,7 @@ f77Files =\
         lapack/ilaenv.f\
         lapack/dlamch.f\
 		lapack/idamax.f\
+		lapack/dgetrs.f\
 		
 
 cFiles = \
