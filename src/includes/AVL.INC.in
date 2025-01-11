@@ -718,11 +718,11 @@ C
      & AICN_LU(NVMAX,NVMAX),     ! LU facotrization of AICN
      & WC_GAM(3,NVMAX,NVMAX), ! c.p. velocity/Gamma influence matrix
      & WV_GAM(3,NVMAX,NVMAX), ! h.v. velocity/Gamma influence matrix
-     & WC(3,NVMAX),           ! total induced velocity at c.p.
+     & WC(3,NVMAX),           ! total induced velocity at c.p. (used in residual)
      & WC_U(3,NVMAX,NUMAX),
      & WC_D(3,NVMAX,NDMAX),
      & WC_G(3,NVMAX,NGMAX),
-     & WV(3,NVMAX),           ! total induced velocity at h.v.
+     & WV(3,NVMAX),           ! total induced velocity at h.v. (used in loads)
      & WV_U(3,NVMAX,NUMAX),
      & WV_D(3,NVMAX,NDMAX),
      & WV_G(3,NVMAX,NGMAX)

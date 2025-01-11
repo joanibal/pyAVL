@@ -21,7 +21,7 @@ requires = [
 
 
 [project]
-name = "pyavl-wrapper"
+name = "optvl"
 license = {file = "LICENSE.txt"}
 description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code."
 dependencies = [
@@ -62,8 +62,8 @@ select = "*-win_amd64"
 environment = { PKG_CONFIG_PATH="c:/opt/64/lib/pkgconfig" }
 
 [project.urls]
-homepage = "https://github.com/joanibal/pyavl"
+homepage = "https://github.com/joanibal/OptVL"
 # documentation =
-source = "https://github.com/joanibal/pyavl"
+source = "https://github.com/joanibal/OptVL"
 # download = 
-tracker = "https://github.com/joanibal/pyavl/issues"
+tracker = "https://github.com/joanibal/OptVL/issues"
