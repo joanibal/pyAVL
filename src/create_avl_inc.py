@@ -30,7 +30,7 @@ if __name__ == "__main__":
     elif platform.system() == "Linux":
         nvmax = 6000
     elif platform.system() == "Windows":
-        nvmax = 6000
+        nvmax = 4000
     else:
         raise NotImplementedError('system platform not found')
     
