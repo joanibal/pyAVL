@@ -81,16 +81,16 @@ fi
 
 
 
-# Install Openblas
-python -m pip install scipy-openblas32==0.3.28.0.2
-python -c "import scipy_openblas32; print(scipy_openblas32.get_pkg_config())" > $PROJECT_DIR/scipy-openblas.pc
+# # Install Openblas
+# python -m pip install scipy-openblas32==0.3.28.0.2
+# python -c "import scipy_openblas32; print(scipy_openblas32.get_pkg_config())" > $PROJECT_DIR/scipy-openblas.pc
 
-lib_loc=$(python -c"import scipy_openblas32; print(scipy_openblas32.get_lib_dir())")
-# Use the libgfortran from gfortran rather than the one in the wheel
-# since delocate gets confused if there is more than one
-# https://github.com/scipy/scipy/issues/20852
-install_name_tool -change @loader_path/../.dylibs/libgfortran.5.dylib @rpath/libgfortran.5.dylib $lib_loc/libsci*
-install_name_tool -change @loader_path/../.dylibs/libgcc_s.1.1.dylib @rpath/libgcc_s.1.1.dylib $lib_loc/libsci*
-install_name_tool -change @loader_path/../.dylibs/libquadmath.0.dylib @rpath/libquadmath.0.dylib $lib_loc/libsci*
+# lib_loc=$(python -c"import scipy_openblas32; print(scipy_openblas32.get_lib_dir())")
+# # Use the libgfortran from gfortran rather than the one in the wheel
+# # since delocate gets confused if there is more than one
+# # https://github.com/scipy/scipy/issues/20852
+# install_name_tool -change @loader_path/../.dylibs/libgfortran.5.dylib @rpath/libgfortran.5.dylib $lib_loc/libsci*
+# install_name_tool -change @loader_path/../.dylibs/libgcc_s.1.1.dylib @rpath/libgcc_s.1.1.dylib $lib_loc/libsci*
+# install_name_tool -change @loader_path/../.dylibs/libquadmath.0.dylib @rpath/libquadmath.0.dylib $lib_loc/libsci*
 
-codesign -s - -f $lib_loc/libsci*
+# codesign -s - -f $lib_loc/libsci*

@@ -7,7 +7,7 @@ printenv
 # Update license
 cat $PROJECT_DIR/tools/wheels/LICENSE_linux.txt >> $PROJECT_DIR/LICENSE.txt
 
-# Install Openblas
-basedir=$(python tools/openblas_support.py)
-cp -r $basedir/lib/* /usr/local/lib
-cp $basedir/include/* /usr/local/include
+# # Install Openblas
+# basedir=$(python tools/openblas_support.py)
+# cp -r $basedir/lib/* /usr/local/lib
+# cp $basedir/include/* /usr/local/include
