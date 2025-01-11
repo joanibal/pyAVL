@@ -155,8 +155,7 @@ cc_args = [numpy_nodepr_api]
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
   cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
-  ff_args += ['-fmax-stack-var-size=655360']
-  cc_args += ['-fmax-stack-var-size=655360']
+  ff_args += ['-fmax-stack-var-size=6553']
 endif
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
