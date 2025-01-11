@@ -37,8 +37,6 @@ jobs:
         python: [["cp39", "3.9"]]
 
 
-    env:
-      IS_32_BIT: ${{ matrix.buildplat[2] == 'x86' }}
 
     steps:
     
@@ -53,9 +51,9 @@ jobs:
       - name: win_amd64 - install rtools
         run: |
           # mingw-w64
-          choco install rtools --no-progress
+          choco install rtools -y --no-progress --force --version=4.0.0.20220206
           echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH
-        if: ${{ runner.os == 'Windows' && env.IS_32_BIT == 'false' }}
+        if: ${{ runner.os == 'Windows' }}
 
       - name: Setup macOS
         if: startsWith( matrix.buildplat[0], 'macos-' )
