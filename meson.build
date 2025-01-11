@@ -156,9 +156,6 @@ if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
   cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
   # ff_args += ['-fmax-stack-var-size=6553']
-  nvmax = 3500
-else
-  nvmax = 5450
 endif
 
 
@@ -180,26 +177,14 @@ avl_source_files = c.stdout().strip().split('\n')
 
 # Specify the directory containing your Meson build script
 incs_dir = 'src/includes'
-avl_inc = include_directories(incs_dir)
+avl_inc_dir = include_directories(incs_dir)
 
 # Define the input and output file paths
 inc_in = join_paths(incs_dir, 'AVL.INC.in')
 inc_out = join_paths(incs_dir, 'AVL.INC')
 
-# Create the custom target
-generated_avl_inc = custom_target('generate_avl_inc',
-  input: inc_in,
-  output: inc_out,
-  command: [
-    'sed', 
-    's/@OSNVMAX@/' + nvmax + '/g', 
-    '@INPUT@'
-  ],
-  capture: true
-)
+run_command('src' / 'create_avl_inc.py', check: true)
 
-
-avl_source_files += [generated_avl_inc]
 
 
 avl_c_wrapper = custom_target('libavlmodule.c',
@@ -212,7 +197,7 @@ py3.extension_module('libavl',
     avl_source_files,
     avl_c_wrapper,
     fortranobject_c,
-    include_directories: [inc_np, inc_f2py, avl_inc],
+    include_directories: [inc_np, inc_f2py, avl_inc_dir],
     dependencies: [lapack, blas, fortranobject_dep],
     # dependencies: [fortranobject_dep],
     subdir: 'pyavl',

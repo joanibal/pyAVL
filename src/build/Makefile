@@ -60,7 +60,7 @@ default: lib ../f2py/libavl.pyf
 
 # # Rule to generate AVL.INC
 ../includes/AVL.INC: ../includes/AVL.INC.in
-	sed 's/@OSNVMAX@/$(OSNVMAX)/g' ../includes/AVL.INC.in > ../includes/AVL.INC
+	python ../create_avl_inc.py $(OSNVMAX)
 
 
 # Ensure all object files are recompiled if AVL.INC changes
