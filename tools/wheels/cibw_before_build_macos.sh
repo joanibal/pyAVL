@@ -82,7 +82,7 @@ fi
 
 
 # Install Openblas
-python -m pip install -r scipy-openblas32==0.3.28.0.2
+python -m pip install scipy-openblas32==0.3.28.0.2
 python -c "import scipy_openblas32; print(scipy_openblas32.get_pkg_config())" > $PROJECT_DIR/scipy-openblas.pc
 
 lib_loc=$(python -c"import scipy_openblas32; print(scipy_openblas32.get_lib_dir())")
