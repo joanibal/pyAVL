@@ -47,6 +47,13 @@ f77Files =\
 		ad_src/reverse_ad_src/amode_b.f\
 		ad_src/ADFirstAidKit/adBuffer.f\
 #       ad_src/ADFirstAidKit/debugAD.f\
+		lapack/dlaswp.f\
+		lapack/dtrsm.f\
+		lapack/dscal.f\
+		lapack/xerbla.f\
+		lapack/dgemm.f\
+		lapack/dgetrf2.f\
+		lapack/dgetrf.f\
 
 
 cFiles = \

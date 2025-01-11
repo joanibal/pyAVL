@@ -8,8 +8,6 @@ project(
     'buildtype=debugoptimized',
     'c_std=c99',
     'fortran_std=legacy',
-    'blas=openblas',
-    'lapack=openblas'
   ],
 )
 
@@ -87,33 +85,6 @@ inc_np = include_directories(incdir_numpy)
 incdir_f2py = incdir_numpy / '..' / '..' / 'f2py' / 'src'
 inc_f2py = include_directories(incdir_f2py)
 
-
-# TODO: 64-bit BLAS and LAPACK
-#
-# Note that this works as long as BLAS and LAPACK are detected properly via
-# pkg-config. By default we look for OpenBLAS, other libraries can be configured via
-# `meson configure -Dblas=blas -Dlapack=lapack` (example to build with Netlib
-# BLAS and LAPACK).
-# For MKL and for auto-detecting one of multiple libs, we'll need a custom
-# dependency in Meson (like is done for scalapack) - see
-# https://github.com/mesonbuild/meson/issues/2835
-blas_name = get_option('blas')
-lapack_name = get_option('lapack')
-# pkg-config uses a lower-case name while CMake uses a capitalized name, so try
-# that too to make the fallback detection with CMake work
-if blas_name == 'openblas'
-  blas_name = ['openblas', 'OpenBLAS']
-endif
-if lapack_name == 'openblas'
-  lapack_name = ['openblas', 'OpenBLAS']
-endif
-blas = dependency(blas_name)
-lapack = dependency(lapack_name)
-
-dependency_map = {
-  'BLAS': blas,
-  'LAPACK': lapack,
-}
 
 # Fortran warning flags
 
@@ -198,8 +169,7 @@ py3.extension_module('libavl',
     avl_c_wrapper,
     fortranobject_c,
     include_directories: [inc_np, inc_f2py, avl_inc_dir],
-    dependencies: [lapack, blas, fortranobject_dep],
-    # dependencies: [fortranobject_dep],
+    dependencies: [fortranobject_dep],
     subdir: 'pyavl',
     link_args: link_args,
     fortran_args: ff_args,
