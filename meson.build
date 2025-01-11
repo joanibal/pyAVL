@@ -32,10 +32,6 @@ ff = meson.get_compiler('fortran')
 
 is_windows = host_machine.system() == 'windows'
 
-# Can you help me understand the following warning? Is there an issue with increasing -fmax-stack-var-size to avoid this problem? How could I modify the code to avoid this problem?
-
-# # Warning: Array 'aict' at (1) is larger than limit set by '-fmax-stack-var-size=', moved from stack to static storage. This makes the procedure unsafe when called recursively, or concurrently from multiple threads. Consider using '-frecursive', or increase the '-fmax-stack-var-size=' limit, or change the code to use an ALLOCATABLE 
-
 
 # Platform detection
 is_mingw = is_windows and cc.get_id() == 'gcc'
@@ -154,10 +150,13 @@ numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
 
 cc_args = [numpy_nodepr_api]
 
+# # Warning: Array 'aict' at (1) is larger than limit set by '-fmax-stack-var-size=', moved from stack to static storage. This makes the procedure unsafe when called recursively, or concurrently from multiple threads. Consider using '-frecursive', or increase the '-fmax-stack-var-size=' limit, or change the code to use an ALLOCATABLE 
+
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
   cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
-  ff_args += ['-fmax-stack-var-size=65536']
+  ff_args += ['-fmax-stack-var-size=655360']
+  cc_args += ['-fmax-stack-var-size=655360']
 endif
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
