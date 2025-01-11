@@ -32,37 +32,8 @@ ff = meson.get_compiler('fortran')
 
 is_windows = host_machine.system() == 'windows'
 
-# is_mingw = is_windows and cc.get_id() == 'gcc'
-# message('is_windows', is_windows, 'is_mingw', is_mingw)
-# if is_windows
-#   # For mingw-w64, link statically against the UCRT.
-#   gcc_link_args = ['-lucrt', '-static']
-#   if is_mingw
-#     add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
-#     # Force gcc to float64 long doubles for compatibility with MSVC
-#     # builds, for C only.
-#     add_project_arguments('-mlong-double-64', language: ['c', 'fortran'])
-#     add_project_arguments('-mcmodel=medium', language: ['c', 'cpp', 'fortran'])
-#     # Make fprintf("%zd") work (see https://github.com/rgommers/scipy/issues/118)
-#     add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
-#     # Manual add of MS_WIN64 macro when not using MSVC.
-#     # https://bugs.python.org/issue28267
-#     bitness = run_command('_build_utils/gcc_build_bitness.py').stdout().strip()
-#     message('windows bitness is ', bitness)
-#     if bitness == '64'
-#       add_project_arguments('-DMS_WIN64', language: ['c', 'cpp', 'fortran'])
-#     endif
-#   endif
-#   if meson.get_compiler('fortran').get_id() == 'gcc'
-#     add_project_link_arguments(gcc_link_args, language: ['fortran'])
-#     # Flag needed to work around BLAS and LAPACK Gfortran dependence on
-#     # undocumented C feature when passing single character string
-#     # arguments.
-#     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90329
-#     # https://github.com/wch/r-source/blob/838f9d5a7be08f2a8c08e47bcd28756f5d0aac90/src/gnuwin32/MkRules.rules#L121
-#     add_project_arguments('-fno-optimize-sibling-calls', language: ['fortran'])
-#   endif
-# endif
+# Warning: Array 'aict' at (1) is larger than limit set by '-fmax-stack-var-size=', moved from stack to static storage. This makes the procedure unsafe when called recursively, or concurrently from multiple threads. Consider using '-frecursive', or increase the '-fmax-stack-var-size=' limit, or change the code to use an ALLOCATABLE 
+
 
 # Platform detection
 is_mingw = is_windows and cc.get_id() == 'gcc'
@@ -184,6 +155,7 @@ cc_args = [numpy_nodepr_api]
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
   cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
+  ff_args += ['-frecursive']
 endif
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
