@@ -27,6 +27,9 @@ C
       REAL(kind=avl_real) temp
       INTEGER ii2
       INTEGER ii1
+      REAL(kind=avl_real) WC_GAM(3,NVOR,NVOR)
+      REAL(kind=avl_real) WC_GAM_DIFF(3,NVOR,NVOR)
+      
       amach_diff = mach_diff
       amach = mach
       arg1_diff = -(2*amach*amach_diff)
@@ -42,7 +45,7 @@ C
       CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
      +            , nsurfv, chordv, chordv_diff, nvor, rc, rc_diff, 
-     +            nsurfv, .false., wc_gam, wc_gam_diff, nvmax)
+     +            nsurfv, .false., wc_gam, wc_gam_diff, NVOR)
       DO ii1=1,nvor
         DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
@@ -120,9 +123,9 @@ C
 C
       DO i=1,nvor
         DO k=1,3
-          wc(k, i) = wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*vinf(2)
-     +      + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot(1) + 
-     +      wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
+    !       wc(k, i) = wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*vinf(2)
+    !  +      + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot(1) + 
+    !  +      wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
           wv_diff(k, i) = wvsrd_u(k, i, 1)*vinf_diff(1) + wvsrd_u(k, i, 
      +      2)*vinf_diff(2) + wvsrd_u(k, i, 3)*vinf_diff(3) + wvsrd_u(k
      +      , i, 4)*wrot_diff(1) + wvsrd_u(k, i, 5)*wrot_diff(2) + 
@@ -135,7 +138,7 @@ C
       DO j=1,nvor
         DO i=1,nvor
           DO k=1,3
-            wc(k, i) = wc(k, i) + wc_gam(k, i, j)*gam(j)
+            ! wc(k, i) = wc(k, i) + wc_gam(k, i, j)*gam(j)
             wv_diff(k, i) = wv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
      +        + wv_gam(k, i, j)*gam_diff(j)
             wv(k, i) = wv(k, i) + wv_gam(k, i, j)*gam(j)
@@ -154,8 +157,8 @@ C
         DO j=1,nvor
           DO i=1,nvor
             DO k=1,3
-              wc_u(k, i, n) = wc_u(k, i, n) + wc_gam(k, i, j)*gam_u(j, n
-     +          )
+              ! wc_u(k, i, n) = wc_u(k, i, n) + wc_gam(k, i, j)*gam_u(j, n
+    !  +          )
               wv_u(k, i, n) = wv_u(k, i, n) + wv_gam(k, i, j)*gam_u(j, n
      +          )
             ENDDO

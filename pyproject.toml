@@ -28,7 +28,7 @@ dependencies = [
     "numpy>=1.19",
 ]
 readme = "README.md"
-version = "1.8.0" # this automatically updates __init__.py
+version = "0.1.0" # this automatically updates __init__.py
 
 
 [tool.cibuildwheel]
