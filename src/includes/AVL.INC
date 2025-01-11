@@ -21,7 +21,11 @@ C    NRMAX   number of stored run cases
 C    NTMAX   number of stored time levels
 C     
 C    ICONX   max number of control or design variable declaration lines per section (20)
+<<<<<<< HEAD
       PARAMETER (NVMAX=5450, !max number of vortices
+=======
+      PARAMETER (NVMAX=3500,
+>>>>>>> b6169a3 (basic win build working?)
      &           NSMAX=400,
      &           NFMAX=30,
      &           NLMAX=500,
