@@ -165,7 +165,7 @@ endif
 configure_file(
     input: 'AVL.INC.in',
     output: 'AVL.INC',
-    configuration: {'OSNVMAX': NVMAX}
+    configuration: {'OSNVMAX': nvmax}
 )
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
