@@ -161,12 +161,6 @@ else
   nvmax = 5450
 endif
 
-# Configure the template
-configure_file(
-    input: 'src/includes/AVL.INC.in',
-    output: 'src/includes/AVL.INC',
-    configuration: {'OSNVMAX': nvmax}
-)
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
 # Share this object across multiple modules.
@@ -183,7 +177,30 @@ fortranobject_dep = declare_dependency(
 
 c = run_command('src' / 'grab-all-fortran-files.py', check: true)
 avl_source_files = c.stdout().strip().split('\n')
-avl_inc = include_directories('src/includes')
+
+# Specify the directory containing your Meson build script
+incs_dir = 'src/includes'
+avl_inc = include_directories(incs_dir)
+
+# Define the input and output file paths
+inc_in = join_paths(incs_dir, 'AVL.INC.in')
+inc_out = join_paths(incs_dir, 'AVL.INC')
+
+# Create the custom target
+generated_avl_inc = custom_target('generate_avl_inc',
+  input: inc_in,
+  output: inc_out,
+  command: [
+    'sed', 
+    's/@OSNVMAX@/' + nvmax + '/g', 
+    '@INPUT@'
+  ],
+  capture: true
+)
+
+
+avl_source_files += [generated_avl_inc]
+
 
 avl_c_wrapper = custom_target('libavlmodule.c',
 input : ['src/f2py/libavl.pyf'],
