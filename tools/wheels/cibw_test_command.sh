@@ -5,6 +5,8 @@ PROJECT_DIR="$1"
 cd $PROJECT_DIR/tests
 # python -m unittest -v
 #HACK: if the tests are not split up the CI runs out of memory...
+pip install psutil
+
 
 # test package built and installed correctly
 python -m unittest -v test_import.py
