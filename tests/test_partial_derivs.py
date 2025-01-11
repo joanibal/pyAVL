@@ -4,8 +4,6 @@
 from pyavl import AVLSolver
 import copy
 import platform
-if platform.system() != "Windows":
-    import resource
 
 # =============================================================================
 # Standard Python Modules
