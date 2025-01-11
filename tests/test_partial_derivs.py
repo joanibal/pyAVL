@@ -34,6 +34,10 @@ class TestFunctionPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 25.0)
         self.avl_solver.add_constraint("beta", 5.0)
         self.avl_solver.execute_run()
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
         
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -352,6 +356,10 @@ class TestResidualPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 25.0)
         self.avl_solver.add_constraint("beta", 5.0)
         self.avl_solver.execute_run()
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
     
     def tearDown(self):
         # Get the memory usage of the current process using psutil
