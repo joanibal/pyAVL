@@ -35,34 +35,38 @@ F90Files=$(filter %.F90,$(fortranFilesNoDir))
 # Finally convert all source files to .o
 OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
 
-.PHONY: sources lib
+OS := $(shell uname)
+
+# Define platform string based on the OS
+ifeq ($(OS), Linux)
+    OSNVMAX := 5450
+else ifeq ($(OS), Darwin)
+    OSNVMAX := 5450
+else ifeq ($(OS), Windows_NT)
+    OSNVMAX := 3500
+else
+    $(error Unsupported operating system)
+endif
+
+# Compile sources
+
+# .PHONY: ../include/AVL.INC sources lib
 
 default: lib ../f2py/libavl.pyf
-	$(F2PY) -llapack -lblas --fcompiler=$(F2PY_FF90) --f90flags='$(FF90_ALL_FLAGS)' -c -m  libavl ../f2py/libavl.pyf libavl.a
+	$(F2PY) --fcompiler=$(F2PY_FF90) --f90flags='$(FF90_ALL_FLAGS)' -c -m  libavl ../f2py/libavl.pyf libavl.a
 	python importTest.py libavl
 	mv libavl.*so ../../pyavl/libavl.so
 
-sources: $(OFILES)
+
+# # Rule to generate AVL.INC
+../includes/AVL.INC: ../includes/AVL.INC.in
+	python ../create_avl_inc.py $(OSNVMAX)
+
+
+# Ensure all object files are recompiled if AVL.INC changes
+# $(OFILES): ../includes/AVL.INC
+
+sources: $(OFILES) 
 
 lib: sources
 	$(AR) $(AR_FLAGS) libavl.a $(OFILES) 
-
-# SRC = ../eispack.f
-# BIN = eispack.o
-# DP =
-# EISLIB = libeispack.a
-# FLG = -O2 -fomit-frame-pointer
-
-# FC = gfortran
-# FLG = -O
-# AR = ar 
-# RAN = ranlib
-
-
-# eigenlib:  $(SRC)
-# # Makefile for MinGW (with gfortran)
-# 	$(F2PY_FF90) -c $(FLG) $(DP) $(SRC)
-# 	$(AR) -r $(EISLIB) $(BIN)
-# 	$(RAN) $(EISLIB)
-
-	

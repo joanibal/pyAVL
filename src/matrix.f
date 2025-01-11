@@ -121,3 +121,45 @@ C
       RETURN
       END ! BAKSUB
 
+      SUBROUTINE BAKSUBTRANS(NSIZ,N,A,INDX,B)
+        REAL A(NSIZ,NSIZ), B(NSIZ), tmp
+        INTEGER INDX(NSIZ)
+C
+       
+        ! Solve A**T * X = B.
+        ! the A matrix passed has L and U factors stored in place
+        ! notes diagonal of L is implied to be all ones
+        
+        ! Solve U**T *X = B, overwriting B with X.
+        ! forward substitution but indexing gets weird because we won'T
+        ! actually transpose the matrix 
+        do i = 1, n
+            sum = b(i)
+            if (i > 1) then ! skip the first
+                do j = 1, i-1
+                    sum = sum - a(j, i) * b(j)
+                end do
+            end if
+            b(i) = sum /a(i,i)
+        end do
+        ! Solve L**T *X = B, overwriting B with X.
+        do i = n, 1, -1
+            sum = b(i)
+            if (i .lt. n) then
+                do j = i + 1, n
+                    sum = sum - a(j, i) * b(j)
+                end do
+            end if
+            b(i) = sum 
+        end do
+        
+        ! Apply row interchanges to the solution vectors.
+        do i = N,1, -1
+            tmp = b(indx(i))
+            b(indx(i)) = b(i)
+            b(i) = tmp
+        enddo
+C
+      RETURN
+      END ! BAKSUBTRANS
+

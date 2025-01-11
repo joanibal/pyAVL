@@ -8,8 +8,6 @@ project(
     'buildtype=debugoptimized',
     'c_std=c99',
     'fortran_std=legacy',
-    'blas=openblas',
-    'lapack=openblas'
   ],
 )
 
@@ -32,44 +30,42 @@ ff = meson.get_compiler('fortran')
 
 is_windows = host_machine.system() == 'windows'
 
+
+# Platform detection
 is_mingw = is_windows and cc.get_id() == 'gcc'
-message('is_windows', is_windows, 'is_mingw', is_mingw)
-if is_windows
+if is_mingw and ff.get_id() != 'gcc'
+  error('If you are using GCC on Windows, you must also use GFortran! Detected ' + ff.get_id())
+endif
+
+cython_c_args = ['-DCYTHON_CCOMPLEX=0'] # see gh-18975 for why we need this
+if is_mingw
   # For mingw-w64, link statically against the UCRT.
   gcc_link_args = ['-lucrt', '-static']
-  if is_mingw
-    add_project_link_arguments(gcc_link_args, language: ['c', 'cpp'])
-    # Force gcc to float64 long doubles for compatibility with MSVC
-    # builds, for C only.
-    add_project_arguments('-mlong-double-64', language: ['c', 'fortran'])
-    add_project_arguments('-mcmodel=medium', language: ['c', 'cpp', 'fortran'])
-    # Make fprintf("%zd") work (see https://github.com/rgommers/scipy/issues/118)
-    add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
-    # Manual add of MS_WIN64 macro when not using MSVC.
-    # https://bugs.python.org/issue28267
-    bitness = run_command('_build_utils/gcc_build_bitness.py').stdout().strip()
-    message('windows bitness is ', bitness)
-    if bitness == '64'
-      add_project_arguments('-DMS_WIN64', language: ['c', 'cpp', 'fortran'])
-    endif
-  endif
-  if meson.get_compiler('fortran').get_id() == 'gcc'
-    add_project_link_arguments(gcc_link_args, language: ['fortran'])
-    # Flag needed to work around BLAS and LAPACK Gfortran dependence on
-    # undocumented C feature when passing single character string
-    # arguments.
-    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90329
-    # https://github.com/wch/r-source/blob/838f9d5a7be08f2a8c08e47bcd28756f5d0aac90/src/gnuwin32/MkRules.rules#L121
-    add_project_arguments('-fno-optimize-sibling-calls', language: ['fortran'])
-  endif
+  add_project_link_arguments(gcc_link_args, language: ['c', 'cpp', 'fortran'])
+  # Force gcc to float64 long doubles for compatibility with MSVC
+  # builds, for C only.
+  add_project_arguments('-mlong-double-64', language: 'c')
+  # Make fprintf("%zd") work (see https://github.com/rgommers/scipy/issues/118)
+  add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
+  # Silence warnings emitted by PyOS_snprintf for (%zd), see
+  # https://github.com/rgommers/scipy/issues/118.
+  # Use as c_args for extensions containing Cython code
+  cython_c_args += ['-Wno-format-extra-args', '-Wno-format']
+  # Flag needed to work around BLAS and LAPACK Gfortran dependence on
+  # undocumented C feature when passing single character string arguments. See:
+  #   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90329
+  #   https://github.com/wch/r-source/blob/838f9d5a7be08f2a8c08e47bcd28756f5d0aac90/src/gnuwin32/MkRules.rules#L121
+  add_project_arguments('-fno-optimize-sibling-calls', language: ['fortran'])
 endif
 
 
 # _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
 # link_args = ['-Wl,--version-script=' + _linker_script]
 # link_args = ['-Wl,--image-base,0x10000000']
-# link_args = ['-mcmodel=medium']
+# link_args = ['-mcmodel=large']
 link_args = []
+# -shared -fPIC
+# gfortran -o myprogram mysource.f90 -Wl,-stack_size,8388608
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')
@@ -89,33 +85,6 @@ inc_np = include_directories(incdir_numpy)
 incdir_f2py = incdir_numpy / '..' / '..' / 'f2py' / 'src'
 inc_f2py = include_directories(incdir_f2py)
 
-
-# TODO: 64-bit BLAS and LAPACK
-#
-# Note that this works as long as BLAS and LAPACK are detected properly via
-# pkg-config. By default we look for OpenBLAS, other libraries can be configured via
-# `meson configure -Dblas=blas -Dlapack=lapack` (example to build with Netlib
-# BLAS and LAPACK).
-# For MKL and for auto-detecting one of multiple libs, we'll need a custom
-# dependency in Meson (like is done for scalapack) - see
-# https://github.com/mesonbuild/meson/issues/2835
-blas_name = get_option('blas')
-lapack_name = get_option('lapack')
-# pkg-config uses a lower-case name while CMake uses a capitalized name, so try
-# that too to make the fallback detection with CMake work
-if blas_name == 'openblas'
-  blas_name = ['openblas', 'OpenBLAS']
-endif
-if lapack_name == 'openblas'
-  lapack_name = ['openblas', 'OpenBLAS']
-endif
-blas = dependency(blas_name)
-lapack = dependency(lapack_name)
-
-dependency_map = {
-  'BLAS': blas,
-  'LAPACK': lapack,
-}
 
 # Fortran warning flags
 
@@ -152,10 +121,14 @@ numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
 
 cc_args = [numpy_nodepr_api]
 
+# # Warning: Array 'aict' at (1) is larger than limit set by '-fmax-stack-var-size=', moved from stack to static storage. This makes the procedure unsafe when called recursively, or concurrently from multiple threads. Consider using '-frecursive', or increase the '-fmax-stack-var-size=' limit, or change the code to use an ALLOCATABLE 
+
 if is_windows
   ff_args += ff.get_supported_arguments('-fomit-frame-pointer')
   cc_args += cc.get_supported_arguments('-fomit-frame-pointer')
+  # ff_args += ['-fmax-stack-var-size=6553']
 endif
+
 
 fortranobject_c = incdir_f2py / 'fortranobject.c'
 # Share this object across multiple modules.
@@ -172,7 +145,18 @@ fortranobject_dep = declare_dependency(
 
 c = run_command('src' / 'grab-all-fortran-files.py', check: true)
 avl_source_files = c.stdout().strip().split('\n')
-avl_inc = include_directories('src/includes')
+
+# Specify the directory containing your Meson build script
+incs_dir = 'src/includes'
+avl_inc_dir = include_directories(incs_dir)
+
+# Define the input and output file paths
+inc_in = join_paths(incs_dir, 'AVL.INC.in')
+inc_out = join_paths(incs_dir, 'AVL.INC')
+
+run_command('src' / 'create_avl_inc.py', check: true)
+
+
 
 avl_c_wrapper = custom_target('libavlmodule.c',
 input : ['src/f2py/libavl.pyf'],
@@ -184,8 +168,8 @@ py3.extension_module('libavl',
     avl_source_files,
     avl_c_wrapper,
     fortranobject_c,
-    include_directories: [inc_np, inc_f2py, avl_inc],
-    dependencies: [lapack, blas, fortranobject_dep],
+    include_directories: [inc_np, inc_f2py, avl_inc_dir],
+    dependencies: [fortranobject_dep],
     subdir: 'pyavl',
     link_args: link_args,
     fortran_args: ff_args,

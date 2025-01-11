@@ -56,7 +56,6 @@ class MExt(object):
             source_path = os.path.join(spec.submodule_search_locations[0], blas_libs_dir)
             target_path = os.path.join(self._pkgdir, blas_libs_dir)
 
-            # Unix-based system (Mac, Linux)
             if not os.path.exists(target_path) and os.path.exists(source_path):
                 # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
@@ -70,7 +69,10 @@ class MExt(object):
                 # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
         else:
-            raise NotImplementedError("platform not supported")            
+            # raise NotImplementedError("platform not supported")
+            print(tmpdir)
+            srcpath = os.path.join(spec.submodule_search_locations[0],  "libavl.cp39-win_amd64.dll.a")
+            pass            
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module
@@ -94,7 +96,7 @@ class MExt(object):
                 del sys.modules[self._pkg.__name__]
 
             # now try to delete the files and directory
-            shutil.rmtree(self._pkgdir)
+            # shutil.rmtree(self._pkgdir)
             # make sure the original module is loaded -
             # otherwise python crashes on exit
             # if MExt objects have not been explicitly 'del'd,

@@ -1,8 +1,7 @@
 set -xe
 
 PROJECT_DIR="$1"
-PLATFORM=$(PYTHONPATH=tools python -c "import openblas_support; print(openblas_support.get_plat())")
-echo $PLATFORM
+PLATFORM=$(uname -m)
 
 # Update license
 cat $PROJECT_DIR/tools/wheels/LICENSE_osx.txt >> $PROJECT_DIR/LICENSE.txt
@@ -10,13 +9,13 @@ cat $PROJECT_DIR/tools/wheels/LICENSE_osx.txt >> $PROJECT_DIR/LICENSE.txt
 #########################################################################################
 # Install GFortran + OpenBLAS
 
-if [[ $PLATFORM == "macosx-x86_64" ]]; then
+if [[ $PLATFORM == "x86_64" ]]; then
   # Openblas
-  basedir=$(python tools/openblas_support.py)
+  # basedir=$(python tools/openblas_support.py)
 
   # copy over the OpenBLAS library stuff first
-  cp -r $basedir/lib/* /usr/local/lib
-  cp $basedir/include/* /usr/local/include
+  # cp -r $basedir/lib/* /usr/local/lib
+  # cp $basedir/include/* /usr/local/include
 
   #GFORTRAN=$(type -p gfortran-9)
   #sudo ln -s $GFORTRAN /usr/local/bin/gfortran
@@ -50,20 +49,20 @@ if [[ $PLATFORM == "macosx-x86_64" ]]; then
   gfortran tools/wheels/test.f
 fi
 
-if [[ $PLATFORM == "macosx-arm64" ]]; then
+if [[ $PLATFORM == "arm64" ]]; then
   # OpenBLAS
   # need a version of OpenBLAS that is suited for gcc >= 11
-  basedir=$(python tools/openblas_support.py)
+  # basedir=$(python tools/openblas_support.py)
 
   # use /opt/arm64-builds as a prefix, because that's what the multibuild
   # OpenBLAS pkgconfig files state
-  sudo mkdir -p /opt/arm64-builds/lib
-  sudo mkdir -p /opt/arm64-builds/include
-  sudo cp -r $basedir/lib/* /opt/arm64-builds/lib
-  sudo cp $basedir/include/* /opt/arm64-builds/include
+  # sudo mkdir -p /opt/arm64-builds/lib
+  # sudo mkdir -p /opt/arm64-builds/include
+  # sudo cp -r $basedir/lib/* /opt/arm64-builds/lib
+  # sudo cp $basedir/include/* /opt/arm64-builds/include
 
-  # we want to force a dynamic linking
-  sudo rm /opt/arm64-builds/lib/*.a
+  # # we want to force a dynamic linking
+  # sudo rm /opt/arm64-builds/lib/*.a
 
   curl -L https://github.com/fxcoudert/gfortran-for-macOS/releases/download/12.1-monterey/gfortran-ARM-12.1-Monterey.dmg -o gfortran.dmg
   GFORTRAN_SHA256=$(shasum -a 256 gfortran.dmg)
@@ -79,3 +78,19 @@ if [[ $PLATFORM == "macosx-arm64" ]]; then
   type -p gfortran
   clang --version
 fi
+
+
+
+# # Install Openblas
+# python -m pip install scipy-openblas32==0.3.28.0.2
+# python -c "import scipy_openblas32; print(scipy_openblas32.get_pkg_config())" > $PROJECT_DIR/scipy-openblas.pc
+
+# lib_loc=$(python -c"import scipy_openblas32; print(scipy_openblas32.get_lib_dir())")
+# # Use the libgfortran from gfortran rather than the one in the wheel
+# # since delocate gets confused if there is more than one
+# # https://github.com/scipy/scipy/issues/20852
+# install_name_tool -change @loader_path/../.dylibs/libgfortran.5.dylib @rpath/libgfortran.5.dylib $lib_loc/libsci*
+# install_name_tool -change @loader_path/../.dylibs/libgcc_s.1.1.dylib @rpath/libgcc_s.1.1.dylib $lib_loc/libsci*
+# install_name_tool -change @loader_path/../.dylibs/libquadmath.0.dylib @rpath/libquadmath.0.dylib $lib_loc/libsci*
+
+# codesign -s - -f $lib_loc/libsci*

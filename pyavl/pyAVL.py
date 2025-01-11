@@ -27,6 +27,7 @@ from typing import Dict, List, Tuple, Union, Any
 import warnings
 import glob
 from typing import Optional
+import platform
 
 # =============================================================================
 # External Python modules
@@ -234,7 +235,13 @@ class AVLSolver(object):
 
         module_dir = os.path.dirname(os.path.realpath(__file__))
         module_name = os.path.basename(module_dir)
-        avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
+        
+        if platform.system() == "Windows":
+            #HACK
+            avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
+        else:
+            avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
+            
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
         self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module

@@ -3,12 +3,13 @@
 # =============================================================================
 from pyavl import AVLSolver
 import copy
-import resource
+import platform
 
 # =============================================================================
 # Standard Python Modules
 # =============================================================================
 import os
+import psutil
 
 # =============================================================================
 # External Python modules
@@ -31,12 +32,17 @@ class TestFunctionPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 25.0)
         self.avl_solver.add_constraint("beta", 5.0)
         self.avl_solver.execute_run()
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
         
     def tearDown(self):
-        # Without the following line a copy of large_list will be kept in
-        # memory for each test that runs, uncomment the line to allow the
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB")
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -236,7 +242,7 @@ class TestFunctionPartials(unittest.TestCase):
             )
 
             for func_key in func_seeds:
-                print(f"{func_key} wrt {param_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                # print(f"{func_key} wrt {param_key}", func_seeds[func_key], func_seeds_FD[func_key])
                 tol = 1e-13
                 if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
                     # If either value is basically zero, use an absolute tolerance
@@ -292,7 +298,7 @@ class TestFunctionPartials(unittest.TestCase):
             )
 
             for func_key in func_seeds:
-                print(f"{func_key} wrt {ref_key}", func_seeds[func_key], func_seeds_FD[func_key])
+                # print(f"{func_key} wrt {ref_key}", func_seeds[func_key], func_seeds_FD[func_key])
                 tol = 1e-13
                 if np.abs(func_seeds[func_key]) < tol or np.abs(func_seeds_FD[func_key]) < tol:
                     # If either value is basically zero, use an absolute tolerance
@@ -320,7 +326,7 @@ class TestFunctionPartials(unittest.TestCase):
             for func_key in self.avl_solver.case_var_to_fort_var:
                 _, _, _, _, _, ref_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})
                 
-                print(f"{func_key} wrt {ref_key}", "fwd ", func_seeds_fwd[func_key], "rev", ref_seeds_rev[ref_key])
+                # print(f"{func_key} wrt {ref_key}", "fwd ", func_seeds_fwd[func_key], "rev", ref_seeds_rev[ref_key])
                 tol = 1e-14
 
                 if np.abs(func_seeds_fwd[func_key]) < tol or np.abs(ref_seeds_rev[ref_key]) < tol:
@@ -348,12 +354,17 @@ class TestResidualPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 25.0)
         self.avl_solver.add_constraint("beta", 5.0)
         self.avl_solver.execute_run()
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
     
     def tearDown(self):
-        # Without the following line a copy of large_list will be kept in
-        # memory for each test that runs, uncomment the line to allow the
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB" )
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:

@@ -3,7 +3,7 @@
 # =============================================================================
 from pyavl import AVLSolver
 import copy
-import resource
+import psutil
 
 # =============================================================================
 # Standard Python Modules
@@ -32,9 +32,12 @@ class TestResidualDPartials(unittest.TestCase):
         self.avl_solver.add_constraint("beta", 5.0)
         self.avl_solver.execute_run()
 
-    def tearDown(self) -> None:
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB" )
+    def tearDown(self):
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
@@ -196,8 +199,10 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         self.avl_solver.clear_ad_seeds_fast()
 
     def tearDown(self):
-        mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print(f"{self.id()} Memory usage: {mb_memory} MB" )
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
