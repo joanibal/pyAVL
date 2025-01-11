@@ -12,11 +12,11 @@ cat $PROJECT_DIR/tools/wheels/LICENSE_osx.txt >> $PROJECT_DIR/LICENSE.txt
 
 if [[ $PLATFORM == "macosx-x86_64" ]]; then
   # Openblas
-  basedir=$(python tools/openblas_support.py)
+  # basedir=$(python tools/openblas_support.py)
 
   # copy over the OpenBLAS library stuff first
-  cp -r $basedir/lib/* /usr/local/lib
-  cp $basedir/include/* /usr/local/include
+  # cp -r $basedir/lib/* /usr/local/lib
+  # cp $basedir/include/* /usr/local/include
 
   #GFORTRAN=$(type -p gfortran-9)
   #sudo ln -s $GFORTRAN /usr/local/bin/gfortran
