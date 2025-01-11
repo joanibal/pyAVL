@@ -96,3 +96,11 @@ for cl in np.arange(0.6,1.6,0.1):
 ```
 
 
+# License
+
+As stated, pyAVL includes a modified version of the source code of AVL.
+AVL is distributed under the GLP version 2 license.
+As a consequence, pyAVL is also distributed under a GLP license via the copyleft principle of the original license. 
+Although, here we update the GLP license to version 3 as allowed by the original license. 
+
+This software includes portions of [NetLib's LAPACK library](https://www.netlib.org/lapack/). LAPACK is a software package provided by University of Tennessee, University of California Berkeley, University of Colorado Denver and NAG Ltd under the modified BSD license.  See the license file in src/lapack/LICENSE.txt for more details.
