@@ -37,7 +37,8 @@ python -m unittest -v test_new_subroutines.py
 #      an error loading the shared lib.
 python -m unittest -v test_partial_derivs.TestFunctionPartials
 python -m unittest -v test_partial_derivs.TestResidualPartials
-python -m unittest -v test_consurf_partial_derivs.py
+python -m unittest -v test_consurf_partial_derivs.TestResidualDPartials
+python -m unittest -v test_consurf_partial_derivs.TestConSurfDerivsPartials
 python -m unittest -v test_total_derivs.py
 
 # test openmdao wrapper and basic optimization results
