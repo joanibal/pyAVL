@@ -702,6 +702,7 @@ C
 
       REAL(kind=avl_real) AMACH
       REAL(kind=avl_real) AICN
+      REAL(kind=avl_real) AICN_LU
 C      REAL(kind=avl_real) WC_GAM
       REAL(kind=avl_real) WV_GAM
       REAL(kind=avl_real) WC

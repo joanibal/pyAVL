@@ -99,10 +99,10 @@ C
       if(lverbose) then
         WRITE(*,*) ' Building bound-vortex velocity matrix...'
        end if 
-       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-     &           NVOR,RV1,RV2,NSURFV,CHORDV,
-     &           NVOR,RV ,    NSURFV,.TRUE.,
-     &           WV_GAM,NVMAX)
+    !    CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
+    !  &           NVOR,RV1,RV2,NSURFV,CHORDV,
+    !  &           NVOR,RV ,    NSURFV,.TRUE.,
+    !  &           WV_GAM,NVMAX)
 C
        NU = 6
        CALL VSRD(BETM,IYSYM,YSYM,IZSYM,ZSYM,SRCORE,
@@ -495,6 +495,14 @@ C
 
       SUBROUTINE VELSUM
       INCLUDE 'AVL.INC'
+      
+      AMACH = MACH
+      BETM = SQRT(1.0 - AMACH**2)
+      
+      CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
+     &           NVOR,RV1,RV2,NSURFV,CHORDV,
+     &           NVOR,RV ,    NSURFV,.TRUE.,
+     &           WV_GAM,NVMAX)
 C--------------------------------------------------
 C     Sums AIC components to get WC, WV
 C--------------------------------------------------
