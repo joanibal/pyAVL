@@ -1,6 +1,6 @@
 import os
 import openmdao.api as om
-from pyavl import AVLSolver
+from optvl import AVLSolver
 import numpy as np
 import copy
 import time
@@ -145,7 +145,7 @@ def om_set_avl_inputs(sys, inputs):
 
 class AVLSolverComp(om.ImplicitComponent):
     """
-    OpenMDAO component that wraps pyAVL
+    OpenMDAO component that wraps optvl
     """
 
     def initialize(self):

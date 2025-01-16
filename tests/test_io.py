@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from pyavl import AVLSolver
+from optvl import AVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -41,7 +41,7 @@ class TestInput(unittest.TestCase):
 
 class TestOutput(unittest.TestCase):
     def test_write_geom(self):
-        """check that the file written by pyavl is the same as the original file"""
+        """check that the file written by OptVL is the same as the original file"""
         avl_solver = AVLSolver(geo_file='supra.avl')
         avl_solver.write_geom_file(geom_output_file)
         baseline_data = avl_solver.get_surface_params()

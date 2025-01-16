@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from pyavl import AVLSolver
+from optvl import AVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -64,9 +64,9 @@ class TestEigenAnalysisSweep(unittest.TestCase):
 
 
             # the eigenvecs appear to be poorly conditioned. 
-            # pyAVL, AVL, and numpy are all slightly different.
+            # OptVL, AVL, and numpy are all slightly different.
             # The almost zero values of the A matrix input to the eigen solver can be different to 3E-015 vs 2.E-015
-            # I traced back the differences between pyAVL and AVL through the Eigsol and appears the pivioting and scalling at one point is differenct due to rounding errors
+            # I traced back the differences between OptVL and AVL through the Eigsol and appears the pivioting and scalling at one point is differenct due to rounding errors
             # Just verify that each vector is an acutal eigenvector
             for idx_eig in range(num_eigs):
                 

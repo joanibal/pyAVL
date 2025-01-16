@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from pyavl import AVLSolver
+from optvl import AVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -124,13 +124,13 @@ class TestAnalysisSweep(unittest.TestCase):
 
 class TestBodyAnalysis(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file="supra.avl",debug=True)
+        self.avl_solver = AVLSolver(geo_file="supra.avl",debug=False)
     
     def test_coefs(self):
         self.avl_solver.add_constraint("alpha", 5.00)
         self.avl_solver.execute_run()
         coef_data = self.avl_solver.get_case_total_data()
-        print(coef_data)
+
         # the values are wonky here because of an unrealistic CDCL curve
         np.testing.assert_allclose(coef_data["CL"], 0.636031170179549, rtol=1e-8)
         np.testing.assert_allclose(coef_data["CD"], 3.6953247032454204, rtol=1e-8)

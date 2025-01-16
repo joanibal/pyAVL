@@ -11,7 +11,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 def make_avl_lib():
     cwd = os.getcwd()
-    # os.chdir("pyavl")
+    # os.chdir("optvl")
     # subprocess.run(["make", "clean"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     config_file = "config/defaults/config.LINUX_GFORTRAN.mk"
 
@@ -36,17 +36,17 @@ if __name__ == "__main__":
     # `python setup_deprecated.py develop`
 
     setup(
-        name="pyavl-wrapper",
+        name="optvl",
         version="dev",
         description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code.",
         long_description=long_description,
         long_description_content_type="text/markdown",
-        url="https://github.com/joanibal/pyavl",
+        url="https://github.com/joanibal/optvl",
         license="GPL-2.0",
         packages=[
-            "pyavl",
+            "optvl",
         ],
-        package_data={"pyavl": ["*.so"]},
+        package_data={"optvl": ["*.so"]},
         install_requires=["numpy"],
         extras_require={"plotting": ["matplotlib"], "testing": ["testflo>=1.4.5"]},
         classifiers=["Programming Language :: Python, Fortran"],

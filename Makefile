@@ -1,6 +1,5 @@
-# Master makefile for pyavl. The actual makefile you want is:
+# Master makefile for OptVL. The actual makefile you want is:
 # src/build/Makefile
-# src_cs/build/Makefile
 
 default:
 # Check if the config.mk file is in the config dir.
@@ -14,7 +13,7 @@ default:
 	echo " ";\
 	echo "The modify this config file as required. With the config file"; \
 	echo " specified, rerun 'make' and the build will start"; \
-	else make pyavl_build;\
+	else make optvl_build;\
 	fi;
 
 clean:
@@ -26,9 +25,9 @@ clean:
 	rm -fr src_cs/build/*.o
 	rm -fr src_cs/build/*.a
 	rm -fr src_cs/build/*.so
-	rm -fr pyavl/*.so
+	rm -fr optvl/*.so
 	rm -f *~ config.mk;
 
-pyavl_build:
+optvl_build:
 	ln -sf config/config.mk config.mk;
 	(cd src/build/ && make)

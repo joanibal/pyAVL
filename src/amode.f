@@ -2234,7 +2234,7 @@ C
             logical :: lsysmat
             
             lsysmat = .TRUE. ! this routine is analogous to 'N' in AVL
-            IR = 1 ! for pyAVL we always use IR = 1
+            IR = 1 ! for OptVL we always use IR = 1
             CALL eigenmode_analysis(IR,lsysmat)
             
       end subroutine execute_eigenmode_calc

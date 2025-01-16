@@ -6,7 +6,7 @@ try:
 except importlib.metadata.PackageNotFoundError:
     __version__ = "0.0.0"
 
-from .pyAVL import AVLSolver
+from .optvl_class import AVLSolver
 
 try:
     from .om_wrapper import AVLGroup, AVLMeshReader

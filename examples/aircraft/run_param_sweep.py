@@ -1,4 +1,4 @@
-from pyavl import AVLSolver
+from optvl import AVLSolver
 import numpy as np
 
 avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False, timing=False)

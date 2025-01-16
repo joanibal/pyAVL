@@ -10,7 +10,9 @@ config.mk
 config/config*
 *.out
 *.egg-info
-
+*.orig
+*.dat
+*.tar.gz
 # ==============================================================================
 # Github python gitignore template
 # ==============================================================================
@@ -44,8 +46,10 @@ share/python-wheels/
 MANIFEST
 src/ad_src/forward_tmp/
 src/ad_src/reverse_tmp/
+src/includes/AVL.INC
 examples/aircraft/*.html
 examples/aircraft/*.db
+examples/aircraft/reports
 tests/reports/
 tests/*.html
 tests/*_out.avl

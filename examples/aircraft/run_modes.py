@@ -1,4 +1,4 @@
-from pyavl import AVLSolver
+from optvl import AVLSolver
 import numpy as np
 import matplotlib.pyplot as plt
 

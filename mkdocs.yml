@@ -1,9 +1,9 @@
-site_name: pyAVL Docs
+site_name: OptVL Docs
 
 ## Repository
-repo_name: pyavl
-repo_url: https://github.com/joanibal/pyAVL
-edit_uri: https://github.com/joanibal/pyAVL/edit/master/docs
+repo_name: optvl
+repo_url: https://github.com/joanibal/OptVL
+edit_uri: https://github.com/joanibal/OptVL/edit/master/docs
 
 nav:
   - Home: index.md
@@ -19,7 +19,7 @@ nav:
   - Code Reference: reference/  
 
 watch:
-  - pyavl
+  - optvl
 
 theme:
   name: material
