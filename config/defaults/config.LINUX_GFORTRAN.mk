@@ -3,9 +3,11 @@ AR       = ar
 AR_FLAGS = -rvs
 
 FF90       = gfortran
-FF90_FLAGS = -O2 -fdefault-real-8 -fPIC -Wno-align-commons -std=legacy
+FF90_FLAGS = -O2 -fdefault-real-8 -fdefault-double-8 -fPIC -Wno-align-commons -std=legacy
+# FF90_FLAGS = -O0 -fdefault-real-8 -fdefault-double-8 -fPIC -Wno-align-commons -std=legacy -g -fcheck=bounds
 
 C_FLAGS = -O2 -fPIC -g
+# C_FLAGS = -O0 -fPIC -g
 
 F2PY = f2py
 F2PY_FF90 = gfortran

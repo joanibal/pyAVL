@@ -26,10 +26,14 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
+      REAL(kind=avl_real) WC_GAM(3,NVOR,NVOR)
+      REAL(kind=avl_real) WC_GAM_DIFF(3,NVOR,NVOR)
+
       amach = mach
       betm = SQRT(1.0 - amach**2)
+      ! is this needed?
       CALL VVOR(betm, iysym, ysym, izsym, zsym, vrcore, nvor, rv1, rv2, 
-     +          nsurfv, chordv, nvor, rc, nsurfv, .false., wc_gam, nvmax
+     +          nsurfv, chordv, nvor, rc, nsurfv, .false., wc_gam, nvor
      +         )
 C$BWD-OF II-LOOP 
       DO n=1,nsurf
@@ -81,7 +85,7 @@ C$BWD-OF II-LOOP
       CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
      +            , nsurfv, chordv, chordv_diff, nvor, rc, rc_diff, 
-     +            nsurfv, .false., wc_gam, wc_gam_diff, nvmax)
+     +            nsurfv, .false., wc_gam, wc_gam_diff, NVOR)
       IF (1.0 - amach**2 .EQ. 0.D0) THEN
         amach_diff = 0.D0
       ELSE
@@ -108,6 +112,17 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
+      REAL(kind=avl_real) WV_GAM(3,NVOR,NVOR)
+      REAL(kind=avl_real) WV_GAM_diff(3,NVOR,NVOR)
+
+      AMACH = MACH
+      BETM = SQRT(1.0 - AMACH**2)
+      
+      CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
+     &           NVOR,RV1,RV2,NSURFV,CHORDV,
+     &           NVOR,RV ,    NSURFV,.TRUE.,
+     &           WV_GAM,NVOR)
+      
       DO ii1=1,nvor
         DO ii2=1,nvor
           DO ii3=1,3
@@ -135,6 +150,18 @@ C
           wv_diff(k, i) = 0.D0
         ENDDO
       ENDDO
+      
+      CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
+     +            nsurfv, .true., wv_gam, wv_gam_diff, nvor)
+       IF (1.0 - amach**2 .EQ. 0.D0) THEN
+         amach_diff = 0.D0
+       ELSE
+         amach_diff = -(2*amach*betm_diff/(2.0*SQRT(1.0-amach**2)))
+       END IF
+       mach_diff = mach_diff + amach_diff
+      
       END
 
 C  Differentiation of set_par_and_cons in reverse (adjoint) mode (with options i4 dr8 r8):

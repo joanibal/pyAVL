@@ -3,12 +3,11 @@ name: Wheel builder and tester
 on: 
   push:
     branches:
-      - master
-      - optvl
+      - main
   pull_request:
     branches:
-      - master
-      - optvl
+      - main
+      - dev
   release:
     types:
       - published
@@ -40,7 +39,7 @@ jobs:
 
     steps:
     
-      - name: Checkout pyAVL
+      - name: Checkout OptVL
         uses: actions/checkout@v4
 
       # Used to host cibuildwheel
@@ -125,7 +124,7 @@ jobs:
       - name: what is going on 
         run: pwd & ls -R 
       
-      - name: Checkout pyAVL
+      - name: Checkout OptVL
         uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
