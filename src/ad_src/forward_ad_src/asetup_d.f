@@ -189,8 +189,6 @@ C
       ENDDO
 C
 C
-      write(*,*) 'wv', wv(:, 1)
-      write(*,*) 'wv_diff', wv_diff(:, 1)
       RETURN
       END
 
