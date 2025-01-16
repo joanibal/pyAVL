@@ -111,11 +111,33 @@ C
       INTEGER n
       INTEGER ii2
       INTEGER ii1
+      REAL(kind=avl_real) WV_GAM(3,NVOR,NVOR)
+      REAL(kind=avl_real) WV_GAM_diff(3,NVOR,NVOR)
+      
       DO ii1=1,nvmax
         DO ii2=1,3
           wv_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+      
+      amach_diff = mach_diff
+      amach = mach
+      arg1_diff = -(2*amach*amach_diff)
+      arg1 = 1.0 - amach**2
+      temp = SQRT(arg1)
+      IF (arg1 .EQ. 0.D0) THEN
+        betm_diff = 0.D0
+      ELSE
+        betm_diff = arg1_diff/(2.0*temp)
+      END IF
+      betm = temp
+      
+      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
+     +            nsurfv, .true., wv_gam, wv_gam_diff, nvor)
+      
+      
 C--------------------------------------------------
 C     Sums AIC components to get WC, WV
 C--------------------------------------------------
@@ -167,6 +189,8 @@ C
       ENDDO
 C
 C
+      write(*,*) 'wv', wv(:, 1)
+      write(*,*) 'wv_diff', wv_diff(:, 1)
       RETURN
       END
 

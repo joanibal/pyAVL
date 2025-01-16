@@ -704,7 +704,7 @@ C
       REAL(kind=avl_real) AICN
       REAL(kind=avl_real) AICN_LU
 C      REAL(kind=avl_real) WC_GAM
-      REAL(kind=avl_real) WV_GAM
+C      REAL(kind=avl_real) WV_GAM
       REAL(kind=avl_real) WC
       REAL(kind=avl_real) WC_U
       REAL(kind=avl_real) WC_D
@@ -718,7 +718,7 @@ C      REAL(kind=avl_real) WC_GAM
      & AICN(NVMAX,NVMAX),     ! normalwash AIC matrix (and VL system matrix)
      & AICN_LU(NVMAX,NVMAX),     ! LU facotrization of AICN
 C     & WC_GAM(3,NVMAX,NVMAX), ! c.p. velocity/Gamma influence matrix
-     & WV_GAM(3,NVMAX,NVMAX), ! h.v. velocity/Gamma influence matrix
+C     & WV_GAM(3,NVMAX,NVMAX), ! h.v. velocity/Gamma influence matrix
      & WC(3,NVMAX),           ! total induced velocity at c.p. (used in residual)
      & WC_U(3,NVMAX,NUMAX),
      & WC_D(3,NVMAX,NDMAX),

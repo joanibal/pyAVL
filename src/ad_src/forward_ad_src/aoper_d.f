@@ -244,21 +244,6 @@ C      CALL build_AIC
 C end if
 C---  
       CALL BUILD_AIC_D()
-      amach_diff = mach_diff
-      amach = mach
-      arg1_diff = -(2*amach*amach_diff)
-      arg1 = 1.0 - amach**2
-      temp = SQRT(arg1)
-      IF (arg1 .EQ. 0.D0) THEN
-        betm_diff = 0.D0
-      ELSE
-        betm_diff = arg1_diff/(2.0*temp)
-      END IF
-      betm = temp
-      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
-     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
-     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
-     +            nsurfv, .true., wv_gam, wv_gam_diff, nvmax)
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB_D()
       CALL SET_VEL_RHS_D()

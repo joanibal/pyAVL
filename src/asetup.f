@@ -496,13 +496,15 @@ C
       SUBROUTINE VELSUM
       INCLUDE 'AVL.INC'
       
+      REAL(kind=avl_real) WV_GAM(3,NVOR,NVOR)
+      
       AMACH = MACH
       BETM = SQRT(1.0 - AMACH**2)
       
       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
      &           NVOR,RV1,RV2,NSURFV,CHORDV,
      &           NVOR,RV ,    NSURFV,.TRUE.,
-     &           WV_GAM,NVMAX)
+     &           WV_GAM,NVOR)
 C--------------------------------------------------
 C     Sums AIC components to get WC, WV
 C--------------------------------------------------

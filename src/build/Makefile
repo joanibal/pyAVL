@@ -35,14 +35,25 @@ F90Files=$(filter %.F90,$(fortranFilesNoDir))
 # Finally convert all source files to .o
 OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
 
-.PHONY: sources lib
+# Compile sources
+
+# .PHONY: ../include/AVL.INC sources lib
 
 default: lib ../f2py/libavl.pyf
-	$(F2PY) -llapack -lblas --fcompiler=$(F2PY_FF90) --f90flags='$(FF90_ALL_FLAGS)' -c -m  libavl ../f2py/libavl.pyf libavl.a
+	$(F2PY) --fcompiler=$(F2PY_FF90) --f90flags='$(FF90_ALL_FLAGS)' -c -m  libavl ../f2py/libavl.pyf libavl.a
 	python importTest.py libavl
 	mv libavl.*so ../../pyavl/libavl.so
 
-sources: $(OFILES)
+
+# # Rule to generate AVL.INC
+../includes/AVL.INC: ../includes/AVL.INC.in
+	python ../create_avl_inc.py
+
+
+# Ensure all object files are recompiled if AVL.INC changes
+# $(OFILES): ../includes/AVL.INC
+
+sources: $(OFILES) 
 
 lib: sources
 	$(AR) $(AR_FLAGS) libavl.a $(OFILES) 

@@ -32,10 +32,6 @@ class TestFunctionPartials(unittest.TestCase):
         self.avl_solver.add_constraint("alpha", 25.0)
         self.avl_solver.add_constraint("beta", 5.0)
         self.avl_solver.execute_run()
-        process = psutil.Process()
-        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
-        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
-
         
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -182,6 +178,7 @@ class TestFunctionPartials(unittest.TestCase):
 
     def test_fwd_gamma(self):
         num_gamma = self.avl_solver.get_mesh_size()
+        np.random.seed(2)
         gamma_seeds = np.random.rand(num_gamma)
 
         func_seeds, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds)

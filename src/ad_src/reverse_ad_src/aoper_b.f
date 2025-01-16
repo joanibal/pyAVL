@@ -176,16 +176,7 @@ C$BWD-OF II-LOOP
       DO ii1=1,nvor
         chordv_diff(ii1) = 0.D0
       ENDDO
-      CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
-     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
-     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
-     +            nsurfv, .true., wv_gam, wv_gam_diff, nvmax)
-      IF (1.0 - amach**2 .EQ. 0.D0) THEN
-        amach_diff = 0.D0
-      ELSE
-        amach_diff = -(2*amach*betm_diff/(2.0*SQRT(1.0-amach**2)))
-      END IF
-      mach_diff = mach_diff + amach_diff
+
       ! CALL POPREAL8ARRAY(wc_gam, 3*nvmax**2)
       CALL BUILD_AIC_B()
       CALL SET_PAR_AND_CONS_B(nitmax, irun)
