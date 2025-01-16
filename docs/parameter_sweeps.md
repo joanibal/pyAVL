@@ -1,6 +1,6 @@
-# Modifying Geometry for Parameter Sweeps in pyAVL
+# Modifying Geometry for Parameter Sweeps in OptVL
 
-pyAVL not only offers aerodynamic analysis capabilities but also provides tools to access and modify geometric parameters of your aircraft models. This documentation illustrates how users can retrieve and set geometry parameters for parameter sweeps.
+OptVL not only offers aerodynamic analysis capabilities but also provides tools to access and modify geometric parameters of your aircraft models. This documentation illustrates how users can retrieve and set geometry parameters for parameter sweeps.
 
 
 ## Setting geometry parameters
