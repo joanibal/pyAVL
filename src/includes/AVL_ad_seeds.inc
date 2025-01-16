@@ -584,9 +584,9 @@ C
 C
       real(kind=avl_real) AMACH_DIFF
       real(kind=avl_real) AICN_DIFF
-      real(kind=avl_real) AICN_LU_DIFF
-      real(kind=avl_real) WC_GAM_DIFF
-      real(kind=avl_real) WV_GAM_DIFF
+      ! real(kind=avl_real) AICN_LU_DIFF
+      ! real(kind=avl_real) WC_GAM_DIFF
+!      real(kind=avl_real) WV_GAM_DIFF
       real(kind=avl_real) WC_DIFF
       real(kind=avl_real) WC_U_DIFF
       real(kind=avl_real) WC_D_DIFF
@@ -598,9 +598,9 @@ C
       COMMON /SOLV_R_DIFF/
      & AMACH_DIFF,
      & AICN_DIFF(NVMAX,NVMAX),
-     & AICN_LU_DIFF(NVMAX,NVMAX),
-     & WC_GAM_DIFF(3,NVMAX,NVMAX),
-     & WV_GAM_DIFF(3,NVMAX,NVMAX),
+!      & AICN_LU_DIFF(NVMAX,NVMAX),
+!      & WC_GAM_DIFF(3,NVMAX,NVMAX),
+!     & WV_GAM_DIFF(3,NVMAX,NVMAX),
      & WC_DIFF(3,NVMAX),
      & WC_U_DIFF(3,NVMAX,NUMAX),
      & WC_D_DIFF(3,NVMAX,NDMAX),

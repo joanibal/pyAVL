@@ -3,9 +3,15 @@ set -xe
 PROJECT_DIR="$1"
 
 cd $PROJECT_DIR/tests
-# python -m unittest -v
-#HACK: if the tests are not split up the CI runs out of memory...
+
+# install tesing dependencies
 pip install psutil openmdao
+
+
+#HACK: if the tests are not split up the CI runs out of memory...
+# python -m unittest -v
+
+
 
 
 # test package built and installed correctly
@@ -27,9 +33,12 @@ python -m unittest -v test_eigen_analysis.py
 
 # tests for adjoint
 python -m unittest -v test_new_subroutines.py
+#HACK: if the tests are not split up the windows version has
+#      an error loading the shared lib.
 python -m unittest -v test_partial_derivs.TestFunctionPartials
 python -m unittest -v test_partial_derivs.TestResidualPartials
-python -m unittest -v test_consurf_partial_derivs.py
+python -m unittest -v test_consurf_partial_derivs.TestResidualDPartials
+python -m unittest -v test_consurf_partial_derivs.TestConSurfDerivsPartials
 python -m unittest -v test_total_derivs.py
 
 # test openmdao wrapper and basic optimization results

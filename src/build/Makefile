@@ -35,19 +35,6 @@ F90Files=$(filter %.F90,$(fortranFilesNoDir))
 # Finally convert all source files to .o
 OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
 
-OS := $(shell uname)
-
-# Define platform string based on the OS
-ifeq ($(OS), Linux)
-    OSNVMAX := 5450
-else ifeq ($(OS), Darwin)
-    OSNVMAX := 5450
-else ifeq ($(OS), Windows_NT)
-    OSNVMAX := 3500
-else
-    $(error Unsupported operating system)
-endif
-
 # Compile sources
 
 # .PHONY: ../include/AVL.INC sources lib
@@ -60,7 +47,7 @@ default: lib ../f2py/libavl.pyf
 
 # # Rule to generate AVL.INC
 ../includes/AVL.INC: ../includes/AVL.INC.in
-	python ../create_avl_inc.py $(OSNVMAX)
+	python ../create_avl_inc.py
 
 
 # Ensure all object files are recompiled if AVL.INC changes

@@ -63,6 +63,7 @@ class TestOMWrapper(unittest.TestCase):
             for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 arr += np.random.rand(*arr.shape)*0.1
+                print(f'setting {surf_key}:{geom_key} to {arr}')
                 # #set surface data
                 self.avl_solver.set_surface_param(surf_key, geom_key, arr)
                 self.avl_solver.avl.update_surfaces()

@@ -147,8 +147,9 @@ C
 C     
       fysym = FLOAT(iysym)
       fzsym = FLOAT(izsym)
-      DO ii1=1,nvor
-        DO ii2=1,nvor
+      
+      DO ii1=1,ncdim
+        DO ii2=1,ncdim
           DO ii3=1,3
             wc_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO

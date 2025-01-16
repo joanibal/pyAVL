@@ -2,3 +2,4 @@ dirs:= ./\
        ad_src/forward_ad_src\
        ad_src/reverse_ad_src\
        ad_src/ADFirstAidKit\
+       lapack\

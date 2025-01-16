@@ -3,7 +3,7 @@ site_name: OptVL Docs
 ## Repository
 repo_name: optvl
 repo_url: https://github.com/joanibal/OptVL
-edit_uri: https://github.com/joanibal/OptVL/edit/master/docs
+edit_uri: https://github.com/joanibal/OptVL/edit/main/docs
 
 nav:
   - Home: index.md

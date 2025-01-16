@@ -1688,6 +1688,7 @@ class AVLSolver(object):
             self.set_constraint_ad_seeds(con_seeds, scale=0.0)
             self.set_geom_ad_seeds(geom_seeds, scale=0.0)
             self.set_gamma_ad_seeds(gamma_seeds, scale=0.0)
+            self.set_gamma_d_ad_seeds(gamma_d_seeds, scale=0.0)
             self.set_parameter_ad_seeds(param_seeds, scale=0.0)
             self.set_reference_ad_seeds(ref_seeds, scale=0.0)
 

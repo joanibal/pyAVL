@@ -24,7 +24,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestNewSubroutines(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
+        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl", debug=False)
         self.avl_solver.add_constraint("alpha", 25.0)
 
     def test_residual(self):
@@ -61,6 +61,7 @@ class TestNewSubroutines(unittest.TestCase):
         
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.velsum()
+        wv_new = self.avl_solver.avl.SOLV_R.WV
         self.avl_solver.avl.aero()
         gam_new = self.avl_solver.avl.VRTX_R.GAM[:]
         coef_data_new = self.avl_solver.get_case_total_data()
@@ -68,9 +69,15 @@ class TestNewSubroutines(unittest.TestCase):
 
         self.avl_solver.execute_run()
         gam = self.avl_solver.avl.VRTX_R.GAM[:]
+        wv = self.avl_solver.avl.SOLV_R.WV
         coef_data = self.avl_solver.get_case_total_data()
         coef_derivs = self.avl_solver.get_case_coef_derivs()
 
+        np.testing.assert_allclose(
+            wv,
+            wv_new,
+            atol=1e-15,
+        )
         np.testing.assert_allclose(
             gam,
             gam_new,

@@ -26,11 +26,11 @@ if __name__ == "__main__":
     
     import platform
     if platform.system() == "Darwin":
-        nvmax = 5450
+        nvmax = 6000
     elif platform.system() == "Linux":
         nvmax = 6000
     elif platform.system() == "Windows":
-        nvmax = 3500
+        nvmax = 5500
     else:
         raise NotImplementedError('system platform not found')
     

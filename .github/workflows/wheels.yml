@@ -3,12 +3,11 @@ name: Wheel builder and tester
 on: 
   push:
     branches:
-      - master
-      - optvl
+      - main
   pull_request:
     branches:
-      - master
-      - optvl
+      - main
+      - dev
   release:
     types:
       - published

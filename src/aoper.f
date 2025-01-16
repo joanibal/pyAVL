@@ -2084,10 +2084,7 @@ C---
       CALL build_AIC
       AMACH = MACH
       BETM = SQRT(1.0 - AMACH**2)
-      CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-     &           NVOR,RV1,RV2,NSURFV,CHORDV,
-     &           NVOR,RV ,    NSURFV,.TRUE.,
-     &           WV_GAM,NVMAX)
+
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
             
