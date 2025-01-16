@@ -14,8 +14,8 @@ On top of this OptVL also has the ability to view the geometry and pressure dist
 
 ## key features
 
-- can specify and modify the geometry from python 
-- derivatives of total forces to geometric variables
+- specify and modify the geometry from python 
+- compute derivatives of total forces with respect to geometric variables
 - derivatives of stability derivatives 
     - needed for neutral point constraint
     
@@ -26,15 +26,10 @@ The best way to get OptVL is to install it through pip
 ```
 pip install optvl
 ```
-This version even comes packaged with OpenBLAS for faster analysis. 
+Windows, macOS, and Linux are all supported!
 
 
-Currently, only Linux and macOS are supported. 
-The process of building on Windows still has issues. 
-For now Windows users will have to use OptVL through Windows subsystem for Linux (WSL).
-
-
-## building locally
+## Building locally
 If you want to make OptVL locally then you have to clone the repository and use the following process.
 
 In the root directory run
@@ -108,7 +103,7 @@ for cl in np.arange(0.6,1.6,0.1):
     )
 ```
 
-# parameter sweep example
+# Parameter sweep example
 
 ## taper ratio sweep
 
