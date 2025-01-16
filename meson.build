@@ -181,7 +181,7 @@ py3.extension_module('libavl',
 
 py3.install_sources([
   'optvl/__init__.py',
-  'optvl/OptVL.py',
+  'optvl/optvl_class.py',
   'optvl/MExt.py',
   'optvl/om_wrapper.py',
 ],
