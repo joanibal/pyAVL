@@ -19,7 +19,7 @@ nav:
   - Code Reference: reference/  
 
 watch:
-  - pyavl
+  - optvl
 
 theme:
   name: material

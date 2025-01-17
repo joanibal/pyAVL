@@ -1,6 +1,6 @@
-"""This script is intended to demonstrate how to use a custom geometry component with pyavl"""
+"""This script is intended to demonstrate how to use a custom geometry component with optvl"""
 import openmdao.api as om
-from pyavl import AVLSolver, AVLGroup, AVLMeshReader
+from optvl import AVLSolver, AVLGroup, AVLMeshReader
 import numpy as np
 import copy
 

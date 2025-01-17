@@ -1,8 +1,8 @@
 project(
-  'pyavl',
+  'optvl',
   'c',
-  version: '0.1.0',
-  license: 'GPL-2.0',
+  version: '0.2.0',
+  license: 'GPL-3.0',
   meson_version: '>= 0.64.0',
   default_options: [
     'buildtype=debugoptimized',
@@ -170,7 +170,7 @@ py3.extension_module('libavl',
     fortranobject_c,
     include_directories: [inc_np, inc_f2py, avl_inc_dir],
     dependencies: [fortranobject_dep],
-    subdir: 'pyavl',
+    subdir: 'optvl',
     link_args: link_args,
     fortran_args: ff_args,
     c_args: cc_args,
@@ -180,12 +180,12 @@ py3.extension_module('libavl',
 )
 
 py3.install_sources([
-  'pyavl/__init__.py',
-  'pyavl/pyAVL.py',
-  'pyavl/MExt.py',
-  'pyavl/om_wrapper.py',
+  'optvl/__init__.py',
+  'optvl/optvl_class.py',
+  'optvl/MExt.py',
+  'optvl/om_wrapper.py',
 ],
-  subdir: 'pyavl'
+  subdir: 'optvl'
 )
 
 

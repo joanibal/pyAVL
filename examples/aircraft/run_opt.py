@@ -1,6 +1,6 @@
-"""A openmdao based optimization for an aicraft using pyavl"""
+"""A openmdao based optimization for an aicraft using optvl"""
 import openmdao.api as om
-from pyavl import AVLSolver, AVLGroup
+from optvl import AVLSolver, AVLGroup
 
 
 model = om.Group()

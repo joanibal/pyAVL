@@ -42,7 +42,7 @@ OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cF
 default: lib ../f2py/libavl.pyf
 	$(F2PY) --fcompiler=$(F2PY_FF90) --f90flags='$(FF90_ALL_FLAGS)' -c -m  libavl ../f2py/libavl.pyf libavl.a
 	python importTest.py libavl
-	mv libavl.*so ../../pyavl/libavl.so
+	mv libavl.*so ../../optvl/libavl.so
 
 
 # # Rule to generate AVL.INC

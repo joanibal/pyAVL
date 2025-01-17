@@ -1,7 +1,6 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-# from pyavl import AVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -25,7 +24,7 @@ class TestImport(unittest.TestCase):
     # TODO: add test for expected input output errors
     def test_instances(self):
 
-        from pyavl import AVLSolver
+        from optvl import AVLSolver
 
         avl_solver1 = AVLSolver(geo_file=geom_file)
 

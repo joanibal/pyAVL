@@ -1,7 +1,7 @@
 """
-pyAVL
+OptVL
 
-pyAVL is a wrapper for Mark Drela's AVL code. The purpose of this
+OptVL is a wrapper for Mark Drela's AVL code. The purpose of this
 class is to provide an easy to use wrapper for avl for intergration
 into other projects.
 
@@ -244,7 +244,7 @@ class AVLSolver(object):
             
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
-        self.avl = MExt.MExt("libavl", module_name, "pyavl_wrapper", lib_so_file=avl_lib_so_file, debug=debug)._module
+        self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
         # this way doesn't work with mulitple isntances fo AVLSolver
         # from . import libavl
@@ -624,7 +624,7 @@ class AVLSolver(object):
         else:
             raise ValueError(f"param '{param_key}' not in possilbe list\n" 
                              f"{[k for k in self.param_idx_dict] + [k for k in self.state_param_idx_dict]}")
-        # [0] because pyavl only supports 1 run case
+        # [0] because optvl only supports 1 run case
         param_val = parvals[0][idx_param]
 
         return param_val
@@ -633,7 +633,7 @@ class AVLSolver(object):
         """ """
         convals = self.get_avl_fort_arr("CASE_R", "CONVAL")
 
-        # [0] because pyavl only supports 1 run case
+        # [0] because optvl only supports 1 run case
         con_val = convals[0][self.conval_idx_dict[con_key]]
 
         return con_val
@@ -651,7 +651,7 @@ class AVLSolver(object):
             )
 
         parvals = self.get_avl_fort_arr("CASE_R", "PARVAL")
-        # [0] because pyavl only supports 1 run case
+        # [0] because optvl only supports 1 run case
         parvals[0][self.param_idx_dict[param_key]] = param_val
 
         self.set_avl_fort_arr("CASE_R", "PARVAL", parvals)
@@ -780,10 +780,10 @@ class AVLSolver(object):
         """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL"""
         
         # get the number of "valid" eigenvalues from avl
-        # [0] because pyavl only supports 1 run case
+        # [0] because optvl only supports 1 run case
         num_eigen = self.get_avl_fort_arr("CASE_I", "NEIGEN")[0]
         
-        # 0 because pyavl only supports 1 run case
+        # 0 because optvl only supports 1 run case
         slicer = (0, slice(0,num_eigen))
         # get the eigenvalues from avl
         eig_vals = self.get_avl_fort_arr("CASE_Z", "EVAL", slicer=slicer)
@@ -793,10 +793,10 @@ class AVLSolver(object):
         """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL"""
         
         # get the number of "valid" eigenvalues from avl
-        # [0] because pyavl only supports 1 run case
+        # [0] because optvl only supports 1 run case
         num_eigen = self.get_avl_fort_arr("CASE_I", "NEIGEN")[0]
         
-        # 0 because pyavl only supports 1 run case
+        # 0 because optvl only supports 1 run case
         slicer = (0, slice(0,num_eigen), slice(None))
         eig_vecs = self.get_avl_fort_arr("CASE_Z", "EVEC", slicer=slicer)
         
@@ -810,7 +810,7 @@ class AVLSolver(object):
         jemax = eig_vals.shape[1]
         asys = np.zeros((jemax,jemax), order="F")
         
-        # 1 because pyavl only supports 1 run case and we are using fortran base 1 indexing
+        # 1 because optvl only supports 1 run case and we are using fortran base 1 indexing
         irun_case = 1
         self.avl.get_system_matrix(irun_case,asys)
         
@@ -1020,7 +1020,7 @@ class AVLSolver(object):
         """write the current avl geometry to a file"""
         with open(filename, "w") as fid:
             # write the header
-            fid.write("# generated using pyAVL\n")
+            fid.write("# generated using OptVL\n")
             self.__write_header(fid)
 
             surf_data = self.get_surface_params(
@@ -1330,7 +1330,7 @@ class AVLSolver(object):
             con_seed_arr = con_seeds[con]
 
             if mode == "AD":
-                # [0] because pyavl only supports 1 run case
+                # [0] because optvl only supports 1 run case
                 blk = "CASE_R" + self.ad_suffix
                 var = "CONVAL" + self.ad_suffix
                 val = con_seed_arr * scale
@@ -1980,9 +1980,6 @@ class AVLSolver(object):
             # # chord-wise grid
             axis.plot(pts[xaxis], pts[yaxis], color='black')
             
-            # import matplotlib.pyplot as plt
-            
-            # plt.show()
             # # --- outline of surface ---
             # front 
             pts ={

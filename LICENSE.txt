@@ -1,6 +1,6 @@
 ----
 
-pyAVL also bundles some of NetLIB's LAPACK source code:
+OptVL also bundles some of NetLIB's LAPACK source code:
 
 
 Name: LAPACK

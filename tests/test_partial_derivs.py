@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from pyavl import AVLSolver
+from optvl import AVLSolver
 import copy
 import platform
 
