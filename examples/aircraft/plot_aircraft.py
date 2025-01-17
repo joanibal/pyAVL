@@ -1,9 +1,9 @@
+""" This scipt demos the use of the ways to vizualie the geometry and the solution in OptVL"""
 from optvl import AVLSolver
 import numpy as np
 import matplotlib.pyplot as plt
 
 avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False)
-# # set the angle of attack
 avl_solver.plot_geom()
 
 avl_solver.add_constraint("alpha", 5.00)
@@ -12,34 +12,6 @@ avl_solver.avl.cpoml()
 
 avl_solver.plot_cp()
 
-# xyz_lo, xyz_up, cp_lo, cp_up = avl_solver.get_cp_data()
-
-# num_surf = avl_solver.get_num_surfaces()
-# surf_names = avl_solver.get_surface_names()
-
-# for idx_surf in range(num_surf):
-#     print(surf_names[idx_surf], xyz_lo[idx_surf].shape, 'zeros', np.sum(xyz_lo[idx_surf].flatten() == 0.0))
-#     xyzs= xyz_lo[idx_surf]
-#     fig = plt.figure()
-#     ax = fig.add_subplot(projection='3d')
-
-#     for xyz in xyzs:
-#         ax.scatter(xyz[0], xyz[1] , xyz[2])
-
-#     xyzs= xyz_up[idx_surf]
-#     for xyz in xyzs:
-#         ax.scatter(xyz[0], xyz[1] , xyz[2])
-
-
-#     ax.set_xlabel('X Label')
-#     ax.set_ylabel('Y Label')
-#     ax.set_zlabel('Z Label')
-#     # ax.set_box_aspect([1,1,1])
-
-#     plt.show()
-
-# fig, ax = plt.subplots(1, 1, sharex=True)
-# avl_solver.add_mesh_plot(ax)
 
 
 # ax.axis('equal')

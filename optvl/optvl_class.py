@@ -705,7 +705,6 @@ class AVLSolver(object):
             "CY": ["STRP_R", "CYSTRP"], 
             "CZ": ["STRP_R", "CZSTRP"],   
             
-            
             # strip contributions to total moments (body frame)
             "CM": ["STRP_R", "CMSTRP"],
             "CN": ["STRP_R", "CNSTRP"],
@@ -718,7 +717,6 @@ class AVLSolver(object):
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
             "CM strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
 
-            
             # additional forces and moments
             "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
             "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
