@@ -533,7 +533,7 @@ C
           ENDDO
 C
           DO N = 1, NUMAX
-            WC_U(K,I,N) = WCSRD_U(K,I,N)
+            ! WC_U(K,I,N) = WCSRD_U(K,I,N)
             WV_U(K,I,N) = WVSRD_U(K,I,N)
             DO J = 1, NVOR
               ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
@@ -715,6 +715,53 @@ C----- might as well directly set operating variables if they are known
 
         
       end !set_vel_rhs
+
+      subroutine set_vel_rhs_u(IU)
+        include 'AVL.INC'
+        real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)
+        
+        DO I = 1, NVOR
+          IF(LVNC(I)) THEN
+            VUNIT(1) = 0.
+            VUNIT(2) = 0.
+            VUNIT(3) = 0.
+            
+            WUNIT(1) = 0.
+            WUNIT(2) = 0.
+            WUNIT(3) = 0.
+             IF(LVALBE(I)) THEN
+              if (IU .le. 3) then
+                VUNIT(IU) = VUNIT(IU) + 1.0
+              else if (IU .le. 6) then
+                WUNIT(IU-3) = WUNIT(IU-3) + 1.0
+              endif
+             ENDIF
+C--------- always add on indirect freestream influence via BODY sources and doublets
+             VUNIT(1) = VUNIT(1) + WCSRD_U(1,I,IU)
+             VUNIT(2) = VUNIT(2) + WCSRD_U(2,I,IU)
+             VUNIT(3) = VUNIT(3) + WCSRD_U(3,I,IU)
+
+             
+             RROT(1) = RC(1,I) - XYZREF(1)
+             RROT(2) = RC(2,I) - XYZREF(2)
+             RROT(3) = RC(3,I) - XYZREF(3)
+             CALL CROSS(RROT,WUNIT,VUNIT_W_term)
+             
+             VUNIT = VUNIT + VUNIT_W_term
+             
+             RHS_U(I,IU) = -DOT(ENC(1,I),VUNIT)
+              
+             ! Add contribution from control surfaces
+             DO N = 1, NCONTROL
+              RHS_U(I,IU) = RHS_U(I,IU) 
+     &                      - DOT(ENC_D(1,I,N),VUNIT)*DELCON(N)
+            ENDDO
+          ELSE
+            RHS_U(I,IU) = 0
+          endif
+          
+        enddo
+        end !set_vel_rhs_u
       
       SUBROUTINE set_gam_d_rhs(IQ,ENC_Q, rhs_vec)
       INCLUDE 'AVL.INC'

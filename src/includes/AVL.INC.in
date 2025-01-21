@@ -612,7 +612,9 @@ C
       REAL(kind=avl_real) WCSRD_U
       REAL(kind=avl_real) WVSRD_U
       REAL(kind=avl_real) RHS
+      REAL(kind=avl_real) RHS_U
       REAL(kind=avl_real) RES
+      REAL(kind=avl_real) RES_U
       REAL(kind=avl_real) RES_D
       REAL(kind=avl_real) CPT
       COMMON /VRTX_R/
@@ -657,7 +659,9 @@ cc#ifdef USE_CPOML
      & CPT(NVMAX),                ! thickness-based Cp at panel midpoint
 cc#else
      & RHS(NVMAX),               ! RHS (flow normal to surface) for linear system
+     & RHS_U(NVMAX,NUMAX),               ! RHS (flow normal to surface for each U compt.) for linear system
      & RES(NVMAX),               ! residual for linear system res = Ax-b
+     & RES_U(NVMAX,NUMAX),               ! residual for gamma_u lin sys
      & RES_D(NVMAX,NDMAX)        ! residual for gamma_d lin. sys 
 
 cc#ifdef USE_CPOML

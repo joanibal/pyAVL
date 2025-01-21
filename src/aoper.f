@@ -2036,7 +2036,7 @@ C ============= Added to AVL ===============
 
       subroutine exec_rhs
       include "AVL.INC"
-      integer i 
+      integer i, IU
       ! CALL EXEC(10,1,1)
       call set_par_and_cons(NITMAX, IRUN)
       
@@ -2046,6 +2046,15 @@ C ============= Added to AVL ===============
       ENDIF
       
       CALL VINFAB
+      
+      DO IU = 1,6
+            call set_vel_rhs_u(IU)
+            do i = 1,NVOR
+                  GAM_U(i,IU) = RHS_U(i, IU)
+            enddo
+            CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U(:,IU))
+      enddo
+      
       call set_vel_rhs
       
 C---- copy RHS vector into GAM that will be used for soluiton
@@ -2055,19 +2064,14 @@ C---- copy RHS vector into GAM that will be used for soluiton
 
       CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
       
-      CAll exec_GDCALC
-            
-      end !subroutine solve_rhs
-      
-      subroutine exec_GDCALC
-      INCLUDE "AVL.INC"
       
       IF(NCONTROL.GT.0) THEN
 C------- set new GAM_D
             CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
       ENDIF
-      
-      end subroutine
+
+      end !subroutine exec_rhs
+
 
 C ======================== res and Adjoint for GAM ========      
       
@@ -2087,6 +2091,18 @@ C---
 
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
+      
+      DO IU = 1,6
+            
+            call mat_prod(AICN, GAM_U(:,IU), NVOR, res_U(:,IU))
+            
+            call set_vel_rhs_u(IU)
+            do I = 1, NVOR
+                  res_U(I,IU) = res_U(I,IU) - RHS_U(I,IU)
+            enddo 
+            
+      enddo
+      
             
       call set_vel_rhs
 
@@ -2098,7 +2114,6 @@ C---- add the RHS vector to the residual
             res(I) = res(I) - RHS(I)
       enddo 
       
-C---- Setup variational BC's at the control points
       !$AD II-LOOP
       DO IC = 1, NCONTROL
 C------ don't bother if this control variable is undefined

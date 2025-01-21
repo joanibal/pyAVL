@@ -71,7 +71,7 @@ C
         I1  = IJFRST(ISTRIP)
         NVC_strp = NVSTRP(ISTRIP)
         IF (NVC_strp.GT.NCMAX) THEN
-          WRITE(*,*) '* CPTHK: Array overflow.  Increase NCMAX to', NVC_strp
+      WRITE(*,*) '* CPTHK: Array overflow.  Increase NCMAX to', NVC_strp
           STOP
         ENDIF
 C
