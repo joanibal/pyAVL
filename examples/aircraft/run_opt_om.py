@@ -1,6 +1,6 @@
 """A openmdao based optimization for an aicraft using optvl"""
 import openmdao.api as om
-from optvl import AVLSolver, AVLGroup
+from optvl import AVLGroup
 
 
 model = om.Group()
@@ -30,6 +30,10 @@ prob.setup(mode='rev')
 om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 prob.run_driver()
 
+aincs = prob.get_val('avlsolver.Wing:aincs')
+print(f'avlsolver.Wing:aincs {aincs}')
+del_ele = prob.get_val('avlsolver.Elevator')
+print(f'avlsolver.Elevator {del_ele}')
 # do this instead if you want to check derivatives
 # prob.run_model()
 # prob.check_totals()
