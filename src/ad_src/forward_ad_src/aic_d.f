@@ -147,7 +147,6 @@ C
 C     
       fysym = FLOAT(iysym)
       fzsym = FLOAT(izsym)
-      
       DO ii1=1,ncdim
         DO ii2=1,ncdim
           DO ii3=1,3

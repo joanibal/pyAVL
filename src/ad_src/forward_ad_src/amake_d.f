@@ -294,6 +294,10 @@ C
       REAL fracte_diff
       INTRINSIC MAX
       INTRINSIC MIN
+      REAL zl_l
+      REAL zu_l
+      REAL zl_r
+      REAL zu_r
       REAL zl
       REAL zu
       REAL sum
@@ -1214,26 +1218,30 @@ C...        nodal grid associated with vortex strip (aft-panel nodes)
 C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
 C...        retained in (x,z) plane at this point
                 CALL AKIMA(xlasec(1, isec, isurf), zlasec(1, isec, isurf
-     +                     ), nsl, xpt(ivc+1), zl, dsdx)
+     +                     ), nsl, xpt(ivc+1), zl_l, dsdx)
                 CALL AKIMA(xuasec(1, isec, isurf), zuasec(1, isec, isurf
-     +                     ), nsl, xpt(ivc+1), zu, dsdx)
+     +                     ), nsl, xpt(ivc+1), zu_l, dsdx)
+C
+                CALL AKIMA(xlasec(1, isec+1, isurf), zlasec(1, isec+1, 
+     +                     isurf), nsr, xpt(ivc+1), zl_r, dsdx)
+                CALL AKIMA(xuasec(1, isec+1, isurf), zuasec(1, isec+1, 
+     +                     isurf), nsr, xpt(ivc+1), zu_r, dsdx)
 C
                 xyn1(1, idx_vor) = rle1(1, idx_strip) + xpt(ivc+1)*
      +            chord1(idx_strip)
                 xyn1(2, idx_vor) = rle1(2, idx_strip)
+                zl = (1.-f1)*zl_l + f1*zl_r
+                zu = (1.-f1)*zu_l + f1*zu_r
                 zlon1(idx_vor) = rle1(3, idx_strip) + zl*chord1(
      +            idx_strip)
                 zupn1(idx_vor) = rle1(3, idx_strip) + zu*chord1(
      +            idx_strip)
 C
-                CALL AKIMA(xlasec(1, isec+1, isurf), zlasec(1, isec+1, 
-     +                     isurf), nsl, xpt(ivc+1), zl, dsdx)
-                CALL AKIMA(xuasec(1, isec+1, isurf), zuasec(1, isec+1, 
-     +                     isurf), nsl, xpt(ivc+1), zu, dsdx)
-C
                 xyn2(1, idx_vor) = rle2(1, idx_strip) + xpt(ivc+1)*
      +            chord2(idx_strip)
                 xyn2(2, idx_vor) = rle2(2, idx_strip)
+                zl = (1.-f2)*zl_l + f2*zl_r
+                zu = (1.-f2)*zu_l + f2*zu_r
                 zlon2(idx_vor) = rle2(3, idx_strip) + zl*chord2(
      +            idx_strip)
                 zupn2(idx_vor) = rle2(3, idx_strip) + zu*chord2(

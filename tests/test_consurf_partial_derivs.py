@@ -54,8 +54,7 @@ class TestResidualDPartials(unittest.TestCase):
             )
 
     def test_rev_aero_constraint(self):
-        # for con_key in self.avl_solver.con_var_to_fort_var:
-        for con_key in ["beta", "beta"]:
+        for con_key in self.avl_solver.con_var_to_fort_var:
             _, _, _, res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
 
             num_gamma = self.avl_solver.get_mesh_size()

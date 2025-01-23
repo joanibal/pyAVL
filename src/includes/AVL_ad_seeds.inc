@@ -78,6 +78,36 @@ C    must be precended by 'include AVL_ad_seed'
       real(kind=avl_real) CRTOT_G_DIFF
       real(kind=avl_real) CMTOT_G_DIFF
       real(kind=avl_real) CNTOT_G_DIFF
+      real(kind=avl_real) CDTOT_AL_DIFF
+      real(kind=avl_real) CLTOT_AL_DIFF
+      real(kind=avl_real) CYTOT_AL_DIFF
+      real(kind=avl_real) CRTOT_AL_DIFF
+      real(kind=avl_real) CMTOT_AL_DIFF
+      real(kind=avl_real) CNTOT_AL_DIFF
+      real(kind=avl_real) CDTOT_BE_DIFF
+      real(kind=avl_real) CLTOT_BE_DIFF
+      real(kind=avl_real) CYTOT_BE_DIFF
+      real(kind=avl_real) CRTOT_BE_DIFF
+      real(kind=avl_real) CMTOT_BE_DIFF
+      real(kind=avl_real) CNTOT_BE_DIFF
+      real(kind=avl_real) CDTOT_RX_DIFF
+      real(kind=avl_real) CLTOT_RX_DIFF
+      real(kind=avl_real) CYTOT_RX_DIFF
+      real(kind=avl_real) CRTOT_RX_DIFF
+      real(kind=avl_real) CMTOT_RX_DIFF
+      real(kind=avl_real) CNTOT_RX_DIFF
+      real(kind=avl_real) CDTOT_RY_DIFF
+      real(kind=avl_real) CLTOT_RY_DIFF
+      real(kind=avl_real) CYTOT_RY_DIFF
+      real(kind=avl_real) CRTOT_RY_DIFF
+      real(kind=avl_real) CMTOT_RY_DIFF
+      real(kind=avl_real) CNTOT_RY_DIFF
+      real(kind=avl_real) CDTOT_RZ_DIFF
+      real(kind=avl_real) CLTOT_RZ_DIFF
+      real(kind=avl_real) CYTOT_RZ_DIFF
+      real(kind=avl_real) CRTOT_RZ_DIFF
+      real(kind=avl_real) CMTOT_RZ_DIFF
+      real(kind=avl_real) CNTOT_RZ_DIFF
       real(kind=avl_real) CHINGE_DIFF
       real(kind=avl_real) CHINGE_U_DIFF
       real(kind=avl_real) CHINGE_D_DIFF
@@ -166,6 +196,36 @@ C    must be precended by 'include AVL_ad_seed'
      & CRTOT_G_DIFF(NGMAX),
      & CMTOT_G_DIFF(NGMAX),
      & CNTOT_G_DIFF(NGMAX),
+     & CDTOT_AL_DIFF,
+     & CLTOT_AL_DIFF,
+     & CYTOT_AL_DIFF,
+     & CRTOT_AL_DIFF,
+     & CMTOT_AL_DIFF,
+     & CNTOT_AL_DIFF,
+     & CDTOT_BE_DIFF,
+     & CLTOT_BE_DIFF,
+     & CYTOT_BE_DIFF,
+     & CRTOT_BE_DIFF,
+     & CMTOT_BE_DIFF,
+     & CNTOT_BE_DIFF,
+     & CDTOT_RX_DIFF,
+     & CLTOT_RX_DIFF,
+     & CYTOT_RX_DIFF,
+     & CRTOT_RX_DIFF,
+     & CMTOT_RX_DIFF,
+     & CNTOT_RX_DIFF,
+     & CDTOT_RY_DIFF,
+     & CLTOT_RY_DIFF,
+     & CYTOT_RY_DIFF,
+     & CRTOT_RY_DIFF,
+     & CMTOT_RY_DIFF,
+     & CNTOT_RY_DIFF,
+     & CDTOT_RZ_DIFF,
+     & CLTOT_RZ_DIFF,
+     & CYTOT_RZ_DIFF,
+     & CRTOT_RZ_DIFF,
+     & CMTOT_RZ_DIFF,
+     & CNTOT_RZ_DIFF,
      & CHINGE_DIFF(NDMAX),
      & CHINGE_U_DIFF(NDMAX,NUMAX),
      & CHINGE_D_DIFF(NDMAX,NDMAX),
@@ -284,11 +344,13 @@ C
       real(kind=avl_real) XYZTRAN_B_DIFF
       real(kind=avl_real) YDUPL_B_DIFF
       real(kind=avl_real) XYZLES_B_DIFF
+      real(kind=avl_real) BSPACE_DIFF
       COMMON /BODY_GEOM_R_DIFF/
      & XYZSCAL_B_DIFF(3, NBMAX),
      & XYZTRAN_B_DIFF(3, NBMAX),
      & YDUPL_B_DIFF(NBMAX),
-     & XYZLES_B_DIFF(3, NSMAX, NBMAX)
+     & XYZLES_B_DIFF(3, NSMAX, NBMAX),
+     & BSPACE_DIFF(NBMAX)
 C
       real(kind=avl_real) XYZSCAL_DIFF
       real(kind=avl_real) XYZTRAN_DIFF
@@ -298,12 +360,17 @@ C
       real(kind=avl_real) SSPACE_DIFF
       real(kind=avl_real) SSPACES_DIFF
       real(kind=avl_real) XYZLES_DIFF
+      real(kind=avl_real) XLASEC_DIFF
+      real(kind=avl_real) ZLASEC_DIFF
+      real(kind=avl_real) XUASEC_DIFF
+      real(kind=avl_real) ZUASEC_DIFF
       real(kind=avl_real) CHORDS_DIFF
       real(kind=avl_real) AINCS_DIFF
       real(kind=avl_real) XASEC_DIFF
       real(kind=avl_real) SASEC_DIFF
       real(kind=avl_real) TASEC_DIFF
       real(kind=avl_real) CLCDSEC_DIFF
+      real(kind=avl_real) CLCDSRF_DIFF
       real(kind=avl_real) CLAF_DIFF
       real(kind=avl_real) XHINGED_DIFF
       real(kind=avl_real) VHINGED_DIFF
@@ -319,12 +386,17 @@ C
      & SSPACE_DIFF(NFMAX),
      & SSPACES_DIFF(NSMAX, NFMAX),
      & XYZLES_DIFF(3, NSMAX, NFMAX),
+     & XLASEC_DIFF(IBX, NSMAX, NFMAX),
+     & ZLASEC_DIFF(IBX, NSMAX, NFMAX),
+     & XUASEC_DIFF(IBX, NSMAX, NFMAX),
+     & ZUASEC_DIFF(IBX, NSMAX, NFMAX),
      & CHORDS_DIFF(NSMAX, NFMAX),
      & AINCS_DIFF(NSMAX, NFMAX),
      & XASEC_DIFF(IBX, NSMAX, NFMAX),
      & SASEC_DIFF(IBX, NSMAX, NFMAX),
      & TASEC_DIFF(IBX, NSMAX, NFMAX),
      & CLCDSEC_DIFF(6, NSMAX, NFMAX),
+     & CLCDSRF_DIFF(6, NFMAX),
      & CLAF_DIFF(NSMAX, NFMAX),
      & XHINGED_DIFF(ICONX, NSMAX, NFMAX),
      & VHINGED_DIFF(3, ICONX, NSMAX, NFMAX),
@@ -510,8 +582,11 @@ C
       real(kind=avl_real) DBL_U_DIFF
       real(kind=avl_real) WCSRD_U_DIFF
       real(kind=avl_real) WVSRD_U_DIFF
+      real(kind=avl_real) CPT_DIFF
       real(kind=avl_real) RHS_DIFF
+      real(kind=avl_real) RHS_U_DIFF
       real(kind=avl_real) RES_DIFF
+      real(kind=avl_real) RES_U_DIFF
       real(kind=avl_real) RES_D_DIFF
       COMMON /VRTX_R_DIFF/
      & RV1_DIFF(3,NVMAX),
@@ -552,8 +627,11 @@ C
      & DBL_U_DIFF(3,NLMAX,NUMAX),
      & WCSRD_U_DIFF(3,NVMAX,NUMAX),
      & WVSRD_U_DIFF(3,NVMAX,NUMAX),
+     & CPT_DIFF(NVMAX),
      & RHS_DIFF(NVMAX),
+     & RHS_U_DIFF(NVMAX,NUMAX),
      & RES_DIFF(NVMAX),
+     & RES_U_DIFF(NVMAX,NUMAX),
      & RES_D_DIFF(NVMAX,NDMAX)
 C
       real(kind=avl_real) ELBDY_DIFF
@@ -584,9 +662,6 @@ C
 C
       real(kind=avl_real) AMACH_DIFF
       real(kind=avl_real) AICN_DIFF
-      ! real(kind=avl_real) AICN_LU_DIFF
-      ! real(kind=avl_real) WC_GAM_DIFF
-!      real(kind=avl_real) WV_GAM_DIFF
       real(kind=avl_real) WC_DIFF
       real(kind=avl_real) WC_U_DIFF
       real(kind=avl_real) WC_D_DIFF
@@ -598,9 +673,6 @@ C
       COMMON /SOLV_R_DIFF/
      & AMACH_DIFF,
      & AICN_DIFF(NVMAX,NVMAX),
-!      & AICN_LU_DIFF(NVMAX,NVMAX),
-!      & WC_GAM_DIFF(3,NVMAX,NVMAX),
-!     & WV_GAM_DIFF(3,NVMAX,NVMAX),
      & WC_DIFF(3,NVMAX),
      & WC_U_DIFF(3,NVMAX,NUMAX),
      & WC_D_DIFF(3,NVMAX,NDMAX),
