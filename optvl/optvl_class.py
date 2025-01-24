@@ -1746,6 +1746,7 @@ class AVLSolver(object):
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
             self.avl.velsum_d()
+            print('--------- ad -------------')
             self.avl.aero_d()
 
             # extract derivatives seeds and set the output dict of functions
@@ -1780,6 +1781,7 @@ class AVLSolver(object):
             self.avl.update_surfaces()
             self.avl.get_res()
             self.avl.velsum()
+            print('-------------- perturbed ------------')
             self.avl.aero()
 
             coef_data_peturb = self.get_case_total_data()
@@ -1802,6 +1804,7 @@ class AVLSolver(object):
             self.avl.update_surfaces()
             self.avl.get_res()
             self.avl.velsum()
+            print('---------------- base state ---------------')
             self.avl.aero()
 
             coef_data = self.get_case_total_data()
@@ -1861,14 +1864,14 @@ class AVLSolver(object):
         if res_d_seeds is None:
             res_d_seeds = np.zeros((num_surf, mesh_size))
         
-        if res_d_seeds is None:
-            res_d_seeds = np.zeros((self.NUMAX, mesh_size))
+        if res_u_seeds is None:
+            res_u_seeds = np.zeros((self.NUMAX, mesh_size))
 
         if consurf_derivs_seeds is None:
             consurf_derivs_seeds = {}
         
         if stab_derivs_seeds is None:
-            consurf_derivs_seeds = {}
+            stab_derivs_seeds = {}
 
         # set derivative seeds
         # self.clear_ad_seeds()
@@ -1878,7 +1881,7 @@ class AVLSolver(object):
         self.set_residual_d_ad_seeds(res_d_seeds)
         self.set_residual_u_ad_seeds(res_u_seeds)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds)
-        self.set_stab_derivs_ad_seeds(consurf_derivs_seeds)
+        self.set_stab_derivs_ad_seeds(stab_derivs_seeds)
 
         if print_timings:
             print(f"    Time to set seeds: {time.time() - time_last}")
@@ -1910,7 +1913,7 @@ class AVLSolver(object):
         self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
         self.set_residual_u_ad_seeds(res_d_seeds, scale=0.0)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds, scale=0.0)
-        self.set_stab_derivs_ad_seeds(consurf_derivs_seeds, scale=0.0)
+        self.set_stab_derivs_ad_seeds(stab_derivs_seeds, scale=0.0)
         if print_timings:
             print(f"    Time to clear seeds: {time.time() - time_last}")
             time_last = time.time()
