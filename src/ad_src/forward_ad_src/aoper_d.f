@@ -8,9 +8,9 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz
-C   with respect to varying inputs: alfa vinf_a vinf_b cref bref
-C                crtot cntot cdtot_a cltot_a cdtot_u cltot_u cytot_u
-C                crtot_u cmtot_u cntot_u
+C   with respect to varying inputs: alfa vinf_a vinf_b wrot cref
+C                bref crtot cntot cdtot_a cltot_a cdtot_u cltot_u
+C                cytot_u crtot_u cmtot_u cntot_u
 C GETFILE
 C
 C
@@ -70,10 +70,12 @@ C---- set stability-axes rates (RX,RY,RZ) in terms of body-axes rates
       sa_diff = COS(alfa)*alfa_diff
       sa = SIN(alfa)
 C
-      rx_diff = dir*(wrot(1)*ca_diff+wrot(3)*sa_diff)
+      rx_diff = dir*(ca*wrot_diff(1)+wrot(1)*ca_diff+sa*wrot_diff(3)+
+     +  wrot(3)*sa_diff)
       rx = (wrot(1)*ca+wrot(3)*sa)*dir
       ry = wrot(2)
-      rz_diff = dir*(wrot(3)*ca_diff-wrot(1)*sa_diff)
+      rz_diff = dir*(ca*wrot_diff(3)+wrot(3)*ca_diff-sa*wrot_diff(1)-
+     +  wrot(1)*sa_diff)
       rz = (wrot(3)*ca-wrot(1)*sa)*dir
 C
 C---- now vice-versa, and set sensitivities (which is what's really needed)
@@ -389,14 +391,14 @@ C        WRITE(*,8401) XNP
 
 C  Differentiation of get_res in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: alfa beta vinf vinf_a vinf_b
-C                delcon xyzref mach cdref res res_u res_d
+C                wrot delcon xyzref mach cdref res res_u res_d
 C   with respect to varying inputs: ysym zsym parval conval rv1
 C                rv2 rc chordv enc enc_d gam gam_u gam_d
 C   RW status of diff variables: ysym:in zsym:in alfa:out beta:out
-C                vinf:out vinf_a:out vinf_b:out parval:in conval:in
-C                delcon:out xyzref:out mach:out cdref:out rv1:in
-C                rv2:in rc:in chordv:in enc:in enc_d:in gam:in
-C                gam_u:in gam_d:in res:out res_u:out res_d:out
+C                vinf:out vinf_a:out vinf_b:out wrot:out parval:in
+C                conval:in delcon:out xyzref:out mach:out cdref:out
+C                rv1:in rv2:in rc:in chordv:in enc:in enc_d:in
+C                gam:in gam_u:in gam_d:in res:out res_u:out res_d:out
 Csubroutine exec_rhs
 C
 C

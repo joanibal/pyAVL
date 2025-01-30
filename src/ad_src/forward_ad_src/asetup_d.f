@@ -96,9 +96,11 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
 
 C  Differentiation of velsum in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: wv wv_u
-C   with respect to varying inputs: vinf wrot gam gam_u
-C   RW status of diff variables: vinf:in wrot:in gam:in gam_u:in
-C                wv:out wv_u:out
+C   with respect to varying inputs: vinf wrot mach rv1 rv2 rv chordv
+C                gam gam_u
+C   RW status of diff variables: vinf:in wrot:in mach:in rv1:in
+C                rv2:in rv:in chordv:in gam:in gam_u:in wv:out
+C                wv_u:out
 C GAMSUM
 C
 C
@@ -106,21 +108,37 @@ C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       REAL(kind=avl_real) wv_gam(3, nvor, nvor)
+      REAL(kind=avl_real) wv_gam_diff(3, nvor, nvor)
       REAL betm
+      REAL betm_diff
       INTRINSIC SQRT
       INTEGER i
       INTEGER k
       INTEGER j
       INTEGER n
       REAL(kind=8) arg1
+      REAL(kind=8) arg1_diff
+      REAL(kind=avl_real) temp
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
+      amach_diff = mach_diff
       amach = mach
+      arg1_diff = -(2*amach*amach_diff)
       arg1 = 1.0 - amach**2
-      betm = SQRT(arg1)
-      CALL VVOR(betm, iysym, ysym, izsym, zsym, vrcore, nvor, rv1, rv2, 
-     +          nsurfv, chordv, nvor, rv, nsurfv, .true., wv_gam, nvor)
+      temp = SQRT(arg1)
+      IF (arg1 .EQ. 0.D0) THEN
+        betm_diff = 0.D0
+      ELSE
+        betm_diff = arg1_diff/(2.0*temp)
+      END IF
+      betm = temp
+      zsym_diff = 0.D0
+      ysym_diff = 0.D0
+      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
+     +            nsurfv, .true., wv_gam, wv_gam_diff, nvor)
       DO ii1=1,nvmax
         DO ii2=1,3
           wv_diff(ii2, ii1) = 0.D0
@@ -158,7 +176,8 @@ C  &            + WCSRD_U(K,I,6)*WROT(3)
      +      wvsrd_u(k, i, 5)*wrot(2) + wvsrd_u(k, i, 6)*wrot(3)
 C WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
           DO j=1,nvor
-            wv_diff(k, i) = wv_diff(k, i) + wv_gam(k, i, j)*gam_diff(j)
+            wv_diff(k, i) = wv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
+     +        + wv_gam(k, i, j)*gam_diff(j)
             wv(k, i) = wv(k, i) + wv_gam(k, i, j)*gam(j)
           ENDDO
 C
@@ -168,8 +187,8 @@ C WC_U(K,I,N) = WCSRD_U(K,I,N)
             wv_u(k, i, n) = wvsrd_u(k, i, n)
 C WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
             DO j=1,nvor
-              wv_u_diff(k, i, n) = wv_u_diff(k, i, n) + wv_gam(k, i, j)*
-     +          gam_u_diff(j, n)
+              wv_u_diff(k, i, n) = wv_u_diff(k, i, n) + gam_u(j, n)*
+     +          wv_gam_diff(k, i, j) + wv_gam(k, i, j)*gam_u_diff(j, n)
               wv_u(k, i, n) = wv_u(k, i, n) + wv_gam(k, i, j)*gam_u(j, n
      +          )
             ENDDO

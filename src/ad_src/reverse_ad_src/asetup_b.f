@@ -92,9 +92,12 @@ C$BWD-OF II-LOOP
       END
 
 C  Differentiation of velsum in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: vinf wrot gam gam_u wv wv_u
-C   with respect to varying inputs: vinf wrot gam gam_u wv wv_u
-C   RW status of diff variables: vinf:incr wrot:incr gam:incr gam_u:incr
+C   gradient     of useful results: vinf wrot rv1 rv2 rv gam gam_u
+C                wv wv_u
+C   with respect to varying inputs: vinf wrot mach rv1 rv2 rv chordv
+C                gam gam_u wv wv_u
+C   RW status of diff variables: vinf:incr wrot:incr mach:out rv1:incr
+C                rv2:incr rv:incr chordv:out gam:incr gam_u:incr
 C                wv:in-out wv_u:in-out
 C GAMSUM
 C
@@ -103,26 +106,42 @@ C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       REAL(kind=avl_real) wv_gam(3, nvor, nvor)
+      REAL(kind=avl_real) wv_gam_diff(3, nvor, nvor)
       REAL betm
+      REAL betm_diff
       INTRINSIC SQRT
       INTEGER i
       INTEGER k
       INTEGER j
       INTEGER n
+      INTEGER ii3
+      INTEGER ii2
+      INTEGER ii1
       amach = mach
       betm = SQRT(1.0 - amach**2)
       CALL VVOR(betm, iysym, ysym, izsym, zsym, vrcore, nvor, rv1, rv2, 
      +          nsurfv, chordv, nvor, rv, nsurfv, .true., wv_gam, nvor)
+      DO ii1=1,nvor
+        DO ii2=1,nvor
+          DO ii3=1,3
+            wv_gam_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
       DO i=nvor,1,-1
         DO k=3,1,-1
           DO n=numax,1,-1
             DO j=nvor,1,-1
+              wv_gam_diff(k, i, j) = wv_gam_diff(k, i, j) + gam_u(j, n)*
+     +          wv_u_diff(k, i, n)
               gam_u_diff(j, n) = gam_u_diff(j, n) + wv_gam(k, i, j)*
      +          wv_u_diff(k, i, n)
             ENDDO
             wv_u_diff(k, i, n) = 0.D0
           ENDDO
           DO j=nvor,1,-1
+            wv_gam_diff(k, i, j) = wv_gam_diff(k, i, j) + gam(j)*wv_diff
+     +        (k, i)
             gam_diff(j) = gam_diff(j) + wv_gam(k, i, j)*wv_diff(k, i)
           ENDDO
           vinf_diff(1) = vinf_diff(1) + wvsrd_u(k, i, 1)*wv_diff(k, i)
@@ -134,13 +153,23 @@ C
           wv_diff(k, i) = 0.D0
         ENDDO
       ENDDO
+      CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
+     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
+     +            nsurfv, .true., wv_gam, wv_gam_diff, nvor)
+      IF (1.0 - amach**2 .EQ. 0.D0) THEN
+        amach_diff = 0.D0
+      ELSE
+        amach_diff = -(2*amach*betm_diff/(2.0*SQRT(1.0-amach**2)))
+      END IF
+      mach_diff = amach_diff
       END
 
 C  Differentiation of set_par_and_cons in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: alfa beta wrot delcon xyzref
 C                mach cdref
-C   with respect to varying inputs: alfa beta parval conval delcon
-C                xyzref
+C   with respect to varying inputs: alfa beta wrot parval conval
+C                delcon xyzref
 C WSENS
       SUBROUTINE SET_PAR_AND_CONS_B(niter, ir)
       INCLUDE 'AVL.INC'
@@ -219,8 +248,11 @@ C$AD-II-loop
           wrot_diff(2) = 0.D0
         END IF
         CALL POPCONTROL1B(branch)
-        IF (branch .EQ. 0) conval_diff(icrotx, ir) = conval_diff(icrotx
-     +      , ir) + 2.*wrot_diff(1)/bref
+        IF (branch .EQ. 0) THEN
+          conval_diff(icrotx, ir) = conval_diff(icrotx, ir) + 2.*
+     +      wrot_diff(1)/bref
+          wrot_diff(1) = 0.D0
+        END IF
         CALL POPCONTROL1B(branch)
         IF (branch .EQ. 0) THEN
           conval_diff(icbeta, ir) = conval_diff(icbeta, ir) + dtr*

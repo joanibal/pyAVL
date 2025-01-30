@@ -11,21 +11,22 @@ C                crtot_be cmtot_be cntot_be cdtot_rx cltot_rx cytot_rx
 C                crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry cytot_ry
 C                crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz cytot_rz
 C                crtot_rz cmtot_rz cntot_rz
-C   with respect to varying inputs: alfa vinf vinf_a vinf_b sref
-C                cref bref xyzref mach cdref clff cyff cdff spanef
-C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
-C                crsax cnsax cdvtot cdtot_d cltot_d cxtot_d cytot_d
-C                cztot_d crtot_d cmtot_d cntot_d cdtot_al cltot_al
-C                cytot_al crtot_al cmtot_al cntot_al cdtot_be cltot_be
-C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
-C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
-C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
-C                cytot_rz crtot_rz cmtot_rz cntot_rz rle chord
-C                rle1 chord1 rle2 chord2 wstrip ensy ensz xsref
-C                ysref zsref rv1 rv2 rv rc gam gam_u gam_d wv
+C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
+C                sref cref bref xyzref mach cdref clff cyff cdff
+C                spanef cdtot cltot cxtot cytot cztot crtot cmtot
+C                cntot crsax cnsax cdvtot cdtot_d cltot_d cxtot_d
+C                cytot_d cztot_d crtot_d cmtot_d cntot_d cdtot_al
+C                cltot_al cytot_al crtot_al cmtot_al cntot_al cdtot_be
+C                cltot_be cytot_be crtot_be cmtot_be cntot_be cdtot_rx
+C                cltot_rx cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry
+C                cltot_ry cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz
+C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz rle
+C                chord rle1 chord1 rle2 chord2 wstrip ensy ensz
+C                xsref ysref zsref rv1 rv2 rv rc gam gam_u gam_d
+C                wv wv_u
 C   RW status of diff variables: alfa:out vinf:out vinf_a:out vinf_b:out
-C                sref:out cref:out bref:out xyzref:out mach:out
-C                cdref:out clff:in-zero cyff:in-zero cdff:in-zero
+C                wrot:out sref:out cref:out bref:out xyzref:out
+C                mach:out cdref:out clff:in-zero cyff:in-zero cdff:in-zero
 C                spanef:in-zero cdtot:in-zero cltot:in-zero cxtot:in-zero
 C                cytot:in-zero cztot:in-zero crtot:in-zero cmtot:in-zero
 C                cntot:in-zero crsax:in-zero cnsax:in-zero cdvtot:in-zero
@@ -44,7 +45,7 @@ C                crtot_rz:in-zero cmtot_rz:in-zero cntot_rz:in-zero
 C                rle:out chord:out rle1:out chord1:out rle2:out
 C                chord2:out wstrip:out ensy:out ensz:out xsref:out
 C                ysref:out zsref:out rv1:out rv2:out rv:out rc:out
-C                gam:out gam_u:out gam_d:out wv:out
+C                gam:out gam_u:out gam_d:out wv:out wv_u:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -314,17 +315,17 @@ C
       END
 
 C  Differentiation of sfforc in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: alfa vinf sref cref bref xyzref
-C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
-C                cdvtot cdtot_a cltot_a cdtot_u cltot_u cytot_u
+C   gradient     of useful results: alfa vinf wrot sref cref bref
+C                xyzref cdtot cltot cxtot cytot cztot crtot cmtot
+C                cntot cdvtot cdtot_a cltot_a cdtot_u cltot_u cytot_u
 C                crtot_u cmtot_u cntot_u cdtot_d cltot_d cxtot_d
 C                cytot_d cztot_d crtot_d cmtot_d cntot_d rv1 rv2
 C                gam
-C   with respect to varying inputs: alfa vinf sref cref bref xyzref
-C                cdtot_d cltot_d cxtot_d cytot_d cztot_d crtot_d
-C                cmtot_d cntot_d rle chord rle1 chord1 rle2 chord2
-C                wstrip ensy ensz xsref ysref zsref rv1 rv2 rv
-C                gam gam_u gam_d wv
+C   with respect to varying inputs: alfa vinf wrot sref cref bref
+C                xyzref cdtot_d cltot_d cxtot_d cytot_d cztot_d
+C                crtot_d cmtot_d cntot_d rle chord rle1 chord1
+C                rle2 chord2 wstrip ensy ensz xsref ysref zsref
+C                rv1 rv2 rv gam gam_u gam_d wv wv_u
 C AERO
 C
 C
@@ -490,6 +491,7 @@ C
       INTEGER branch
       INTEGER ad_to
       INTEGER ii2
+      INTEGER ii3
 C
 C
       sina = SIN(alfa)
@@ -1850,6 +1852,13 @@ C    zero out the asymmetric forces and double the symmetric ones
         ENDDO
       ENDDO
       DO ii1=1,numax
+        DO ii2=1,nvmax
+          DO ii3=1,3
+            wv_u_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
         cmz_u_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
@@ -2660,9 +2669,6 @@ C
         vinf_diff(1) = vinf_diff(1) + veff_diff(1)
         vrot_diff(1) = vrot_diff(1) + veff_diff(1)
         veff_diff(1) = 0.D0
-        DO ii1=1,3
-          wrot_diff(ii1) = 0.D0
-        ENDDO
         CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff)
         CALL POPREAL8(rrot(3))
         zsref_diff(j) = zsref_diff(j) + rrot_diff(3)
@@ -3001,9 +3007,6 @@ C
           vinf_diff(1) = vinf_diff(1) + veff_diff(1)
           vrot_diff(1) = vrot_diff(1) + veff_diff(1)
           veff_diff(1) = 0.D0
-          DO ii1=1,3
-            wrot_diff(ii1) = 0.D0
-          ENDDO
           CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
           CALL POPREAL8(rrot(3))
@@ -3239,9 +3242,6 @@ C$BWD-OF II-LOOP
               vinf_diff(1) = vinf_diff(1) + veff_diff(1)
               vrot_diff(1) = vrot_diff(1) + veff_diff(1)
               veff_diff(1) = 0.D0
-              DO ii1=1,3
-                wrot_diff(ii1) = 0.D0
-              ENDDO
               CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, 
      +                     vrot_diff)
               CALL POPCONTROL1B(branch)
@@ -3563,10 +3563,13 @@ C$BWD-OF II-LOOP
             wrot_u(3) = 0.
             wrot_u(k-3) = 1.0
             vrot_u_diff(3) = vrot_u_diff(3) + veff_u_diff(3, k)
+            wv_u_diff(3, i, k) = wv_u_diff(3, i, k) + veff_u_diff(3, k)
             veff_u_diff(3, k) = 0.D0
             vrot_u_diff(2) = vrot_u_diff(2) + veff_u_diff(2, k)
+            wv_u_diff(2, i, k) = wv_u_diff(2, i, k) + veff_u_diff(2, k)
             veff_u_diff(2, k) = 0.D0
             vrot_u_diff(1) = vrot_u_diff(1) + veff_u_diff(1, k)
+            wv_u_diff(1, i, k) = wv_u_diff(1, i, k) + veff_u_diff(1, k)
             veff_u_diff(1, k) = 0.D0
             DO ii1=1,3
               wrot_u_diff(ii1) = 0.D0
@@ -3575,8 +3578,11 @@ C$BWD-OF II-LOOP
      +                   vrot_u_diff)
           ENDDO
           DO k=3,1,-1
+            wv_u_diff(3, i, k) = wv_u_diff(3, i, k) + veff_u_diff(3, k)
             veff_u_diff(3, k) = 0.D0
+            wv_u_diff(2, i, k) = wv_u_diff(2, i, k) + veff_u_diff(2, k)
             veff_u_diff(2, k) = 0.D0
+            wv_u_diff(1, i, k) = wv_u_diff(1, i, k) + veff_u_diff(1, k)
             veff_u_diff(1, k) = 0.D0
           ENDDO
           vinf_diff(3) = vinf_diff(3) + veff_diff(3)
@@ -3591,9 +3597,6 @@ C$BWD-OF II-LOOP
           vrot_diff(1) = vrot_diff(1) + veff_diff(1)
           wv_diff(1, i) = wv_diff(1, i) + veff_diff(1)
           veff_diff(1) = 0.D0
-          DO ii1=1,3
-            wrot_diff(ii1) = 0.D0
-          ENDDO
           CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
           rv_diff(3, i) = rv_diff(3, i) + rrot_diff(3) + r_diff(3)
@@ -3676,12 +3679,12 @@ C$BWD-OF II-LOOP
       END
 
 C  Differentiation of bdforc in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: alfa vinf sref cref bref cdtot
-C                cltot cxtot cytot cztot crtot cmtot cntot cdtot_u
-C                cltot_u cytot_u crtot_u cmtot_u cntot_u
-C   with respect to varying inputs: alfa vinf sref cref bref xyzref
-C                mach cdtot cltot cxtot cytot cztot crtot cmtot
-C                cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
+C   gradient     of useful results: alfa vinf wrot sref cref bref
+C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
+C                cdtot_u cltot_u cytot_u crtot_u cmtot_u cntot_u
+C   with respect to varying inputs: alfa vinf wrot sref cref bref
+C                xyzref mach cdtot cltot cxtot cytot cztot crtot
+C                cmtot cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
 C                cntot_u
 C SFFORC
 C
@@ -3734,8 +3737,8 @@ C
       REAL un_u
       REAL un_u_diff
       REAL temp_diff
-      INTEGER ii1
       REAL(kind=8) temp_diff0
+      INTEGER ii1
       REAL(kind=avl_real) temp_diff1
       INTEGER branch
       INTEGER ad_to
@@ -4128,9 +4131,6 @@ C
           vrot_diff(1) = vrot_diff(1) + temp_diff0
           betm_diff = betm_diff - (vinf(1)+vrot(1))*temp_diff0/betm
           CALL POPREAL8ARRAY(vrot, 3)
-          DO ii1=1,3
-            wrot_diff(ii1) = 0.D0
-          ENDDO
           CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
           l2 = lfrst(ib) + ilseg

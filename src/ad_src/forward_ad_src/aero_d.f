@@ -11,28 +11,29 @@ C                crtot_be cmtot_be cntot_be cdtot_rx cltot_rx cytot_rx
 C                crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry cytot_ry
 C                crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz cytot_rz
 C                crtot_rz cmtot_rz cntot_rz
-C   with respect to varying inputs: alfa vinf vinf_a vinf_b sref
-C                cref bref xyzref mach cdref rle chord rle1 chord1
-C                rle2 chord2 wstrip ensy ensz xsref ysref zsref
-C                rv1 rv2 rv rc gam gam_u gam_d wv
+C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
+C                sref cref bref xyzref mach cdref rle chord rle1
+C                chord1 rle2 chord2 wstrip ensy ensz xsref ysref
+C                zsref rv1 rv2 rv rc gam gam_u gam_d wv wv_u
 C   RW status of diff variables: alfa:in vinf:in vinf_a:in vinf_b:in
-C                sref:in cref:in bref:in xyzref:in mach:in cdref:in
-C                clff:out cyff:out cdff:out spanef:out cdtot:out
-C                cltot:out cxtot:out cytot:out cztot:out crtot:out
-C                cmtot:out cntot:out crsax:out cnsax:out cdvtot:out
-C                cdtot_d:out cltot_d:out cxtot_d:out cytot_d:out
-C                cztot_d:out crtot_d:out cmtot_d:out cntot_d:out
-C                cdtot_al:out cltot_al:out cytot_al:out crtot_al:out
-C                cmtot_al:out cntot_al:out cdtot_be:out cltot_be:out
-C                cytot_be:out crtot_be:out cmtot_be:out cntot_be:out
-C                cdtot_rx:out cltot_rx:out cytot_rx:out crtot_rx:out
-C                cmtot_rx:out cntot_rx:out cdtot_ry:out cltot_ry:out
-C                cytot_ry:out crtot_ry:out cmtot_ry:out cntot_ry:out
-C                cdtot_rz:out cltot_rz:out cytot_rz:out crtot_rz:out
-C                cmtot_rz:out cntot_rz:out rle:in chord:in rle1:in
-C                chord1:in rle2:in chord2:in wstrip:in ensy:in
-C                ensz:in xsref:in ysref:in zsref:in rv1:in rv2:in
-C                rv:in rc:in gam:in gam_u:in gam_d:in wv:in
+C                wrot:in sref:in cref:in bref:in xyzref:in mach:in
+C                cdref:in clff:out cyff:out cdff:out spanef:out
+C                cdtot:out cltot:out cxtot:out cytot:out cztot:out
+C                crtot:out cmtot:out cntot:out crsax:out cnsax:out
+C                cdvtot:out cdtot_d:out cltot_d:out cxtot_d:out
+C                cytot_d:out cztot_d:out crtot_d:out cmtot_d:out
+C                cntot_d:out cdtot_al:out cltot_al:out cytot_al:out
+C                crtot_al:out cmtot_al:out cntot_al:out cdtot_be:out
+C                cltot_be:out cytot_be:out crtot_be:out cmtot_be:out
+C                cntot_be:out cdtot_rx:out cltot_rx:out cytot_rx:out
+C                crtot_rx:out cmtot_rx:out cntot_rx:out cdtot_ry:out
+C                cltot_ry:out cytot_ry:out crtot_ry:out cmtot_ry:out
+C                cntot_ry:out cdtot_rz:out cltot_rz:out cytot_rz:out
+C                crtot_rz:out cmtot_rz:out cntot_rz:out rle:in
+C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
+C                ensy:in ensz:in xsref:in ysref:in zsref:in rv1:in
+C                rv2:in rv:in rc:in gam:in gam_u:in gam_d:in wv:in
+C                wv_u:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -213,10 +214,10 @@ C                crtot cmtot cntot cdvtot cdtot_a cltot_a cdtot_u
 C                cltot_u cytot_u crtot_u cmtot_u cntot_u cdtot_d
 C                cltot_d cxtot_d cytot_d cztot_d crtot_d cmtot_d
 C                cntot_d
-C   with respect to varying inputs: alfa vinf sref cref bref xyzref
-C                rle chord rle1 chord1 rle2 chord2 wstrip ensy
-C                ensz xsref ysref zsref rv1 rv2 rv gam gam_u gam_d
-C                wv
+C   with respect to varying inputs: alfa vinf wrot sref cref bref
+C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
+C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
+C                gam_d wv wv_u
 C AERO
 C
 C
@@ -739,9 +740,6 @@ C          RROT(3) = 0.5*(RV1(3,I) + RV2(3,I)) - XYZREF(3)
           rrot(3) = rv(3, i) - xyzref(3)
 C
 C-------- set total effective velocity = freestream + rotation + induced
-          DO ii1=1,3
-            wrot_diff(ii1) = 0.D0
-          ENDDO
           CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
           veff_diff(1) = vinf_diff(1) + vrot_diff(1) + wv_diff(1, i)
@@ -754,11 +752,11 @@ C$AD II-LOOP
 C
 C-------- set VEFF sensitivities to freestream,rotation components
           DO k=1,3
-            veff_u_diff(1, k) = 0.D0
+            veff_u_diff(1, k) = wv_u_diff(1, i, k)
             veff_u(1, k) = wv_u(1, i, k)
-            veff_u_diff(2, k) = 0.D0
+            veff_u_diff(2, k) = wv_u_diff(2, i, k)
             veff_u(2, k) = wv_u(2, i, k)
-            veff_u_diff(3, k) = 0.D0
+            veff_u_diff(3, k) = wv_u_diff(3, i, k)
             veff_u(3, k) = wv_u(3, i, k)
             veff_u(k, k) = 1.0 + veff_u(k, k)
           ENDDO
@@ -772,11 +770,11 @@ C-------- set VEFF sensitivities to freestream,rotation components
             ENDDO
             CALL CROSS_D(rrot, rrot_diff, wrot_u, wrot_u_diff, vrot_u, 
      +                   vrot_u_diff)
-            veff_u_diff(1, k) = vrot_u_diff(1)
+            veff_u_diff(1, k) = vrot_u_diff(1) + wv_u_diff(1, i, k)
             veff_u(1, k) = vrot_u(1) + wv_u(1, i, k)
-            veff_u_diff(2, k) = vrot_u_diff(2)
+            veff_u_diff(2, k) = vrot_u_diff(2) + wv_u_diff(2, i, k)
             veff_u(2, k) = vrot_u(2) + wv_u(2, i, k)
-            veff_u_diff(3, k) = vrot_u_diff(3)
+            veff_u_diff(3, k) = vrot_u_diff(3) + wv_u_diff(3, i, k)
             veff_u(3, k) = vrot_u(3) + wv_u(3, i, k)
           ENDDO
 C
@@ -1080,9 +1078,6 @@ C----------- part of trailing leg lying on surface
               END IF
 C
 C---------- set total effective velocity = freestream + rotation
-              DO ii1=1,3
-                wrot_diff(ii1) = 0.D0
-              ENDDO
               CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, 
      +                     vrot_diff)
               veff_diff(1) = vinf_diff(1) + vrot_diff(1)
@@ -1373,9 +1368,6 @@ C--- Get rotational velocity at strip 1/4 chord reference point
           rrot_diff(3) = zr_diff - xyzref_diff(3)
           rrot(3) = zr - xyzref(3)
 C--- Onset velocity at strip c/4 = freestream + rotation
-          DO ii1=1,3
-            wrot_diff(ii1) = 0.D0
-          ENDDO
           CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
           veff_diff(1) = vinf_diff(1) + vrot_diff(1)
@@ -1734,9 +1726,6 @@ C------ vector at chord reference point from rotation axes
         rrot(3) = zsref(j) - xyzref(3)
 C
 C------ set total effective velocity = freestream + rotation
-        DO ii1=1,3
-          wrot_diff(ii1) = 0.D0
-        ENDDO
         CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff)
         veff_diff(1) = vinf_diff(1) + vrot_diff(1)
         veff(1) = vinf(1) + vrot(1)
@@ -2417,9 +2406,9 @@ C  Differentiation of bdforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cltot cxtot cytot cztot
 C                crtot cmtot cntot cdtot_u cltot_u cytot_u crtot_u
 C                cmtot_u cntot_u
-C   with respect to varying inputs: alfa vinf sref cref bref xyzref
-C                mach cdtot cltot cxtot cytot cztot crtot cmtot
-C                cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
+C   with respect to varying inputs: alfa vinf wrot sref cref bref
+C                xyzref mach cdtot cltot cxtot cytot cztot crtot
+C                cmtot cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
 C                cntot_u
 C SFFORC
 C
@@ -2669,9 +2658,6 @@ C
           rrot(3) = 0.5*(rl(3, l2)+rl(3, l1)) - xyzref(3)
 C
 C-------- go over freestream velocity and rotation components
-          DO ii1=1,3
-            wrot_diff(ii1) = 0.D0
-          ENDDO
           CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff
      +                )
 C

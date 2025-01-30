@@ -2133,10 +2133,12 @@ C------ don't bother if this control variable is undefined
 
       
       
-      subroutine solve_adjoint()
+      subroutine solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
       include "AVL.INC"
       include "AVL_ad_seeds.inc"
       integer i 
+      logical :: solve_stab_deriv_adj, solve_con_surf_adj
+      
       CALL SETUP
       IF(.NOT.LAIC) THEN
             call factor_AIC
@@ -2149,12 +2151,23 @@ C------ don't bother if this control variable is undefined
 
       CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
       
-      
+      if (solve_con_surf_adj) then 
       DO IC = 1, NCONTROL
             do i =1,NVOR
                   RES_D_diff(i,IC) = GAM_D_diff(i,IC)
             enddo
             CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
       enddo
+      endif 
+
+      if (solve_stab_deriv_adj) then 
+      DO IU = 1,6
+            do i =1,NVOR
+                  RES_U_diff(i,IC) = GAM_U_diff(i,IC)
+            enddo
+            
+            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IC))
+      enddo
+      endif
       
       end !subroutine solve_adjoint

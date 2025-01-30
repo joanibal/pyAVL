@@ -254,38 +254,37 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
             for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
-                # geom_seeds = np.random.rand(*arr.shape)
-                geom_seeds = np.ones(*arr.shape)
+                geom_seeds = np.random.rand(*arr.shape)
 
                 sd_d = self.avl_solver.execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[3]
 
                 sd_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(
-                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-0
+                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=5e-8
                 )[3]
 
                 for func_key in sd_d:
                     for var_key in sd_d[func_key]:
                         sens_label = f"d{func_key}/d{var_key} wrt {surf_key}:{geom_key:5}"
 
-                        print(f"{sens_label} AD:{sd_d[func_key][var_key]} FD:{sd_d_fd[func_key][var_key]}")
-                        quit()
-                        # tol = 1e-13
-                        # # print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
-                        # if np.abs(sd_d[func_key][var_key]) < tol or np.abs(sd_d_fd[func_key][var_key]) < tol:
-                        #     # If either value is basically zero, use an absolute tolerance
-                        #     np.testing.assert_allclose(
-                        #         sd_d[func_key][var_key],
-                        #         sd_d_fd[func_key][var_key],
-                        #         atol=1e-20,
-                        #         err_msg=sens_label,
-                        #     )
-                        # else:
-                        #     np.testing.assert_allclose(
-                        #         sd_d[func_key][var_key],
-                        #         sd_d_fd[func_key][var_key],
-                        #         rtol=1e-3,
-                        #         err_msg=sens_label,
-                        #     )
+                        # print(f"{sens_label} AD:{sd_d[func_key][var_key]} FD:{sd_d_fd[func_key][var_key]}")
+                        # quit()
+                        tol = 1e-10
+                        # print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                        if np.abs(sd_d[func_key][var_key]) < tol or np.abs(sd_d_fd[func_key][var_key]) < tol:
+                            # If either value is basically zero, use an absolute tolerance
+                            np.testing.assert_allclose(
+                                sd_d[func_key][var_key],
+                                sd_d_fd[func_key][var_key],
+                                atol=1e-8,
+                                err_msg=sens_label,
+                            )
+                        else:
+                            np.testing.assert_allclose(
+                                sd_d[func_key][var_key],
+                                sd_d_fd[func_key][var_key],
+                                rtol=1e-4,
+                                err_msg=sens_label,
+                            )
 
     def test_rev_geom(self):
         np.random.seed(111)
@@ -350,7 +349,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 np.testing.assert_allclose(
                     sd_d[func_key][var_key],
                     sd_d_fd[func_key][var_key],
-                    rtol=1e-3,
+                    rtol=1e-7,
                     err_msg=sens_label,
                 )
 

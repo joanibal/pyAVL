@@ -1927,7 +1927,7 @@ class AVLSolver(object):
     def execute_direct_solve():
         raise NotImplementedError
 
-    def execute_run_sensitivies(self, funcs, consurf_derivs=None, print_timings=False):
+    def execute_run_sensitivies(self, funcs, stab_derivs=None, consurf_derivs=None, print_timings=False):
 
         """
         only runs in adjoint mode
@@ -1988,7 +1988,7 @@ class AVLSolver(object):
                     cs_deriv_seeds[func_key][cs_key] = 1.0
                     sens[func_key][cs_key] = {}
 
-                    # get the RHS of the adjiont equation (pFpU)
+                    # get the RHS of the adjoint equation (pFpU)
                     # TODO: remove seeds if it doesn't effect accuracy
                     _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
                     if print_timings:
@@ -1999,7 +1999,9 @@ class AVLSolver(object):
                     # u solver adjoint equation with RHS
                     self.set_gamma_ad_seeds(-1 * pfpU)
                     self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
-                    self.avl.solve_adjoint()
+                    solve_stab_deriv_adj=False
+                    solve_con_surf_adj=True
+                    self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
                     if print_timings:
                         print(f"Time to solve adjoint: {time.time() - time_last}")
                         time_last = time.time()
@@ -2020,6 +2022,55 @@ class AVLSolver(object):
                     sens[func_key][cs_key].update(param_seeds)
                     sens[func_key][cs_key].update(ref_seeds)
                     cs_deriv_seeds[func_key][cs_key] = 0.0
+
+        if stab_derivs is not None:
+            if print_timings:
+                print("Running stab derivs")
+                time_last = time.time()
+
+            sd_deriv_seeds = {}
+            for func_key in stab_derivs:
+                sd_deriv_seeds[func_key] = {}
+                if func_key not in sens:
+                    sens[func_key] = {}
+                for var_key in stab_derivs[func_key]:
+                    sd_deriv_seeds[func_key][var_key] = 1.0
+                    sens[func_key][var_key] = {}
+
+                    # get the RHS of the adjoint equation (pFpU)
+                    # TODO: remove seeds if it doesn't effect accuracy
+                    _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(stab_derivs_seeds=sd_deriv_seeds)
+                    if print_timings:
+                        print(f"Time to get RHS: {time.time() - time_last}")
+                        time_last = time.time()
+
+                    # self.clear_ad_seeds()
+                    # u solver adjoint equation with RHS
+                    self.set_gamma_ad_seeds(-1 * pfpU)
+                    self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
+                    solve_stab_deriv_adj=True
+                    solve_con_surf_adj=False
+                    self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+                    if print_timings:
+                        print(f"Time to solve adjoint: {time.time() - time_last}")
+                        time_last = time.time()
+
+                    # get the resulting adjoint vector (dfunc/dRes) from fortran
+                    dfdR = self.get_residual_ad_seeds()
+                    dfdR_d = self.get_residual_d_ad_seeds()
+                    # self.clear_ad_seeds()
+                    con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
+                        stab_derivs_seeds=sd_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
+                    )
+                    if print_timings:
+                        print(f"Time to combine : {time.time() - time_last}")
+                        time_last = time.time()
+
+                    sens[func_key][var_key].update(con_seeds)
+                    sens[func_key][var_key].update(geom_seeds)
+                    sens[func_key][var_key].update(param_seeds)
+                    sens[func_key][var_key].update(ref_seeds)
+                    sd_deriv_seeds[func_key][var_key] = 0.0
 
         return sens
 

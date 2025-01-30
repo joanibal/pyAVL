@@ -8,9 +8,9 @@ C                cltot_be cytot_be crtot_be cmtot_be cntot_be cdtot_rx
 C                cltot_rx cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry
 C                cltot_ry cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz
 C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz
-C   with respect to varying inputs: alfa vinf_a vinf_b cref bref
-C                crtot cntot cdtot_a cltot_a cdtot_u cltot_u cytot_u
-C                crtot_u cmtot_u cntot_u
+C   with respect to varying inputs: alfa vinf_a vinf_b wrot cref
+C                bref crtot cntot cdtot_a cltot_a cdtot_u cltot_u
+C                cytot_u crtot_u cmtot_u cntot_u
 C GETFILE
 C
 C
@@ -372,8 +372,6 @@ C
         cmsax_u_diff(k) = 0.D0
         crsax_u_diff(k) = 0.D0
       ENDDO
-      rz_diff = -(sa*wrot_a_diff(3)) - ca*wrot_a_diff(1)
-      rx_diff = ca*wrot_a_diff(3) - sa*wrot_a_diff(1)
       temp_diff = dir*cnsax_diff
       cntot_diff = cntot_diff + ca*crsax_a_diff - sa*cnsax_a_diff + ca*
      +  temp_diff
@@ -385,19 +383,32 @@ C
      +  cntot*temp_diff
       temp_diff = dir*crsax_diff
       crtot_diff = crtot_diff + ca*temp_diff
-      ca_diff = ca_diff + crtot*temp_diff + rx*wrot_a_diff(3) + dir*
-     +  wrot_rz_diff(3) - rz*wrot_a_diff(1) + dir*wrot_rx_diff(1) + wrot
-     +  (3)*dir*rz_diff + wrot(1)*dir*rx_diff
+      ca_diff = ca_diff + crtot*temp_diff
       cntot_diff = cntot_diff + sa*temp_diff
-      sa_diff = sa_diff + cntot*temp_diff + dir*wrot_rx_diff(3) - rz*
-     +  wrot_a_diff(3) - rx*wrot_a_diff(1) - dir*wrot_rz_diff(1) + wrot(
-     +  3)*dir*rx_diff - wrot(1)*dir*rz_diff
-      wrot_a_diff(3) = 0.D0
+      sa_diff = sa_diff + cntot*temp_diff
+      rx_diff = ca*wrot_a_diff(3) - sa*wrot_a_diff(1)
+      rz_diff = -(sa*wrot_a_diff(3)) - ca*wrot_a_diff(1)
       wrot_a_diff(2) = 0.D0
-      wrot_rz_diff(3) = 0.D0
       wrot_rz_diff(2) = 0.D0
-      wrot_rx_diff(3) = 0.D0
       wrot_rx_diff(2) = 0.D0
+      DO ii1=1,3
+        wrot_diff(ii1) = 0.D0
+      ENDDO
+      temp_diff = dir*rz_diff
+      ca_diff = ca_diff + rx*wrot_a_diff(3) + dir*wrot_rz_diff(3) - rz*
+     +  wrot_a_diff(1) + dir*wrot_rx_diff(1) + wrot(3)*temp_diff
+      sa_diff = sa_diff + dir*wrot_rx_diff(3) - rz*wrot_a_diff(3) - rx*
+     +  wrot_a_diff(1) - dir*wrot_rz_diff(1) - wrot(1)*temp_diff
+      wrot_a_diff(3) = 0.D0
+      wrot_rz_diff(3) = 0.D0
+      wrot_rx_diff(3) = 0.D0
+      wrot_diff(3) = wrot_diff(3) + ca*temp_diff
+      wrot_diff(1) = wrot_diff(1) - sa*temp_diff
+      temp_diff = dir*rx_diff
+      wrot_diff(1) = wrot_diff(1) + ca*temp_diff
+      ca_diff = ca_diff + wrot(1)*temp_diff
+      wrot_diff(3) = wrot_diff(3) + sa*temp_diff
+      sa_diff = sa_diff + wrot(3)*temp_diff
       alfa_diff = COS(alfa)*sa_diff - SIN(alfa)*ca_diff
 C
 C        WRITE(*,8401) XNP
@@ -406,18 +417,19 @@ C        WRITE(*,8401) XNP
 
 C  Differentiation of get_res in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: alfa beta vinf vinf_a vinf_b
-C                delcon xyzref mach cdref rv1 rv2 rc gam gam_u
+C                wrot delcon xyzref mach cdref rv1 rv2 rc gam gam_u
 C                gam_d res res_u res_d
 C   with respect to varying inputs: ysym zsym alfa beta vinf vinf_a
-C                vinf_b parval conval delcon xyzref mach cdref
+C                vinf_b wrot parval conval delcon xyzref mach cdref
 C                rv1 rv2 rc chordv enc enc_d gam gam_u gam_d res
 C                res_u res_d
 C   RW status of diff variables: ysym:out zsym:out alfa:in-out
 C                beta:in-out vinf:in-out vinf_a:in-out vinf_b:in-out
-C                parval:out conval:out delcon:in-out xyzref:in-out
-C                mach:in-zero cdref:in-zero rv1:incr rv2:incr rc:incr
-C                chordv:out enc:out enc_d:out gam:incr gam_u:incr
-C                gam_d:incr res:in-zero res_u:in-out res_d:in-out
+C                wrot:in-out parval:out conval:out delcon:in-out
+C                xyzref:in-out mach:in-zero cdref:in-zero rv1:incr
+C                rv2:incr rc:incr chordv:out enc:out enc_d:out
+C                gam:incr gam_u:incr gam_d:incr res:in-zero res_u:in-out
+C                res_d:in-out
 Csubroutine exec_rhs
 C
 C
@@ -445,9 +457,6 @@ C---
 C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
-      DO ii1=1,3
-        wrot_diff(ii1) = 0.D0
-      ENDDO
       DO ii1=1,ndmax
         DO ii2=1,nvmax
           DO ii3=1,3

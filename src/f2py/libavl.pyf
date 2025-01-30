@@ -86,7 +86,8 @@ python module libavl ! in
         subroutine get_res_b ! in :libavl:aoper_d.f
         end subroutine get_res_b
 
-        subroutine solve_adjoint
+        subroutine solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+            logical :: solve_stab_deriv_adj, solve_con_surf_adj
         end subroutine solve_adjoint
         
         subroutine cpoml
