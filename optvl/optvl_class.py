@@ -1945,7 +1945,7 @@ class AVLSolver(object):
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
-            _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, pfpU, _, _, _, _ = self.execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -1953,17 +1953,17 @@ class AVLSolver(object):
             # self.clear_ad_seeds()
             # u solver adjoint equation with RHS
             self.set_gamma_ad_seeds(-1 * pfpU)
-            self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
-            self.avl.solve_adjoint()
+            solve_stab_deriv_adj=False
+            solve_con_surf_adj=False
+            self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
             if print_timings:
                 print(f"Time to solve adjoint: {time.time() - time_last}")
                 time_last = time.time()
             # get the resulting adjoint vector (dfunc/dRes) from fortran
             dfdR = self.get_residual_ad_seeds()
-            dfdR_d = self.get_residual_d_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
-                func_seeds={func: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
+            con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
+                func_seeds={func: 1.0}, res_seeds=dfdR
             )
             if print_timings:
                 print(f"Time to combine derivs: {time.time() - time_last}")
@@ -1990,7 +1990,7 @@ class AVLSolver(object):
 
                     # get the RHS of the adjoint equation (pFpU)
                     # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+                    _, _, pfpU, pf_pU_d, _, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
                     if print_timings:
                         print(f"Time to get RHS: {time.time() - time_last}")
                         time_last = time.time()
@@ -2010,7 +2010,7 @@ class AVLSolver(object):
                     dfdR = self.get_residual_ad_seeds()
                     dfdR_d = self.get_residual_d_ad_seeds()
                     # self.clear_ad_seeds()
-                    con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
+                    con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
                         consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
                     )
                     if print_timings:
@@ -2033,13 +2033,14 @@ class AVLSolver(object):
                 sd_deriv_seeds[func_key] = {}
                 if func_key not in sens:
                     sens[func_key] = {}
+
                 for var_key in stab_derivs[func_key]:
                     sd_deriv_seeds[func_key][var_key] = 1.0
                     sens[func_key][var_key] = {}
 
                     # get the RHS of the adjoint equation (pFpU)
                     # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, pf_pU_d, _, _ = self.execute_jac_vec_prod_rev(stab_derivs_seeds=sd_deriv_seeds)
+                    _, _, pfpU, _, pf_pU_u, _, _ = self.execute_jac_vec_prod_rev(stab_derivs_seeds=sd_deriv_seeds)
                     if print_timings:
                         print(f"Time to get RHS: {time.time() - time_last}")
                         time_last = time.time()
@@ -2047,7 +2048,7 @@ class AVLSolver(object):
                     # self.clear_ad_seeds()
                     # u solver adjoint equation with RHS
                     self.set_gamma_ad_seeds(-1 * pfpU)
-                    self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
+                    self.set_gamma_u_ad_seeds(-1 * pf_pU_u)
                     solve_stab_deriv_adj=True
                     solve_con_surf_adj=False
                     self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
@@ -2057,10 +2058,10 @@ class AVLSolver(object):
 
                     # get the resulting adjoint vector (dfunc/dRes) from fortran
                     dfdR = self.get_residual_ad_seeds()
-                    dfdR_d = self.get_residual_d_ad_seeds()
+                    dfdR_u = self.get_residual_u_ad_seeds()
                     # self.clear_ad_seeds()
                     con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
-                        stab_derivs_seeds=sd_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
+                        stab_derivs_seeds=sd_deriv_seeds, res_seeds=dfdR, res_u_seeds=dfdR_u
                     )
                     if print_timings:
                         print(f"Time to combine : {time.time() - time_last}")

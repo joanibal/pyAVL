@@ -98,7 +98,9 @@ class TestTotals(unittest.TestCase):
     def test_aero_constraint(self):
         # compare the analytical gradients with finite difference for each constraint and function
         func_vars = self.avl_solver.case_var_to_fort_var
-        sens = self.avl_solver.execute_run_sensitivies(func_vars)
+        stab_derivs = self.avl_solver.case_stab_derivs_to_fort_var
+        # sens = self.avl_solver.execute_run_sensitivies(func_vars)
+        sens = self.avl_solver.execute_run_sensitivies([], stab_derivs=stab_derivs, print_timings=True)
 
         for con_key in self.avl_solver.con_var_to_fort_var:
             # for con_key in ['beta']:
@@ -163,9 +165,25 @@ class TestTotals(unittest.TestCase):
 
                     rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                    print(
-                        f"{func_key:5} wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                    )
+                    # print(
+                    #     f"{func_key:5} wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    # )
+                    tol = 1e-7
+                    if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
+                        # If either value is basically zero, use an absolute tolerance
+                        np.testing.assert_allclose(
+                            geom_dot,
+                            func_dot,
+                            atol=1e-4,
+                            err_msg=f"{func_key:5} wrt {surf_key}:{geom_key:10}",
+                        )
+                    else:
+                        np.testing.assert_allclose(
+                            geom_dot,
+                            func_dot,
+                            rtol=1e-4,
+                            err_msg=f"{func_key:5} wrt {surf_key}:{geom_key:10}",
+                        )
 
                 for func_key in consurf_vars:
                     for cs_key in consurf_vars[func_key]:
@@ -174,9 +192,26 @@ class TestTotals(unittest.TestCase):
 
                         rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                        print(
-                            f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                        )
+                        # print(
+                        #     f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                        # )
+                        
+                        tol = 1e-8
+                        if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
+                            # If either value is basically zero, use an absolute tolerance
+                            np.testing.assert_allclose(
+                                geom_dot,
+                                func_dot,
+                                atol=1e-4,
+                                err_msg=f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10}",
+                            )
+                        else:
+                            np.testing.assert_allclose(
+                                geom_dot,
+                                func_dot,
+                                rtol=1e-4,
+                                err_msg=f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10}",
+                            )
                         
                 #TODO: add an assert here
 
