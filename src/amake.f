@@ -109,7 +109,8 @@ C----- set spanwise spacing using spacing parameters for each section interval
          NVS(ISURF) = NVS(ISURF) + NSPANS(ISEC, ISURF)
        ENDDO
        IF(NVS(ISURF).GT.KSMAX) THEN
-        WRITE(*,*) '*** MAKESURF: Array overflow. Increase KSMAX to',NVS(ISURF)
+           WRITE(*,*) '*** MAKESURF: Array overflow. Increase',
+     &      'KSMAX to',NVS(ISURF)
         STOP
        ENDIF
 C
@@ -369,7 +370,8 @@ C
 C
           WSTRIP(idx_strip) = ABS(F2-F1)*WIDTH
           TANLE(idx_strip)  = (XYZLER(1)-XYZLEL(1))/WIDTH
-          TANTE(idx_strip)  = (XYZLER(1)+CHORDR - XYZLEL(1)-CHORDL)/WIDTH
+          TANTE(idx_strip)  = (XYZLER(1)+CHORDR - 
+     &                         XYZLEL(1)-CHORDL)/WIDTH
 C
 cc#ifdef USE_CPOML
           CHSIN = CHSINL + F1*(CHSINR-CHSINL)

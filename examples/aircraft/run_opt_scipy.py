@@ -7,43 +7,70 @@ from optvl import AVLSolver
 avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False)
 
 # setup OptVL 
-avl_solver.execute_run()
+avl_solver.set_case_parameter("Mach", 0.0)
 
-# Define your custom objective function
+# Define your custom objective function with outputs from OptVL
 def custom_function(x):
-    return x[0]**2 + x[1]**2 + 3*x[0]*x[1]
+    avl_solver.add_constraint("Elevator", x[0])
+    avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
+    
+    avl_solver.execute_run()
+    cd = avl_solver.get_case_total_data()['CD']
+    print(x, cd)
 
-# Define the gradient of the custom objective function
+    return cd
+
+# Define the gradient (Jacobian) of the objective function
 def custom_gradient(x):
-    df_dx0 = 2*x[0] + 3*x[1]
-    df_dx1 = 2*x[1] + 3*x[0]
-    return np.array([df_dx0, df_dx1])
+    # Partial derivatives of the custom_function
+    sens = avl_solver.execute_run_sensitivies(['CD'])
+    dcd_dele = sens['CD']['Elevator']
+    # dcd_dalpha = sens['CD']['alpha']
+    dcd_daincs = sens['CD']['Wing']['aincs']
+    # concatinate the two and return the derivs
+    return np.concatenate(([dcd_dele], dcd_daincs))
+
+cl_target = 1.5
+cm_target = 0.0
 
 # Define equality constraint: h(x) = 0
 def eq_constraint(x):
-    return x[0] + x[1] - 1
+    avl_solver.add_constraint("Elevator", x[0])
+    avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
+
+    avl_solver.execute_run()
+
+    # the objective must always be run first
+    coeff = avl_solver.get_case_total_data()
+    
+    cl_con = coeff['CL'] - cl_target
+    cm_con = coeff['CM'] - cm_target
+
+    return np.array([cl_con, cm_con])
 
 # Define the gradient of the equality constraint
 def eq_constraint_jac(x):
-    # Gradient of x[0] + x[1] - 1 is [1, 1]
-    return np.array([1, 1])
+    sens = avl_solver.execute_run_sensitivies(['CL', 'CM'])
+    dcl_dele = sens['CL']['Elevator']
+    # dcl_dalpha = sens['CL']['alpha']
+    dcl_daincs = sens['CL']['Wing']['aincs']
+    dcl_dx = np.concatenate(([dcl_dele], dcl_daincs))
+    
+    dcm_dele = sens['CM']['Elevator']
+    # dcm_dalpha = sens['CM']['alpha']    
+    dcm_daincs = sens['CM']['Wing']['aincs']
+    dcm_dx = np.concatenate(([dcm_dele], dcm_daincs))
 
-# Define inequality constraint: g(x) >= 0
-def ineq_constraint(x):
-    return x[0] - 0.5
+    # concatinate the two and return the derivs
+    return np.array([dcl_dx, dcm_dx])
 
-# Define the gradient of the inequality constraint
-def ineq_constraint_jac(x):
-    # Gradient of x[0] - 0.5 is [1, 0]
-    return np.array([1, 0])
-
+num_sec = 5
 # Initial guess for the variables
-x0 = np.array([0.6, 0.4])
+x0 = np.zeros(1+num_sec)
 
 # Define constraints with their gradients
 constraints = [
     {'type': 'eq', 'fun': eq_constraint, 'jac': eq_constraint_jac},   # Equality constraint
-    {'type': 'ineq', 'fun': ineq_constraint, 'jac': ineq_constraint_jac}  # Inequality constraint
 ]
 
 # Call the minimize function with constraints and their gradients
@@ -53,12 +80,13 @@ result = minimize(
     x0=x0,                     # Initial guess
     constraints=constraints,   # Constraints with gradients
     method='SLSQP',            # Optimization method that supports constraints
-    options={'disp': True}     # Display convergence messages
+    options={'disp': True},     # Display convergence messages
+    tol=1e-10
 )
 
 # Print the result
 print("Optimization result:")
-print("x:", result.x)              # Optimized variables
-print("fun:", result.fun)          # Final value of the objective function
-print("success:", result.success)  # Whether the optimizer exited successfully
-print("message:", result.message)  # Description of the cause of termination
+opt_x = result.x
+print(f"Elevator:{opt_x[0]}")
+print(f"Wing twist:{opt_x[1:]}")
+print(f"Final CD:{result.fun}")          # Final value of the objective function
