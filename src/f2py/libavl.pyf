@@ -90,11 +90,14 @@ python module libavl ! in
             logical :: solve_stab_deriv_adj, solve_con_surf_adj
         end subroutine solve_adjoint
         
-        subroutine cpoml
+        subroutine cpoml(save_file)
+            logical :: save_file
         end subroutine cpoml
         
-        subroutine write_tecplot(file_name)
+        subroutine write_tecplot(file_name, add_time, solution_time)
             character*(*) file_name
+            logical :: add_time
+            real*8 :: solution_time
         end subroutine write_tecplot
         subroutine mode
         end subroutine mode

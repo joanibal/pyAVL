@@ -1,10 +1,12 @@
-      subroutine write_tecplot(file_name)
+      subroutine write_tecplot(file_name, add_time, solution_time)
 C
       INCLUDE 'AVL.INC'
 C
       LOGICAL LRANGEALL
       INTEGER LU, nChords, nStrips, nPts
       CHARACTER*(*) file_name
+      logical :: add_time
+      real(kind=8) :: solution_time
 C
 C...  check that all surfaces use full range of airfoil definitions
       LRANGEALL = .TRUE.
@@ -33,7 +35,6 @@ c      Open the file for writing. Use a unit number (out_unit) that is not in us
       DO ISURF = 1, NSURF
             nChords = NK(ISURF)
             nStrips = NJ(ISURF)
-            write(*,*) 'ISURF', ISURF
             
             nPts = (nStrips+1)*(nChords*2+1)
             ! nPts = (nStrips+1)*(nChords+1)
@@ -42,6 +43,10 @@ c      Open the file for writing. Use a unit number (out_unit) that is not in us
      &   trim(STITLE(ISURF)),'", DATAPACKING=BLOCK, ',
      &   'VARLOCATION=(4=CELLCENTERED), ',
      &   'I=',(2*nChords+1), ', J=', (nStrips+1)
+        if (add_time) then 
+            WRITE(LU, '(A,f20.16)') 'SOLUTIONTIME=',solution_time
+        endif 
+            
         DO idim = 1,3
             DO iPt = 1,nPts
                 WRITE(LU, '(F15.8)') XYZSURF(idim, iPt, ISURF)

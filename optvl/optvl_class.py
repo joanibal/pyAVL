@@ -707,7 +707,6 @@ class AVLSolver(object):
             "CY": ["STRP_R", "CYSTRP"], 
             "CZ": ["STRP_R", "CZSTRP"],   
             
-            
             # strip contributions to total moments (body frame)
             "CM": ["STRP_R", "CMSTRP"],
             "CN": ["STRP_R", "CNSTRP"],
@@ -720,7 +719,6 @@ class AVLSolver(object):
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
             "CM strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
 
-            
             # additional forces and moments
             "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
             "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
@@ -2242,7 +2240,7 @@ class AVLSolver(object):
         import matplotlib.pyplot as plt
         from matplotlib import cm
         
-        self.avl.cpoml()
+        self.avl.cpoml(False)
         xyz, cp = self.get_cp_data()
         
         num_surfs = self.get_num_surfaces()
@@ -2284,5 +2282,13 @@ class AVLSolver(object):
 
         plt.show()
 
-        
+    def write_tecplot(self, file_name : str, solution_time=None):
+        if solution_time is not None:
+            add_time = True
+        else:
+            solution_time = 0.0
+            add_time = False
+            
+        self.avl.cpoml(False)
+        self.avl.write_tecplot(file_name + '.dat', add_time, solution_time )
         
