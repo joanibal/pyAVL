@@ -1539,9 +1539,9 @@ class AVLSolver(object):
         return res_seeds
 
     def set_residual_u_ad_seeds(self, res_u_seeds: np.ndarray, scale=1.0) -> None:
-        res_slice = (slice(0, self.NUMAX), slice(0, self.get_mesh_size()))
+        res_u_slice = (slice(0, self.NUMAX), slice(0, self.get_mesh_size()))
 
-        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_U_DIFF", res_u_seeds * scale, slicer=res_slice)
+        self.set_avl_fort_arr("VRTX_R_DIFF", "RES_U_DIFF", res_u_seeds * scale, slicer=res_u_slice)
         return
 
 # --- output AD seeds ---
@@ -1838,7 +1838,8 @@ class AVLSolver(object):
             res_seeds = (res_peturbed - res) / step
             res_d_seeds = (res_d_peturbed - res_d) / step
             res_u_seeds = (res_u_peturbed - res_u) / step
-
+        
+        # TODO-clean: the way these arrays are returned is a bit of a mess 
         return func_seeds, res_seeds, consurf_derivs_seeds, stab_derivs_seeds, res_d_seeds, res_u_seeds
 
     def execute_jac_vec_prod_rev(
@@ -1911,7 +1912,7 @@ class AVLSolver(object):
         self.set_function_ad_seeds(func_seeds, scale=0.0)
         self.set_residual_ad_seeds(res_seeds, scale=0.0)
         self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
-        self.set_residual_u_ad_seeds(res_d_seeds, scale=0.0)
+        self.set_residual_u_ad_seeds(res_u_seeds, scale=0.0)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds, scale=0.0)
         self.set_stab_derivs_ad_seeds(stab_derivs_seeds, scale=0.0)
         if print_timings:
@@ -2060,7 +2061,7 @@ class AVLSolver(object):
                     dfdR = self.get_residual_ad_seeds()
                     dfdR_u = self.get_residual_u_ad_seeds()
                     # self.clear_ad_seeds()
-                    con_seeds, geom_seeds, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
+                    con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
                         stab_derivs_seeds=sd_deriv_seeds, res_seeds=dfdR, res_u_seeds=dfdR_u
                     )
                     if print_timings:

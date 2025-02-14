@@ -216,6 +216,7 @@ C
       real(kind=avl_real) DCL_A0, DCM_A0
       real(kind=avl_real) DCL_U0, DCM_U0
       real(kind=avl_real) XNP
+      real(kind=avl_real) SM
       real(kind=avl_real) EXEC_TOL                
       COMMON /CASE_R/
      & VERSION,          ! AVL version number
@@ -276,6 +277,7 @@ C
      & DCL_A0, DCM_A0,   ! additional default CL_a, CM_a
      & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
      & XNP,                ! x neutral point
+     & SM,                ! static margin
      & EXEC_TOL           ! tolerance of exec trim solve
       COMPLEX(kind=avl_real) EVAL, EVEC, EVALDAT
       COMMON /CASE_Z/

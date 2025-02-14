@@ -1898,15 +1898,16 @@ C
 C
 C        
 
-      IF(CL_AL .NE. 0.0) THEN
-       XNP = XYZREF(1) - CREF*CM_AL/CL_AL
+      IF(CLTOT_AL .NE. 0.0) THEN
+       XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
+       SM = (XNP - XYZREF(1))/CREF
 
 C        WRITE(*,8401) XNP
  8401  FORMAT(/'Neutral point  Xnp =', F11.6)
       ENDIF
 C
-      IF(ABS(CR_RZ*CN_BE) .GT. 0.0001) THEN
-       BB = CR_BE*CN_RZ / (CR_RZ*CN_BE)
+      IF(ABS(CRTOT_RZ*CNTOT_BE) .GT. 0.0001) THEN
+       BB = CRTOT_BE*CNTOT_RZ / (CRTOT_RZ*CNTOT_BE)
 C        WRITE(LU,8402) BB 
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
@@ -2163,10 +2164,10 @@ C------ don't bother if this control variable is undefined
       if (solve_stab_deriv_adj) then 
       DO IU = 1,6
             do i =1,NVOR
-                  RES_U_diff(i,IC) = GAM_U_diff(i,IC)
+                  RES_U_diff(i,IU) = GAM_U_diff(i,IU)
             enddo
             
-            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IC))
+            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IU))
       enddo
       endif
       
