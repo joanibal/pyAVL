@@ -464,8 +464,8 @@ C---- set VINF() vector from initial ALFA,BETA
           ENDDO
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
-        DO ii2=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
@@ -483,12 +483,12 @@ C$BWD-OF II-LOOP
           CALL SET_GAM_D_RHS_B(ic, enc_d, enc_d_diff, rhs_d, rhs_d_diff)
           CALL MAT_PROD_B(aicn, aicn_diff, gam_d(:, ic), gam_d_diff(:, 
      +                    ic), nvor, res_d(:, ic), res_d_diff(:, ic))
-          DO ii1=1,6000
+          DO ii1=1,nvor
             res_d_diff(ii1, ic) = 0.D0
           ENDDO
         END IF
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         rhs_diff(ii1) = 0.D0
       ENDDO
 C$BWD-OF II-LOOP 
@@ -497,7 +497,7 @@ C$BWD-OF II-LOOP
       ENDDO
       CALL MAT_PROD_B(aicn, aicn_diff, gam, gam_diff, nvor, res, 
      +                res_diff)
-      DO ii1=1,6000
+      DO ii1=1,nvor
         res_diff(ii1) = 0.D0
       ENDDO
       CALL SET_VEL_RHS_B()
@@ -513,7 +513,7 @@ C$BWD-OF II-LOOP
         CALL SET_VEL_RHS_U_B(iu)
         CALL MAT_PROD_B(aicn, aicn_diff, gam_u(:, iu), gam_u_diff(:, iu)
      +                  , nvor, res_u(:, iu), res_u_diff(:, iu))
-        DO ii1=1,6000
+        DO ii1=1,nvor
           res_u_diff(ii1, iu) = 0.D0
         ENDDO
       ENDDO
