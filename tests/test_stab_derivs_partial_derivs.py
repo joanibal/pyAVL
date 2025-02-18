@@ -183,7 +183,7 @@ class TestResidualUPartials(unittest.TestCase):
         )
 
 
-class TestConSurfDerivsPartials(unittest.TestCase):
+class TestStabDerivDerivsPartials(unittest.TestCase):
     def setUp(self):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
