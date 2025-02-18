@@ -1744,7 +1744,6 @@ class AVLSolver(object):
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
             self.avl.velsum_d()
-            print('--------- ad -------------')
             self.avl.aero_d()
 
             # extract derivatives seeds and set the output dict of functions
@@ -1779,7 +1778,6 @@ class AVLSolver(object):
             self.avl.update_surfaces()
             self.avl.get_res()
             self.avl.velsum()
-            print('-------------- perturbed ------------')
             self.avl.aero()
 
             coef_data_peturb = self.get_case_total_data()
@@ -1802,7 +1800,6 @@ class AVLSolver(object):
             self.avl.update_surfaces()
             self.avl.get_res()
             self.avl.velsum()
-            print('---------------- base state ---------------')
             self.avl.aero()
 
             coef_data = self.get_case_total_data()

@@ -41,11 +41,11 @@ class TestResidualDPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
-            _, _, _, res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
 
-            _, _, _, res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+            res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, mode="FD", step=1e-5
-            )
+            )[4]
 
             np.testing.assert_allclose(
                 res_d_seeds,
@@ -55,7 +55,7 @@ class TestResidualDPartials(unittest.TestCase):
 
     def test_rev_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
-            _, _, _, res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
 
             num_gamma = self.avl_solver.get_mesh_size()
             num_consurf = self.avl_solver.get_num_control_surfs()
@@ -64,7 +64,7 @@ class TestResidualDPartials(unittest.TestCase):
 
             self.avl_solver.clear_ad_seeds_fast()
 
-            con_seeds, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
+            con_seeds = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)[0]
             self.avl_solver.clear_ad_seeds_fast()
 
             # do dot product
@@ -86,13 +86,13 @@ class TestResidualDPartials(unittest.TestCase):
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                _, _, _, res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )
+                )[4]
 
-                _, _, _, res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )
+                )[4]
                 abs_error = np.abs(res_d_seeds.flatten() - res_d_seeds_FD.flatten())
                 rel_error = np.abs((res_d_seeds.flatten() - res_d_seeds_FD.flatten()) / (res_d_seeds.flatten() + 1e-15))
 
@@ -117,7 +117,7 @@ class TestResidualDPartials(unittest.TestCase):
 
         self.avl_solver.clear_ad_seeds_fast()
 
-        _, geom_seeds_rev, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
+        geom_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)[1]
         self.avl_solver.clear_ad_seeds_fast()
 
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -125,9 +125,9 @@ class TestResidualDPartials(unittest.TestCase):
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                _, _, _, res_d_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_d_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )
+                )[4]
 
                 # do dot product
                 res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
@@ -149,13 +149,11 @@ class TestResidualDPartials(unittest.TestCase):
         gamma_d_seeds = np.random.rand(num_consurf, num_gamma)
         # gamma_d_seeds = np.array([[1],[0]])
 
-        _, _, _, res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)
+        res_d_seeds = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)[4]
 
-        _, _, _, res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+        res_d_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
             gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-0
-        )
-        # print("res_d_seeds", res_d_seeds)
-        # print("res_d_seeds_FD", res_d_seeds_FD)
+        )[4]
 
         np.testing.assert_allclose(
             res_d_seeds,
@@ -170,10 +168,10 @@ class TestResidualDPartials(unittest.TestCase):
 
         res_d_seeds_rev = np.random.rand(num_consurf, num_gamma)
 
-        _, _, _, res_d_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)
+        res_d_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)[4]
         self.avl_solver.clear_ad_seeds_fast()
 
-        _, _, _, gamma_d_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)
+        gamma_d_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)[3]
 
         gamma_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
         res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
@@ -205,9 +203,9 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
-            _, _, cs_d, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            cs_d = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
 
-            _, _, cs_d_fd, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-8)
+            cs_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-8)[2]
 
             for func_key in cs_d:
                 for cs_key in cs_d[func_key]:
@@ -228,12 +226,12 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             for cs_key in cs_names:
                 cs_deriv_seeds[func_key][cs_key] = np.random.rand(1)[0]
 
-        con_seeds_rev, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
+        con_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)[0]
 
         self.avl_solver.clear_ad_seeds_fast()
 
         for con_key in self.avl_solver.con_var_to_fort_var:
-            _, _, cs_deriv_seeds_fwd, _ = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            cs_deriv_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
 
             cs_deriv_sum = 0.0
             for func_key in cs_deriv_seeds_fwd:
@@ -259,11 +257,11 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                _, _, cs_d, _ = self.avl_solver.execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})
+                cs_d = self.avl_solver.execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[2]
 
-                _, _, cs_d_fd, _ = self.avl_solver.execute_jac_vec_prod_fwd(
+                cs_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(
                     geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )
+                )[2]
 
                 for func_key in cs_d:
                     for cs_key in cs_d[func_key]:
@@ -299,7 +297,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             for cs_key in cs_names:
                 cs_d_rev[func_key][cs_key] = np.random.rand(1)[0]
 
-        _, geom_seeds_rev, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
+        geom_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[1]
         self.avl_solver.clear_ad_seeds_fast()
 
         for surf_key in self.avl_solver.surf_geom_to_fort_var:
@@ -307,9 +305,10 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds_fwd = np.random.rand(*arr.shape)
 
-                func_seeds_fwd, _, cs_d_fwd, _ = self.avl_solver.execute_jac_vec_prod_fwd(
+                func_seeds_fwd, _, cs_d_fwd, _, _, _ = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}
                 )
+                
 
                 for func_key in func_seeds_fwd:
                     # use dot product test as design variables maybe arrays
@@ -346,8 +345,8 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         num_consurf = self.avl_solver.get_num_control_surfs()
         gamma_d_seeds = np.random.rand(num_consurf, num_gamma)
 
-        _, _, cs_d, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)
-        _, _, cs_d_fd, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-7)
+        cs_d = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)[2]
+        cs_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-7)[2]
 
         for func_key in cs_d:
             for cs_key in cs_d[func_key]:
@@ -365,14 +364,14 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         num_consurf = self.avl_solver.get_num_control_surfs()
         gamma_d_seeds_fwd = np.random.rand(num_consurf, num_gamma)
 
-        _, _, cs_d_fwd, _ = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)
+        cs_d_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)[2]
         self.avl_solver.clear_ad_seeds_fast()
 
         for func_key in cs_d_fwd:
             for cs_key in cs_d_fwd[func_key]:
                 cs_d_rev = {func_key: {cs_key: 1.0}}
 
-                _, _, _, gamma_d_seeds_rev, _, _ = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)
+                gamma_d_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[3]
 
                 rev_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
 
