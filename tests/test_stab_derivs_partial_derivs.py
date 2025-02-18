@@ -40,14 +40,12 @@ class TestResidualUPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
-            print("con_key", con_key)
-            _, _, _, _, res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
-            _, _, _, _, res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+            res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, mode="FD", step=1e-5
-            )
-            print("res_u_seeds", np.linalg.norm(res_u_seeds))
-            print("res_u_seeds_FD", np.linalg.norm(res_u_seeds_FD))
+            )[5]
+
             np.testing.assert_allclose(
                 res_u_seeds,
                 res_u_seeds_FD,
@@ -57,7 +55,7 @@ class TestResidualUPartials(unittest.TestCase):
     def test_rev_aero_constraint(self):
         for con_key in self.avl_solver.con_var_to_fort_var:
         # for con_key in ["beta", "beta"]:
-            _, _, _, _, res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})
+            res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
             num_gamma = self.avl_solver.get_mesh_size()
             np.random.seed(111)
@@ -65,13 +63,13 @@ class TestResidualUPartials(unittest.TestCase):
 
             self.avl_solver.clear_ad_seeds_fast()
 
-            con_seeds, _, _, _, _, _, _ = self.avl_solver.execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)
+            con_seeds = self.avl_solver.execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[0]
             self.avl_solver.clear_ad_seeds_fast()
 
             # do dot product
             res_sum = np.sum(res_u_seeds_rev * res_u_seeds)
 
-            print(f"res wrt {con_key}", "fwd", res_sum, "rev", con_seeds[con_key])
+            # print(f"res wrt {con_key}", "fwd", res_sum, "rev", con_seeds[con_key])
 
             np.testing.assert_allclose(
                 res_sum,
@@ -87,13 +85,14 @@ class TestResidualUPartials(unittest.TestCase):
                 arr = self.avl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                _, _, _, _, res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )
+                )[5]
 
-                _, _, _, _, res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )
+                )[5]
+
                 abs_error = np.abs(res_u_seeds.flatten() - res_u_seeds_FD.flatten())
                 rel_error = np.abs((res_u_seeds.flatten() - res_u_seeds_FD.flatten()) / (res_u_seeds.flatten() + 1e-15))
 
@@ -126,13 +125,13 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[4]
+                )[5]
 
                 # do dot product
                 res_sum = np.sum(res_u_seeds_rev * res_u_seeds_fwd)
                 geom_sum = np.sum(geom_seeds_rev[surf_key][geom_key] * geom_seeds)
 
-                print(f"res wrt {surf_key}:{geom_key}", "rev", geom_sum, "fwd", res_sum)
+                # print(f"res wrt {surf_key}:{geom_key}", "rev", geom_sum, "fwd", res_sum)
 
                 np.testing.assert_allclose(
                     res_sum,
@@ -148,11 +147,11 @@ class TestResidualUPartials(unittest.TestCase):
         gamma_u_seeds = np.random.rand(self.avl_solver.NUMAX, num_gamma)
         # gamma_u_seeds = np.array([[1],[0]])
 
-        res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[4]
+        res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[5]
 
         res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
             gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-0
-        )[4]
+        )[5]
 
         np.testing.assert_allclose(
             res_u_seeds,
@@ -166,7 +165,7 @@ class TestResidualUPartials(unittest.TestCase):
 
         res_u_seeds_rev = np.random.rand(self.avl_solver.NUMAX, num_gamma)
 
-        res_u_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[4]
+        res_u_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[5]
         self.avl_solver.clear_ad_seeds_fast()
 
         gamma_u_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[4]
@@ -239,7 +238,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             # do dot product
             con_sum = np.sum(con_seeds_rev[con_key])
 
-            print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", stab_deriv_sum)
+            # print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", stab_deriv_sum)
 
             np.testing.assert_allclose(
                 con_sum,
@@ -319,7 +318,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
                     # # print(geom_seeds_rev)
                     tol = 1e-13
-                    print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                    # print(f"{func_key} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(fwd_sum) < tol or np.abs(rev_sum) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(

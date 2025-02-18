@@ -109,29 +109,29 @@ class TestTotals(unittest.TestCase):
         # compare the analytical gradients with finite difference for each constraint and function
         func_vars = self.avl_solver.case_var_to_fort_var
         stab_derivs = self.avl_solver.case_stab_derivs_to_fort_var
-        # sens = self.avl_solver.execute_run_sensitivies(func_vars)
-        sens = self.avl_solver.execute_run_sensitivies([], stab_derivs=stab_derivs, print_timings=True)
+        sens_funcs = self.avl_solver.execute_run_sensitivies(func_vars)
+        sens_sd = self.avl_solver.execute_run_sensitivies([], stab_derivs=stab_derivs, print_timings=False)
 
         for con_key in self.avl_solver.con_var_to_fort_var:
             # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds = self.finite_dif([con_key], {}, {}, {}, step=1.0e-5)
 
             for func_key in func_vars:
-                ad_dot = sens[func_key][con_key]
+                ad_dot = sens_funcs[func_key][con_key]
                 fd_dot = func_seeds[func_key]
 
-                # print(f"{func_key} wrt {con_key}", "AD", ad_dot, "FD", fd_dot)
+                print(f"{func_key} wrt {con_key}", "AD", ad_dot, "FD", fd_dot)
                 rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
 
                 # print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
-                tol = 1e-13
+                tol = 1e-8
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
-                        atol=1e-5,
+                        atol=1e-9,
                         err_msg=f"func_key {func_key} w.r.t. {con_key}",
                     )
                 else:
@@ -144,7 +144,7 @@ class TestTotals(unittest.TestCase):
 
             for func_key in stab_derivs_seeds:
                 for var_key in stab_derivs_seeds[func_key]:
-                    ad_dot = sens[func_key][var_key][con_key]
+                    ad_dot = sens_sd[func_key][var_key][con_key]
                     func_dot = stab_derivs_seeds[func_key][var_key]
 
                     rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
@@ -159,7 +159,7 @@ class TestTotals(unittest.TestCase):
                         np.testing.assert_allclose(
                             ad_dot,
                             func_dot,
-                            atol=1e-10,
+                            atol=1e-9,
                             err_msg=f"{func_key} wrt {var_key:5}  wrt {con_key}",
                         )
                     else:
@@ -185,7 +185,7 @@ class TestTotals(unittest.TestCase):
         stab_derivs = self.avl_solver.case_stab_derivs_to_fort_var
         # sens = self.avl_solver.execute_run_sensitivies(func_vars)
         func_vars = self.avl_solver.case_var_to_fort_var
-        sens = self.avl_solver.execute_run_sensitivies(func_vars, consurf_derivs=consurf_vars, stab_derivs=stab_derivs, print_timings=True)
+        sens = self.avl_solver.execute_run_sensitivies(func_vars, consurf_derivs=consurf_vars, stab_derivs=stab_derivs, print_timings=False)
 
         # for con_key in self.avl_solver.con_var_to_fort_var:
         sens_FD = {}
