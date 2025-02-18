@@ -161,9 +161,11 @@ class AVLSolverComp(om.ImplicitComponent):
         
         self.num_states = self.avl.get_mesh_size()
         self.num_cs = self.avl.get_num_control_surfs()
+        self.num_vel = self.avl.NUMAX
 
         self.add_output("gamma", val=np.zeros(self.num_states))
         self.add_output("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
+        self.add_output("gamma_u", val=np.zeros((self.num_vel, self.num_states)))
         
         add_avl_conditions_as_inputs(self, self.avl)
         
@@ -175,6 +177,11 @@ class AVLSolverComp(om.ImplicitComponent):
         
         self.control_names = add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_vars(self, self.avl, add_as="inputs")
+        
+        self.res_slice = (slice(0, self.num_states),)
+        self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
+        self.res_u_slice = (slice(0, self.num_vel), slice(0, self.num_states))
+
 
     def apply_nonlinear(self, inputs, outputs, residuals):
         om_set_avl_inputs(self, inputs)
@@ -184,24 +191,28 @@ class AVLSolverComp(om.ImplicitComponent):
 
         gam_arr = outputs["gamma"]
         gam_d_arr = outputs["gamma_d"]
+        gam_u_arr = outputs["gamma_u"]
 
-        self.avl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=(slice(0, gam_arr.size),))
-        self.avl.set_avl_fort_arr(
-            "VRTX_R", "GAM_D", gam_d_arr, slicer=(slice(0, self.num_cs), slice(0, self.num_states))
-        )
+
+        
+        # TODO-api: this should probably be an API level call to set gamma
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=self.res_slice)
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM_D", gam_d_arr, slicer=self.res_d_slice)
+        self.set_avl_fort_arr("VRTX_R", "GAM_U", gam_u_arr, slicer=self.res_u_slice)
 
         # propogate the seeds through without resolving
         self.avl.avl.update_surfaces()
         self.avl.avl.get_res()
 
-        res_slice = (slice(0, self.num_states),)
-        res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
 
-        res = copy.deepcopy(self.avl.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
+        res = copy.deepcopy(self.avl.get_avl_fort_arr("VRTX_R", "RES", slicer=self.res_slice))
         residuals["gamma"] = res
-        res_d = copy.deepcopy(self.avl.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
+        res_d = copy.deepcopy(self.avl.get_avl_fort_arr("VRTX_R", "RES_D", slicer=self.res_d_slice))
         residuals["gamma_d"] = res_d
-        # this shouldn't happen
+        res_u = copy.deepcopy(self.avl.get_avl_fort_arr("VRTX_R", "RES_U", slicer=self.res_u_slice))
+        residuals["gamma_u"] = res_u
+        
+        # this routine shouldn't be used normally
 
     def solve_nonlinear(self, inputs, outputs):
         start_time = time.time()
@@ -215,14 +226,15 @@ class AVLSolverComp(om.ImplicitComponent):
         print('executing avl run')
         self.avl.execute_run()
 
-        gam_arr = self.avl.get_avl_fort_arr("VRTX_R", "GAM", slicer=(slice(0, self.num_states),))
+        gam_arr = self.avl.get_avl_fort_arr("VRTX_R", "GAM", slicer=self.res_slice)
 
         outputs["gamma"] = copy.deepcopy(gam_arr)
 
-        gam_d_arr = self.avl.get_avl_fort_arr(
-            "VRTX_R", "GAM_D", slicer=(slice(0, self.num_cs), slice(0, self.num_states))
-        )
+        gam_d_arr = self.avl.get_avl_fort_arr("VRTX_R", "GAM_D", slicer=self.res_d_slice)
         outputs["gamma_d"] = copy.deepcopy(gam_d_arr)
+        
+        gam_u_arr = self.avl.get_avl_fort_arr("VRTX_R", "GAM_U", slicer=self.res_u_slice)
+        outputs["gamma_u"] = copy.deepcopy(gam_u_arr)
 
         # run_data = self.avl.get_case_total_data()
         # for func_key in run_data:
@@ -254,20 +266,22 @@ class AVLSolverComp(om.ImplicitComponent):
                 if ref in d_inputs:
                     ref_seeds[ref] = d_inputs[ref]
 
-            _, res_seeds, _, res_d_seeds = self.avl.execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds,
+            _, res_seeds, _, _, res_d_seeds, res_u_seeds = self.avl.execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds,
                                                                            param_seeds=param_seeds, ref_seeds=ref_seeds)
 
             d_residuals["gamma"] += res_seeds
-            d_residuals["gamma_d"] += res_seeds
+            d_residuals["gamma_d"] += res_d_seeds
+            d_residuals["gamma_u"] += res_u_seeds
 
         if mode == "rev":
             if "gamma" in d_residuals:
                 self.avl.clear_ad_seeds_fast()
                 res_seeds = d_residuals["gamma"]
                 res_d_seeds = d_residuals["gamma_d"]
+                res_u_seeds = d_residuals["gamma_u"]
 
-                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
-                    res_seeds=res_seeds, res_d_seeds=res_d_seeds
+                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
+                    res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds
                 )
 
                 if "gamma" in d_outputs:
@@ -275,6 +289,9 @@ class AVLSolverComp(om.ImplicitComponent):
 
                 if "gamma_d" in d_outputs:
                     d_outputs["gamma_d"] += gamma_d_seeds
+                
+                if "gamma_u" in d_outputs:
+                    d_outputs["gamma_u"] += gamma_u_seeds
 
                 d_input_geom = om_surf_dict_to_input(geom_seeds)
 
@@ -296,11 +313,16 @@ class AVLSolverComp(om.ImplicitComponent):
         if mode == "rev":
             self.avl.set_gamma_ad_seeds(d_outputs["gamma"])
             self.avl.set_gamma_d_ad_seeds(d_outputs["gamma_d"])
+            self.avl.set_gamma_u_ad_seeds(d_outputs["gamma_u"])
             # start_time = time.time()
-            self.avl.avl.solve_adjoint()
+            solve_stab_deriv_adj=True
+            solve_con_surf_adj=True
+            self.avl.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
             # print("OM Solve adjoint time: ", time.time() - start_time)
             d_residuals["gamma"] = self.avl.get_residual_ad_seeds()
             d_residuals["gamma_d"] = self.avl.get_residual_d_ad_seeds()
+            d_residuals["gamma_u"] = self.avl.get_residual_u_ad_seeds()
+
         elif mode == "fwd":
             raise NotImplementedError("only reverse mode derivaties implemented. Use prob.setup(mode='rev')")
 
@@ -318,11 +340,13 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.avl = self.options["avl"]
         self.num_states = self.avl.get_mesh_size()
         self.num_cs = self.avl.get_num_control_surfs()
+        self.num_vel = self.avl.NUMAX
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
         
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
+        self.add_input("gamma_u", val=np.zeros((self.num_vel, self.num_states)))
 
         add_avl_conditions_as_inputs(self, self.avl)
 
@@ -353,6 +377,11 @@ class AVLFuncsComp(om.ExplicitComponent):
                 for var in deriv_dict[func_key]:
                     var_name = f"d{func_key}_d{var}"
                     self.add_output(var_name)        
+        
+        # TODO-refactor: push these slices down into the ovl class?                     
+        self.res_slice = (slice(0, self.num_states),)
+        self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
+        self.res_u_slice = (slice(0, self.num_vel), slice(0, self.num_states))
 
     def compute(self, inputs, outputs):
         # self.avl.set_gamma(inputs['gamma'])
@@ -370,11 +399,11 @@ class AVLFuncsComp(om.ExplicitComponent):
 
         gam_arr = inputs["gamma"]
         gam_d_arr = inputs["gamma_d"]
+        gam_u_arr = inputs["gamma_u"]
 
-        self.avl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=(slice(0, gam_arr.size),))
-        self.avl.set_avl_fort_arr(
-            "VRTX_R", "GAM_D", gam_d_arr, slicer=(slice(0, self.num_cs), slice(0, self.num_states))
-        )
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=self.res_slice)
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM_D", gam_d_arr, slicer=self.res_d_slice)
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM_U", gam_u_arr, slicer=self.res_u_slice)
         
         # TODO: only update what you need to. 
         # residuals (and AIC?) do not need to be calculated 
@@ -428,6 +457,11 @@ class AVLFuncsComp(om.ExplicitComponent):
             else:
                 gamma_d_seeds = None
                 
+            if "gamma_u" in d_inputs:
+                gamma_u_seeds = d_inputs["gamma_u"]
+            else:
+                gamma_u_seeds = None
+                
             param_seeds = {}
             for param in self.avl.param_idx_dict:
                 if param in d_inputs:
@@ -440,8 +474,8 @@ class AVLFuncsComp(om.ExplicitComponent):
 
             geom_seeds = self.om_input_to_surf_dict(self, d_inputs)
 
-            func_seeds, _, csd_seeds, _ = self.avl.execute_jac_vec_prod_fwd(
-                con_seeds=con_seeds, geom_seeds=geom_seeds, gamma_seeds=gamma_seeds, gamma_d_seeds=gamma_d_seeds,
+            func_seeds, _, csd_seeds, stab_derivs_seeds, _, _ = self.avl.execute_jac_vec_prod_fwd(
+                con_seeds=con_seeds, geom_seeds=geom_seeds, gamma_seeds=gamma_seeds, gamma_d_seeds=gamma_d_seeds, gamma_u_seeds=gamma_u_seeds,
                 param_seeds=param_seeds, ref_seeds=ref_seeds
             )
 
@@ -452,6 +486,11 @@ class AVLFuncsComp(om.ExplicitComponent):
                 for con_name in csd_seeds[func_key]:
                     var_name = f"d{func_key}_d{con_name}"
                     d_outputs[var_name] = csd_seeds[func_key][con_name]
+            
+            for func_key in stab_derivs_seeds:
+                for var in stab_derivs_seeds[func_key]:
+                    var_name = f"d{func_key}_d{var}"
+                    d_outputs[var_name] = stab_derivs_seeds[func_key][var]
 
         if mode == "rev":
             self.avl.clear_ad_seeds_fast()
@@ -476,10 +515,33 @@ class AVLFuncsComp(om.ExplicitComponent):
                         
                         if np.abs(csd_seeds[func_key][con_name]) > 0.0:
                             # print(var_name, csd_seeds[func_key][con_name])
-                            print(f'  running rev mode derivs for {func_key}:{con_name}')
+                            print(f'  running rev mode derivs for {var_name}')
+            
+            csd_seeds = {}
+            con_names = self.avl.get_control_names()
+            for func_key in self.avl.case_derivs_to_fort_var:
+                csd_seeds[func_key] = {}
+                for con_name in con_names:
+                    var_name = f"d{func_key}_d{con_name}"
+
+                    
+
+            stab_derivs_seeds = {}
+            for func_key, var_dict in self.avl.case_stab_derivs_to_fort_var.items():
+                stab_derivs_seeds[func_key] = {}
+                for var_key in var_dict:
+                    var_name = f"d{func_key}_d{var_key}"
+                    
+                    if var_name in d_outputs:
+                        stab_derivs_seeds[func_key][var_key] = d_outputs[var_name]
                         
-            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
-                func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds
+                        if np.abs(stab_derivs_seeds[func_key][var_key]) > 0.0:
+                            # print(var_name, stab_derivs_seeds[func_key][var_key])
+                            print(f'  running rev mode derivs for {var_name}')
+
+                        
+            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
+                func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds, stab_derivs_seeds=stab_derivs_seeds
             )
 
             if "gamma" in d_inputs:
@@ -487,7 +549,10 @@ class AVLFuncsComp(om.ExplicitComponent):
 
             if "gamma_d" in d_inputs:
                 d_inputs["gamma_d"] += gamma_d_seeds
-
+            
+            if "gamma_u" in d_inputs:
+                d_inputs["gamma_u"] += gamma_u_seeds
+            
             d_input_geom = om_surf_dict_to_input(geom_seeds)
 
             for d_input in d_inputs:
@@ -513,12 +578,14 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.avl = self.options["avl"]
         self.num_states = self.avl.get_mesh_size()
         self.num_cs = self.avl.get_num_control_surfs()
+        self.num_vel = self.avl.NUMAX
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
         
 
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
+        self.add_input("gamma_u", val=np.zeros((self.num_vel, self.num_states)))
 
         add_avl_conditions_as_inputs(self, self.avl)
         
@@ -532,6 +599,10 @@ class AVLPostProcessComp(om.ExplicitComponent):
         add_avl_geom_vars(self, self.avl, add_as="inputs")
 
         self.iter_count = 0
+        self.res_slice = (slice(0, self.num_states),)
+        self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
+        self.res_u_slice = (slice(0, self.num_vel), slice(0, self.num_states))
+
 
     def compute(self, inputs, outputs):
         # self.avl.set_gamma(inputs['gamma'])
@@ -546,13 +617,13 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.avl.set_surface_params(surf_data)
 
         gam_arr = inputs["gamma"]
-
-        self.avl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=(slice(0, gam_arr.size),))
-
         gam_d_arr = inputs["gamma_d"]
-        self.avl.set_avl_fort_arr(
-            "VRTX_R", "GAM_D", gam_d_arr, slicer=(slice(0, gam_d_arr.shape[0]), slice(0, gam_d_arr.shape[1]))
-        )
+        gam_u_arr = inputs["gamma_u"]
+
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=self.res_slice)
+
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM_D", gam_d_arr, slicer=self.res_d_slice)
+        self.avl.set_avl_fort_arr("VRTX_R", "GAM_U", gam_u_arr, slicer=self.res_u_slice)
 
         file_name = f"vlm_{self.iter_count:03d}.avl"
         output_dir = self.options["output_dir"]

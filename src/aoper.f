@@ -1898,15 +1898,16 @@ C
 C
 C        
 
-      IF(CL_AL .NE. 0.0) THEN
-       XNP = XYZREF(1) - CREF*CM_AL/CL_AL
+      IF(CLTOT_AL .NE. 0.0) THEN
+       XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
+       SM = (XNP - XYZREF(1))/CREF
 
 C        WRITE(*,8401) XNP
  8401  FORMAT(/'Neutral point  Xnp =', F11.6)
       ENDIF
 C
-      IF(ABS(CR_RZ*CN_BE) .GT. 0.0001) THEN
-       BB = CR_BE*CN_RZ / (CR_RZ*CN_BE)
+      IF(ABS(CRTOT_RZ*CNTOT_BE) .GT. 0.0001) THEN
+       BB = CRTOT_BE*CNTOT_RZ / (CRTOT_RZ*CNTOT_BE)
 C        WRITE(LU,8402) BB 
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
@@ -2036,7 +2037,7 @@ C ============= Added to AVL ===============
 
       subroutine exec_rhs
       include "AVL.INC"
-      integer i 
+      integer i, IU
       ! CALL EXEC(10,1,1)
       call set_par_and_cons(NITMAX, IRUN)
       
@@ -2046,6 +2047,15 @@ C ============= Added to AVL ===============
       ENDIF
       
       CALL VINFAB
+      
+      DO IU = 1,6
+            call set_vel_rhs_u(IU)
+            do i = 1,NVOR
+                  GAM_U(i,IU) = RHS_U(i, IU)
+            enddo
+            CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U(:,IU))
+      enddo
+      
       call set_vel_rhs
       
 C---- copy RHS vector into GAM that will be used for soluiton
@@ -2055,19 +2065,14 @@ C---- copy RHS vector into GAM that will be used for soluiton
 
       CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
       
-      CAll exec_GDCALC
-            
-      end !subroutine solve_rhs
-      
-      subroutine exec_GDCALC
-      INCLUDE "AVL.INC"
       
       IF(NCONTROL.GT.0) THEN
 C------- set new GAM_D
             CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
       ENDIF
-      
-      end subroutine
+
+      end !subroutine exec_rhs
+
 
 C ======================== res and Adjoint for GAM ========      
       
@@ -2087,6 +2092,18 @@ C---
 
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
+      
+      DO IU = 1,6
+            
+            call mat_prod(AICN, GAM_U(:,IU), NVOR, res_U(:,IU))
+            
+            call set_vel_rhs_u(IU)
+            do I = 1, NVOR
+                  res_U(I,IU) = res_U(I,IU) - RHS_U(I,IU)
+            enddo 
+            
+      enddo
+      
             
       call set_vel_rhs
 
@@ -2098,7 +2115,6 @@ C---- add the RHS vector to the residual
             res(I) = res(I) - RHS(I)
       enddo 
       
-C---- Setup variational BC's at the control points
       !$AD II-LOOP
       DO IC = 1, NCONTROL
 C------ don't bother if this control variable is undefined
@@ -2118,10 +2134,12 @@ C------ don't bother if this control variable is undefined
 
       
       
-      subroutine solve_adjoint()
+      subroutine solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
       include "AVL.INC"
       include "AVL_ad_seeds.inc"
       integer i 
+      logical :: solve_stab_deriv_adj, solve_con_surf_adj
+      
       CALL SETUP
       IF(.NOT.LAIC) THEN
             call factor_AIC
@@ -2134,12 +2152,23 @@ C------ don't bother if this control variable is undefined
 
       CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
       
-      
+      if (solve_con_surf_adj) then 
       DO IC = 1, NCONTROL
             do i =1,NVOR
                   RES_D_diff(i,IC) = GAM_D_diff(i,IC)
             enddo
             CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
       enddo
+      endif 
+
+      if (solve_stab_deriv_adj) then 
+      DO IU = 1,6
+            do i =1,NVOR
+                  RES_U_diff(i,IU) = GAM_U_diff(i,IU)
+            enddo
+            
+            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IU))
+      enddo
+      endif
       
       end !subroutine solve_adjoint

@@ -316,7 +316,7 @@ C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
           G(3) = RV2(3,I)-RV1(3,I)
           CALL CROSS(VEFF, G, F)
           DO N = 1, NUMAX
-            CALL CROSS(VEFF_U(1,N), G, F_U(1,N))
+            CALL CROSS(VEFF_U(:,N), G, F_U(:,N))
           ENDDO
 C
           FGAM(1) = 2.0*GAM(I)*F(1)
@@ -449,15 +449,15 @@ C
             CHINGE(L) = CHINGE(L) + DOT(MH,VHINGE(1,J,L))*DFAC
 C
             DO N = 1, NUMAX
-              CALL CROSS(RH,FGAM_U(1,N),MH)
+              CALL CROSS(RH,FGAM_U(:,N),MH)
               CHINGE_U(L,N) = CHINGE_U(L,N) + DOT(MH,VHINGE(1,J,L))*DFAC
             ENDDO
             DO N = 1, NCONTROL
-              CALL CROSS(RH,FGAM_D(1,N),MH)
+              CALL CROSS(RH,FGAM_D(:,N),MH)
               CHINGE_D(L,N) = CHINGE_D(L,N) + DOT(MH,VHINGE(1,J,L))*DFAC
             ENDDO
             DO N = 1, NDESIGN
-              CALL CROSS(RH,FGAM_G(1,N),MH)
+              CALL CROSS(RH,FGAM_G(:,N),MH)
               CHINGE_G(L,N) = CHINGE_G(L,N) + DOT(MH,VHINGE(1,J,L))*DFAC
             ENDDO
           ENDDO
@@ -536,7 +536,7 @@ C---------- Force coefficient on vortex segment is 2(Veff x Gamma)
             CALL CROSS (VEFF, G, F)
 C
             DO N = 1, NUMAX
-              CALL CROSS(VEFF_U(1,N), G, F_U(1,N))
+              CALL CROSS(VEFF_U(:,N), G, F_U(:,N))
             ENDDO
 C
             FGAM(1) = 2.0*GAM(I)*F(1)
@@ -1384,7 +1384,7 @@ C
 C
           CALL CROSS(RROT,FB,MB)
           DO IU = 1, 6
-            CALL CROSS(RROT,FB_U(1,IU),MB_U(1,IU)) 
+            CALL CROSS(RROT,FB_U(:,IU),MB_U(:,IU)) 
           ENDDO
 C
           CDBDY(IB) = CDBDY(IB) + ( FB(1)*COSA + FB(3)*SINA) * 2.0/SREF

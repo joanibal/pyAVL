@@ -29,18 +29,29 @@ class TestNewSubroutines(unittest.TestCase):
 
     def test_residual(self):
         self.avl_solver.avl.get_res()
-        res = self.avl_solver.avl.VRTX_R.RES[:]
-        rhs = self.avl_solver.avl.VRTX_R.RHS[:]
+        res = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES)
+        rhs = copy.deepcopy(self.avl_solver.avl.VRTX_R.RHS)
         np.testing.assert_allclose(
             res,
             -1 * rhs,
             atol=1e-15,
         )
+        res_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES_U)
+        rhs_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.RHS_U)
+        
+        # print('rhs_u', np.linalg.norm(rhs_u))
+        # print('res_u', np.linalg.norm(res_u))
+        np.testing.assert_allclose(
+            res_u,
+            -1 * rhs_u,
+            atol=1e-15,
+        )
 
         self.avl_solver.avl.exec_rhs()
         self.avl_solver.avl.get_res()
-        res = self.avl_solver.avl.VRTX_R.RES[:]
-        res_d = self.avl_solver.avl.VRTX_R.RES_D[:]
+        res   = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES)
+        res_d = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES_D)
+        res_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES_U)
 
         np.testing.assert_allclose(
             res,
@@ -53,6 +64,12 @@ class TestNewSubroutines(unittest.TestCase):
             np.zeros_like(res_d),
             atol=5e-14,
         )
+        
+        np.testing.assert_allclose(
+            res_u,
+            np.zeros_like(res_u),
+            atol=5e-14,
+        )
 
     def test_new_solve(self):
         self.avl_solver.add_constraint("Elevator", 10.00)
@@ -60,16 +77,21 @@ class TestNewSubroutines(unittest.TestCase):
         self.avl_solver.add_constraint("beta", 10.00)
         
         self.avl_solver.avl.exec_rhs()
+        
         self.avl_solver.avl.velsum()
-        wv_new = self.avl_solver.avl.SOLV_R.WV
         self.avl_solver.avl.aero()
-        gam_new = self.avl_solver.avl.VRTX_R.GAM[:]
+        wv_new    = copy.deepcopy(self.avl_solver.avl.SOLV_R.WV)
+        gam_new   = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM)
+        gam_u_new = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM_U)
+        print('gam_u_new', np.linalg.norm(gam_u_new))
         coef_data_new = self.avl_solver.get_case_total_data()
+        
         coef_derivs_new = self.avl_solver.get_case_coef_derivs()
 
         self.avl_solver.execute_run()
-        gam = self.avl_solver.avl.VRTX_R.GAM[:]
-        wv = self.avl_solver.avl.SOLV_R.WV
+        gam   = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM)
+        wv    = copy.deepcopy(self.avl_solver.avl.SOLV_R.WV)
+        gam_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM_U)
         coef_data = self.avl_solver.get_case_total_data()
         coef_derivs = self.avl_solver.get_case_coef_derivs()
 
@@ -81,6 +103,11 @@ class TestNewSubroutines(unittest.TestCase):
         np.testing.assert_allclose(
             gam,
             gam_new,
+            atol=1e-15,
+        )
+        np.testing.assert_allclose(
+            gam_u,
+            gam_u_new,
             atol=1e-15,
         )
         for func_key in coef_data:

@@ -34,6 +34,7 @@ class TestOMWrapper(unittest.TestCase):
     
         model = om.Group()
         model.add_subsystem("avlsolver", AVLGroup(geom_file=geom_file, mass_file=mass_file, 
+                                                  output_stabililty_derivs=True,
                                                   input_param_vals=True, input_ref_vals=True))
 
         self.prob = om.Problem(model)
@@ -137,6 +138,7 @@ class TestOMWrapper(unittest.TestCase):
     def test_OM_total_derivs(self):
         prob = self.prob
         cl_star = 1.5
+        dcl_dalpha_star = -0.1
         prob.model.add_design_var("avlsolver.Wing:xyzles")
         prob.model.add_design_var("avlsolver.Wing:chords")
         prob.model.add_design_var("avlsolver.Wing:aincs")
@@ -146,6 +148,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_design_var("avlsolver.Mach")
         prob.model.add_design_var("avlsolver.X cg")
         prob.model.add_constraint("avlsolver.CL", equals=cl_star)
+        prob.model.add_constraint("avlsolver.dCL_dalpha", equals=-dcl_dalpha_star)
         prob.model.add_objective("avlsolver.CD", scaler=1e3)
         prob.model.add_objective("avlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')

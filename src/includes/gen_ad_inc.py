@@ -13,8 +13,8 @@ def process_fortran_include_file(input_filename, output_filename, ad_ext="_DIFF"
         line = line.strip()
         return line
 
-    ignore_blocks = ["UN_R", "TIME_R", "PLOT_R"]
-    ignore_vars = ["VERSION", "DTR", "PI", "DTIMED"]
+    ignore_blocks = ["UN_R", "TIME_R", "PLOT_R", "VRTX_S"]
+    ignore_vars = ["VERSION", "DTR", "PI", "DTIMED", "AICN_LU(NVMAX,NVMAX)", "EXEC_TOL"]
 
     with open(input_filename, "r") as input_file:
         lines = input_file.readlines()
@@ -43,6 +43,9 @@ def process_fortran_include_file(input_filename, output_filename, ad_ext="_DIFF"
                 idx_line += 1
                 while True:
                     line = get_line(idx_line)
+                    if line[0].lower() == "c":
+                        idx_line += 1
+                        continue
                     # remove & from the line
                     line = line.replace("& ", "")
                     # print(line)
@@ -112,4 +115,4 @@ def process_fortran_include_file(input_filename, output_filename, ad_ext="_DIFF"
 
 
 if __name__ == "__main__":
-    process_fortran_include_file("AVL.INC", "AVL_ad_seeds.inc")
+    process_fortran_include_file("AVL.INC.in", "AVL_ad_seeds.inc")

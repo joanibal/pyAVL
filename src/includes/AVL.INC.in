@@ -216,6 +216,7 @@ C
       real(kind=avl_real) DCL_A0, DCM_A0
       real(kind=avl_real) DCL_U0, DCM_U0
       real(kind=avl_real) XNP
+      real(kind=avl_real) SM
       real(kind=avl_real) EXEC_TOL                
       COMMON /CASE_R/
      & VERSION,          ! AVL version number
@@ -276,6 +277,7 @@ C
      & DCL_A0, DCM_A0,   ! additional default CL_a, CM_a
      & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
      & XNP,                ! x neutral point
+     & SM,                ! static margin
      & EXEC_TOL           ! tolerance of exec trim solve
       COMPLEX(kind=avl_real) EVAL, EVEC, EVALDAT
       COMMON /CASE_Z/
@@ -612,7 +614,9 @@ C
       REAL(kind=avl_real) WCSRD_U
       REAL(kind=avl_real) WVSRD_U
       REAL(kind=avl_real) RHS
+      REAL(kind=avl_real) RHS_U
       REAL(kind=avl_real) RES
+      REAL(kind=avl_real) RES_U
       REAL(kind=avl_real) RES_D
       REAL(kind=avl_real) CPT
       COMMON /VRTX_R/
@@ -657,7 +661,9 @@ cc#ifdef USE_CPOML
      & CPT(NVMAX),                ! thickness-based Cp at panel midpoint
 cc#else
      & RHS(NVMAX),               ! RHS (flow normal to surface) for linear system
+     & RHS_U(NVMAX,NUMAX),               ! RHS (flow normal to surface for each U compt.) for linear system
      & RES(NVMAX),               ! residual for linear system res = Ax-b
+     & RES_U(NVMAX,NUMAX),               ! residual for gamma_u lin sys
      & RES_D(NVMAX,NDMAX)        ! residual for gamma_d lin. sys 
 
 cc#ifdef USE_CPOML

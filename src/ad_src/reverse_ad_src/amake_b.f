@@ -333,6 +333,10 @@ C
       REAL fracte_diff
       INTRINSIC MAX
       INTRINSIC MIN
+      REAL zl_l
+      REAL zu_l
+      REAL zl_r
+      REAL zu_r
       REAL zl
       REAL zu
       REAL sum
