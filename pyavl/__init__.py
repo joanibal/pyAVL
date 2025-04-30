@@ -6,6 +6,8 @@ try:
 except importlib.metadata.PackageNotFoundError:
     __version__ = "0.0.0"
 
+print('Warning: pyAVL is deprecated and will be removed soon, use OptVL instead (pip install optvl). '\
+      'See https://joanibal.github.io/OptVL/pyavl_changes/ for an overview of the changes.')
 from .pyAVL import AVLSolver
 
 try:
