@@ -1,4 +1,4 @@
-# pyAVL is not obsolete, use [OptVL](https://github.com/joanibal/OptVL)
+# pyAVL is now obsolete, use [OptVL](https://github.com/joanibal/OptVL)
 I will no longer be working on pyAVL and will be removing it soon. 
 OptVL is a more advanced version and where developement will continue. 
 
